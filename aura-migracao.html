@@ -1,0 +1,488 @@
+<title>Aura Agent — diagnóstico da migração</title>
+<style>
+  /* ---------- tokens: light (bare :root = complete palette) ---------- */
+  :root {
+    --ground:   #EEF0F3;
+    --surface:  #FFFFFF;
+    --surface2: #F6F7F9;
+    --ink:      #191C22;
+    --muted:    #5D6371;
+    --faint:    #868D9B;
+    --line:     #D6DAE1;
+    --line-soft:#E5E8ED;
+    --accent:   #A85B06;
+    --accent-bg:#F7EBD8;
+    --lost:     #A82A2F;
+    --lost-bg:  #F8E4E4;
+    --kept:     #0B6E5F;
+    --kept-bg:  #DDEFEA;
+    --shadow:   0 1px 2px rgba(25,28,34,.06), 0 8px 24px -12px rgba(25,28,34,.18);
+
+    --display: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    --data: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:   #121419;
+      --surface:  #1A1D24;
+      --surface2: #21252D;
+      --ink:      #E7EAEF;
+      --muted:    #99A0AE;
+      --faint:    #6E7684;
+      --line:     #2E333D;
+      --line-soft:#262B33;
+      --accent:   #E9A33F;
+      --accent-bg:#3A2C14;
+      --lost:     #E8737B;
+      --lost-bg:  #382123;
+      --kept:     #46C3A8;
+      --kept-bg:  #12332E;
+      --shadow:   0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:   #121419;
+    --surface:  #1A1D24;
+    --surface2: #21252D;
+    --ink:      #E7EAEF;
+    --muted:    #99A0AE;
+    --faint:    #6E7684;
+    --line:     #2E333D;
+    --line-soft:#262B33;
+    --accent:   #E9A33F;
+    --accent-bg:#3A2C14;
+    --lost:     #E8737B;
+    --lost-bg:  #382123;
+    --kept:     #46C3A8;
+    --kept-bg:  #12332E;
+    --shadow:   0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px 96px; }
+  .col  { max-width: 68ch; }
+
+  /* ---------- masthead ---------- */
+  header.mast {
+    border-bottom: 1px solid var(--line);
+    padding: 56px 0 0;
+    margin-bottom: 40px;
+  }
+  .eyebrow {
+    font-family: var(--data);
+    font-size: 11px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 18px;
+  }
+  h1 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(34px, 5.4vw, 56px);
+    line-height: 1.06;
+    letter-spacing: -.018em;
+    text-wrap: balance;
+    margin: 0 0 20px;
+  }
+  .lede { font-size: 18px; color: var(--muted); margin: 0 0 40px; max-width: 62ch; }
+  .lede strong { color: var(--ink); font-weight: 600; }
+
+  /* ---------- scoreboard ---------- */
+  .board {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-bottom: none;
+    border-radius: 3px 3px 0 0;
+    overflow: hidden;
+  }
+  .board .cell { background: var(--surface); padding: 18px 20px 20px; }
+  .board .k {
+    font-family: var(--data); font-size: 10.5px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--faint); margin: 0 0 10px;
+  }
+  .board .v {
+    font-family: var(--data); font-variant-numeric: tabular-nums;
+    font-size: 26px; letter-spacing: -.02em; display: flex; align-items: baseline; gap: 7px;
+  }
+  .board .from { color: var(--faint); }
+  .board .arw  { color: var(--line); font-size: 17px; }
+  .board .to   { font-weight: 600; }
+  .to.bad  { color: var(--lost); }
+  .to.warn { color: var(--accent); }
+  .to.good { color: var(--kept); }
+  .board .note { font-size: 12.5px; color: var(--muted); margin: 7px 0 0; line-height: 1.4; }
+
+  /* ---------- sections ---------- */
+  section { padding-top: 56px; }
+  h2 {
+    font-family: var(--display); font-weight: 600;
+    font-size: clamp(23px, 2.9vw, 30px); letter-spacing: -.012em;
+    line-height: 1.2; text-wrap: balance; margin: 0 0 8px;
+    padding-bottom: 12px; border-bottom: 2px solid var(--ink);
+    display: inline-block;
+  }
+  .sec-note { color: var(--muted); font-size: 15px; margin: 14px 0 26px; max-width: 68ch; }
+  h3 {
+    font-family: var(--body); font-weight: 650; font-size: 16px;
+    letter-spacing: -.005em; margin: 34px 0 10px;
+  }
+  p { margin: 0 0 14px; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px;
+  }
+  code {
+    font-family: var(--data); font-size: .87em;
+    background: var(--surface2); border: 1px solid var(--line-soft);
+    padding: .08em .34em; border-radius: 3px; overflow-wrap: anywhere;
+  }
+
+  /* ---------- ledger ---------- */
+  .scroller { overflow-x: auto; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 620px; }
+  th, td { text-align: left; padding: 11px 16px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  thead th {
+    font-family: var(--data); font-size: 10.5px; letter-spacing: .09em;
+    text-transform: uppercase; color: var(--faint); font-weight: 500;
+    background: var(--surface2); border-bottom: 1px solid var(--line);
+    position: sticky; top: 0;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num { font-family: var(--data); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .stripe { border-left: 3px solid transparent; }
+  .stripe.bad  { border-left-color: var(--lost); }
+  .stripe.warn { border-left-color: var(--accent); }
+  .stripe.good { border-left-color: var(--kept); }
+
+  .pill {
+    font-family: var(--data); font-size: 10.5px; letter-spacing: .06em;
+    text-transform: uppercase; padding: 2.5px 7px; border-radius: 3px;
+    white-space: nowrap; display: inline-block; font-weight: 500;
+  }
+  .pill.bad  { background: var(--lost-bg);   color: var(--lost); }
+  .pill.warn { background: var(--accent-bg); color: var(--accent); }
+  .pill.good { background: var(--kept-bg);   color: var(--kept); }
+
+  /* ---------- defect cards ---------- */
+  .defects { display: grid; gap: 14px; }
+  .defect {
+    background: var(--surface); border: 1px solid var(--line);
+    border-left: 3px solid var(--lost); border-radius: 3px;
+    padding: 18px 20px; box-shadow: var(--shadow);
+  }
+  .defect.warn { border-left-color: var(--accent); }
+  .defect h3 { margin: 0 0 8px; font-size: 15.5px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .defect .idx {
+    font-family: var(--data); font-size: 11px; color: var(--faint);
+    font-weight: 400; letter-spacing: .06em;
+  }
+  .defect p { font-size: 14.5px; color: var(--muted); margin: 0 0 10px; }
+  .defect p:last-child { margin-bottom: 0; }
+  .defect strong { color: var(--ink); font-weight: 600; }
+  pre {
+    font-family: var(--data); font-size: 12.5px; line-height: 1.55;
+    background: var(--surface2); border: 1px solid var(--line-soft);
+    border-radius: 3px; padding: 12px 14px; margin: 0 0 10px;
+    overflow-x: auto; color: var(--ink);
+  }
+  pre .cm { color: var(--faint); }
+  pre .hl { color: var(--lost); }
+
+  /* ---------- architecture stack ---------- */
+  .stack { display: grid; gap: 6px; margin: 0 0 12px; }
+  .layer {
+    display: grid; grid-template-columns: 132px 1fr; gap: 16px; align-items: center;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 3px; padding: 13px 16px;
+  }
+  .layer .lname {
+    font-family: var(--data); font-size: 11.5px; letter-spacing: .09em;
+    text-transform: uppercase; color: var(--accent);
+  }
+  .layer .ldesc { font-size: 14px; color: var(--muted); }
+  .layer .ldesc b { color: var(--ink); font-weight: 600; }
+  .orch {
+    text-align: center; font-family: var(--data); font-size: 11.5px;
+    letter-spacing: .09em; text-transform: uppercase; color: var(--faint);
+    padding: 11px; border: 1px dashed var(--line); border-radius: 3px;
+    background: var(--surface2);
+  }
+
+  /* ---------- build grid ---------- */
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+  .panel {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 3px; padding: 20px 22px; box-shadow: var(--shadow);
+  }
+  .panel h3 { margin-top: 0; }
+  .panel ul { margin: 0; padding-left: 0; list-style: none; }
+  .panel li {
+    display: flex; gap: 10px; align-items: baseline;
+    padding: 7px 0; border-bottom: 1px solid var(--line-soft); font-size: 14px;
+  }
+  .panel li:last-child { border-bottom: none; }
+  .panel li code { background: none; border: none; padding: 0; color: var(--ink); }
+
+  /* ---------- steps ---------- */
+  ol.steps { list-style: none; counter-reset: s; padding: 0; margin: 0; }
+  ol.steps li {
+    counter-increment: s; position: relative; padding: 0 0 20px 46px;
+    border-left: 1px solid var(--line); margin-left: 13px;
+  }
+  ol.steps li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  ol.steps li::before {
+    content: counter(s); position: absolute; left: -13px; top: -2px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--line); color: var(--faint);
+    font-family: var(--data); font-size: 11.5px; font-variant-numeric: tabular-nums;
+    display: grid; place-items: center;
+  }
+  ol.steps b { display: block; font-size: 15px; margin-bottom: 3px; font-weight: 650; }
+  ol.steps span { font-size: 14px; color: var(--muted); }
+
+  /* ---------- callout ---------- */
+  .callout {
+    background: var(--accent-bg); border: 1px solid var(--line);
+    border-left: 3px solid var(--accent); border-radius: 3px;
+    padding: 17px 20px; margin: 0 0 14px;
+  }
+  .callout p { margin: 0; font-size: 14.5px; }
+  .callout p + p { margin-top: 9px; }
+  .callout .clabel {
+    font-family: var(--data); font-size: 10.5px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 7px;
+  }
+
+  footer {
+    margin-top: 64px; padding-top: 22px; border-top: 1px solid var(--line);
+    font-size: 13px; color: var(--faint);
+  }
+  footer code { background: none; border: none; padding: 0; }
+  @media (max-width: 620px) {
+    .layer { grid-template-columns: 1fr; gap: 5px; }
+    .board .v { font-size: 22px; }
+  }
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <p class="eyebrow">Copilot Studio · clássico → nova experiência</p>
+  <h1>Aura Agent: o que a migração levou embora</h1>
+  <p class="lede">O agente de portfólio do <strong>CDIO LATAM</strong> funcionava no Copilot Studio clássico. A Microsoft removeu tópicos e child agents, e <strong>não existe conversão entre as duas experiências</strong>. O que chegou do outro lado foi uma fração — com defeitos de configuração no caminho.</p>
+
+  <div class="board">
+    <div class="cell">
+      <p class="k">Tools Azure DevOps</p>
+      <p class="v"><span class="from">5</span><span class="arw">→</span><span class="to bad">0</span></p>
+      <p class="note">Nenhuma referência ao conector sobreviveu</p>
+    </div>
+    <div class="cell">
+      <p class="k">Tools Power BI</p>
+      <p class="v"><span class="from">3</span><span class="arw">→</span><span class="to warn">2</span></p>
+      <p class="note">E uma das duas está quebrada</p>
+    </div>
+    <div class="cell">
+      <p class="k">Lógica de conversa</p>
+      <p class="v"><span class="from">3</span><span class="arw">→</span><span class="to bad">1</span></p>
+      <p class="note">Tópicos ativos → skills</p>
+    </div>
+    <div class="cell">
+      <p class="k">Fontes de conhecimento</p>
+      <p class="v"><span class="from">2</span><span class="arw">→</span><span class="to good">2</span></p>
+      <p class="note">Migraram intactas</p>
+    </div>
+    <div class="cell">
+      <p class="k">Idioma do agente</p>
+      <p class="v"><span class="from">1046</span><span class="arw">→</span><span class="to warn">1033</span></p>
+      <p class="note">pt-BR virou en-US sozinho</p>
+    </div>
+  </div>
+</header>
+
+<section>
+  <h2>Os dois arquivos</h2>
+  <p class="sec-note">São o mesmo agente em duas gerações incompatíveis do produto. Em ambos, cerca de 80% das linhas é swagger dos conectores — não é conteúdo seu.</p>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr><th>&nbsp;</th><th><code>botContent_68.zip</code></th><th><code>Aura_Agent.yaml</code></th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Geração</td><td>clássico</td><td>nova experiência</td></tr>
+        <tr><td><code>template</code></td><td class="num">default-2.1.0</td><td class="num">cliagent-1.0.0</td></tr>
+        <tr><td><code>recognizer</code></td><td class="num">GenerativeAIRecognizer</td><td class="num">CLICopilotRecognizer</td></tr>
+        <tr><td>Linhas</td><td class="num">13.574</td><td class="num">13.810</td></tr>
+        <tr><td>Componentes reais</td><td class="num">36</td><td class="num">11</td></tr>
+        <tr><td>Estado</td><td><span class="pill good">funcionava</span></td><td><span class="pill bad">não funciona</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>Os cinco defeitos concretos</h2>
+  <p class="sec-note">Não é uma impressão de que “está estranho”. São cinco coisas verificáveis no arquivo.</p>
+
+  <div class="defects">
+
+    <div class="defect">
+      <h3><span class="idx">01</span> Azure DevOps desapareceu por inteiro</h3>
+      <pre><span class="cm">$</span> grep -c "visualstudioteamservices" Aura_Agent.yaml
+<span class="hl">0</span></pre>
+      <p>Sumiram as três consultas por Query ID, o <code>GetWorkItemDetails</code> e o <code>UpdateWorkItem</code>. Suas instruções ainda mandam “use Azure DevOps com o ID exato” — o agente lê, tenta obedecer e não acha ferramenta nenhuma.</p>
+    </div>
+
+    <div class="defect">
+      <h3><span class="idx">02</span> A <code>Master DB Search</code> perdeu os bindings</h3>
+      <pre>    dialog:
+      kind: ConnectorTool
+      operationId: ExecuteDatasetQuery
+      <span class="cm"># ← acabou aqui. NÃO existe bloco toolInputs.</span></pre>
+      <p>Sem <code>toolInputs</code>, os três parâmetros caem em “preencher com IA”. <strong>O modelo não tem como adivinhar os GUIDs</strong> do workspace e do dataset — eles não estão em lugar nenhum do contexto dele. Resultado: <strong>HTTP 400 sempre</strong>.</p>
+      <p>O detalhe cruel: as variáveis com os valores certos <em>existem no arquivo</em>. Só não foram ligadas à tool. Essa é provavelmente a correção que sozinha destrava metade dos erros de hoje.</p>
+    </div>
+
+    <div class="defect">
+      <h3><span class="idx">03</span> O motor analítico não foi recriado</h3>
+      <p>A <code>Power BI Portfolio Database</code> tinha <code>groupid</code> e <code>datasetid</code> <strong>fixos</strong>, <code>query</code> <strong>livre para a IA</strong>, e o dicionário de colunas embutido na descrição do input. Era ela que transformava “quais são os watermelons” em DAX.</p>
+      <p>Sem ela, o agente ficou com duas queries fixas — <code>EVALUATE 'Short Name'</code> e <code>EVALUATE 'tabela_agente'</code> — e nenhuma capacidade analítica.</p>
+    </div>
+
+    <div class="defect warn">
+      <h3><span class="idx">04</span> A skill migrada chama tools que não existem</h3>
+      <p>A <code>inicio-de-conversa</code> manda “Call the Power BI detailed-query tool <strong>(PowerBI - Execute a query against a dataset)</strong>”. Nenhuma tool do agente se chama assim.</p>
+      <p>Skills referenciam tools por <em>nome visível</em>, em texto. Se o nome não bate, o agente não dá erro — ele <strong>improvisa</strong>, que é pior. E a tool <code>Inicio de Conversa</code> tem exatamente o mesmo nome da skill <code>inicio-de-conversa</code>, num sistema onde o roteamento é semântico.</p>
+    </div>
+
+    <div class="defect warn">
+      <h3><span class="idx">05</span> As instruções leem uma variável que morreu</h3>
+      <pre>- MEMORY ALREADY FILTERED: The internal memory
+  <span class="hl">'Global.tabela_pbi'</span> is ALREADY filtered for
+  active/recent projects.</pre>
+      <p><code>Global.tabela_pbi</code> era criada pelo nó <code>ParseValue</code> do tópico de abertura. <strong>Sem o tópico, a variável não existe</strong> — o agente segue uma instrução impossível. E o texto veio com escapes literais de markdown (<code>\*</code>, <code>\_</code>) e a numeração das seções quebrada.</p>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <h2>O modelo mental novo</h2>
+  <p class="sec-note">Onde cada peça do agente antigo passa a viver. No clássico você era desenhista de fluxo; aqui você é redator de comportamento.</p>
+
+  <div class="stack">
+    <div class="layer"><span class="lname">Instructions</span><span class="ldesc"><b>Sempre no contexto.</b> Persona, vocabulário do negócio, regras inegociáveis, roteamento de alto nível.</span></div>
+    <div class="layer"><span class="lname">Skills</span><span class="ldesc"><b>Sob demanda.</b> Arquivos Markdown com o passo a passo de uma tarefa. É aqui que os tópicos renascem.</span></div>
+    <div class="layer"><span class="lname">Tools</span><span class="ldesc"><b>Quando preciso.</b> Conector, MCP, agent flow. Tradução 1:1 das antigas ações.</span></div>
+    <div class="layer"><span class="lname">Knowledge</span><span class="ldesc"><b>Quando preciso.</b> SharePoint, Dataverse, Microsoft IQ. Suas duas fontes migraram intactas.</span></div>
+    <div class="layer"><span class="lname">Memory</span><span class="ldesc"><b>Entre conversas.</b> Capacidade nova, já ligada no seu agente.</span></div>
+    <div class="orch">↑ o orquestrador decide o que usar, quando e em que ordem</div>
+  </div>
+
+  <h3>Skills, em uma tela</h3>
+  <p>Uma skill é um arquivo Markdown com frontmatter YAML. Só isso.</p>
+  <pre>---
+name: project-deep-dive        <span class="cm"># kebab-case, ≤64 chars, = nome da pasta</span>
+description: >                 <span class="cm"># ≤1024 chars — o CONTRATO DE ATIVAÇÃO</span>
+  Análise profunda de UM projeto... Use quando o usuário citar
+  o nome ou o ID de um projeto... NÃO use para visão macro
+  (use portfolio-overview).
+---
+
+## Passo 1 — Resolver nome → Work Item ID
+Chame a tool **`Power BI Master DB Search`** com: ...</pre>
+
+  <div class="callout">
+    <span class="clabel">O erro nº 1 de quem vem dos tópicos</span>
+    <p>No clássico o gatilho era literal: <code>triggerPhrases: ["preparar reunião", "pauta"]</code>. Aqui <strong>não existe trigger phrase</strong> — a ativação é semântica, comparando a intenção do usuário com a <code>description</code>.</p>
+    <p>Por isso toda description deste projeto segue o mesmo padrão: <strong>o que faz + com que dados + quando usar + quando NÃO usar</strong>. O “quando não usar” é o que impede duas skills de brigarem pela mesma pergunta.</p>
+  </div>
+</section>
+
+<section>
+  <h2>O que reconstruir</h2>
+  <p class="sec-note">Oito tools e seis skills. Os arquivos das skills estão prontos para upload; as tools são criadas na UI porque dependem das conexões do tenant.</p>
+
+  <div class="grid2">
+    <div class="panel">
+      <h3>8 tools</h3>
+      <ul>
+        <li><span class="pill warn">criar</span><code>Power BI Portfolio Database</code></li>
+        <li><span class="pill bad">corrigir</span><code>Power BI Master DB Search</code></li>
+        <li><span class="pill good">renomear</span><code>Power BI KPI Agente</code></li>
+        <li><span class="pill warn">criar</span><code>DevOps Portfolio Master Query</code></li>
+        <li><span class="pill warn">criar</span><code>DevOps Query by Area or BU</code></li>
+        <li><span class="pill warn">criar</span><code>DevOps Work Item Details</code></li>
+        <li><span class="pill warn">criar</span><code>DevOps Update Work Item</code></li>
+        <li><span class="pill good">manter</span><code>Teams — Postar mensagem</code></li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>6 skills</h3>
+      <ul>
+        <li><span class="pill bad">corrigida</span><code>inicio-de-conversa</code></li>
+        <li><span class="pill warn">recriada</span><code>portfolio-overview</code></li>
+        <li><span class="pill warn">recriada</span><code>project-deep-dive</code></li>
+        <li><span class="pill warn">recriada</span><code>meeting-preparation</code></li>
+        <li><span class="pill warn">recriada</span><code>update-devops</code></li>
+        <li><span class="pill good">nova</span><code>notificar-gestor</code></li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>A armadilha que vai te pegar de novo</h3>
+  <p class="col">Toda vez que você cria uma tool, o Copilot Studio marca <strong>todos</strong> os inputs como “preencher dinamicamente com IA”. Você precisa ir em cada um dos fixos — <code>groupid</code>, <code>datasetid</code>, <code>account</code>, <code>project</code>, <code>typeName</code> — e trocar para <strong>“Valor personalizado”</strong>. Foi exatamente isso que quebrou a <code>Master DB Search</code>.</p>
+</section>
+
+<section>
+  <h2>A ordem de execução</h2>
+  <p class="sec-note">Cada etapa tem um teste de aceite. Não avance sem ele passar — senão você acumula erro e não descobre qual peça quebrou.</p>
+
+  <ol class="steps">
+    <li><b>Settings</b><span>Idioma para pt-BR, moderação de Máxima para Alta. Teste: escreva “olá”, ele responde em português.</span></li>
+    <li><b>Instruções</b><span>Cole do arquivo <code>.md</code> cru — nunca de editor rico, é assim que os <code>\*</code> entram. Teste: reabra e procure por escapes.</span></li>
+    <li><b>Tools, uma por vez</b><span>Comece corrigindo a <code>Master DB Search</code>. Teste cada uma no painel antes de criar a próxima.</span></li>
+    <li><b>Knowledge</b><span>Confirme as duas fontes SharePoint. Teste: “o que é a fase 09 PGLS?”</span></li>
+    <li><b>Skills</b><span>Apague a antiga primeiro. Suba os seis <code>.zip</code> — o <code>.md</code> solto não carrega a pasta <code>references/</code>.</span></li>
+    <li><b>Greeting &amp; prompts</b><span>Os três atalhos voltam aqui, como chips clicáveis. Dentro da skill eles são só texto.</span></li>
+    <li><b>Testes ponta a ponta</b><span>Um por skill. Se falhar, o culpado quase sempre é o nome da tool citado na skill não bater com o real.</span></li>
+    <li><b>Publicar e repetir no Teams</b><span>A tool do Teams usa credencial de usuário final e se comporta diferente fora do painel de teste.</span></li>
+  </ol>
+</section>
+
+<section>
+  <h2>Duas decisões que são suas</h2>
+
+  <div class="callout">
+    <span class="clabel">Determinismo — o que você perde de verdade</span>
+    <p>A restrição da pauta executiva era Power Fx que <em>executava</em>: <code>Or("nicolas.kuhnast@unilever.com" in Lower(System.User.Email), ...)</code>. Não tinha como contornar.</p>
+    <p>Numa skill, a mesma regra vira texto. Um modelo obedece na maioria das vezes — mas é uma instrução, não um portão. Se for crítico, precisa sair da skill: <strong>grupo de segurança</strong>, <strong>agente separado</strong> para os quatro, ou <strong>workflow</strong> com nó de condição.</p>
+  </div>
+
+  <div class="callout">
+    <span class="clabel">Teams — a combinação que só o teste revela</span>
+    <p>Para mandar DM ao gestor, o par <code>poster</code> / <code>location</code> varia por tenant. Não dá para determinar isso pelo arquivo. Teste mandando mensagem <strong>para você mesmo</strong>, descubra o que funciona, e trave os dois em “Valor personalizado”.</p>
+  </div>
+</section>
+
+<footer>
+  <p>Todo GUID, <code>operationId</code>, coluna DAX e reference name <code>Custom.*</code> foi extraído do <code>botContent.yml</code> do agente clássico e conferido linha a linha. Nada foi inventado.</p>
+  <p>Documentação completa, arquivos de skill e pacotes <code>.zip</code> no branch <code>claude/copilot-studio-agent-migration-9l6mcq</code>.</p>
+</footer>
+
+</div>
