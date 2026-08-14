@@ -93,6 +93,54 @@ def checar_dialeto(texto):
     return problemas
 
 
+def variaveis_de_closed_list(doc):
+    """Nomes de variáveis (`Topic.X` / `Global.X`) definidas por um `Question`
+    com `EmbeddedEntity`/`ClosedListEntity` — no Copilot Studio elas têm tipo
+    `EmbeddedOptionSet`, não `String`. Comparar com string literal exige `Text()`."""
+    achados = set()
+
+    def anda(no):
+        if isinstance(no, dict):
+            if no.get("kind") == "Question" and isinstance(no.get("variable"), str):
+                ent = no.get("entity")
+                if isinstance(ent, dict) and ent.get("kind") == "EmbeddedEntity":
+                    defn = ent.get("definition", {})
+                    if isinstance(defn, dict) and defn.get("kind") in (
+                        "ClosedListEntity", "DynamicClosedListEntity"
+                    ):
+                        achados.add(no["variable"])
+            for v in no.values():
+                anda(v)
+        elif isinstance(no, list):
+            for item in no:
+                anda(item)
+
+    anda(doc)
+    return achados
+
+
+def comparacoes_sem_text(texto, variaveis_option_set):
+    """Encontra `condition: =<Var> = "literal"` sem `Text()` envolvendo a variável."""
+    problemas = []
+    for n, linha in enumerate(texto.splitlines(), 1):
+        # só condições que atribuem valor Power Fx
+        m = re.match(r"^\s*condition:\s*=(.+)$", linha)
+        if not m:
+            continue
+        expr = m.group(1)
+        for var in variaveis_option_set:
+            # Var = "..."  ou "..." = Var, mas SEM Text(...) envolvendo
+            var_esc = re.escape(var)
+            # ocorrência crua da variável comparada com string
+            padrao_cru = re.compile(
+                rf"(?<!Text\(){var_esc}\s*=\s*\"|\"\s*=\s*{var_esc}(?!\))"
+            )
+            if padrao_cru.search(expr):
+                problemas.append((n, var, linha.strip()))
+                break
+    return problemas
+
+
 def ids_de_no(doc):
     """Os `id:` que identificam nó, ignorando os `id:` dentro de `input:`
     (ali é nome de parâmetro da tool, não identificador de nó)."""
@@ -197,6 +245,19 @@ def main():
             erros += 1
         else:
             print(f"  ids de nó: {len(ids)}, todos únicos")
+
+        # 3b. type check: ClosedListEntity → EmbeddedOptionSet, precisa de Text()
+        vars_choice = variaveis_de_closed_list(doc)
+        if vars_choice:
+            faltando = comparacoes_sem_text(texto, vars_choice)
+            for n, var, linha in faltando:
+                print(f"  ERRO tipo (linha {n}): {var} vem de ClosedListEntity")
+                print(f"       {linha[:70]}")
+                print(f"       -> envolva em Text(): condition: =Text({var}) = \"...\"")
+                print(f"       (padrão do export antigo: Text(Topic.MeetingArea))")
+                erros += 1
+            if not faltando:
+                print(f"  type check: OK ({len(vars_choice)} var(s) choice, todas com Text())")
 
         if vocab is None:
             continue

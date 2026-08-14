@@ -106,7 +106,7 @@ beginDialog:
       id: decidirGravacao
       conditions:
         - id: confirmado
-          condition: =Topic.Confirmacao = "Confirmar"
+          condition: =Text(Topic.Confirmacao) = "Confirmar"
           actions:
             # ----------------------------------------------------------
             # 4. Gravar no Azure DevOps

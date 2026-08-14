@@ -129,7 +129,7 @@ beginDialog:
       id: decidirEnvio
       conditions:
         - id: aprovado
-          condition: =Topic.Aprovacao = "Enviar"
+          condition: =Text(Topic.Aprovacao) = "Enviar"
           actions:
             # ----------------------------------------------------------
             # 6. Enviar pelo Teams

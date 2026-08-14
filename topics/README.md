@@ -74,6 +74,28 @@ Diferença prática entre os dois:
 
 Como só `|-` existe, escreva cada parágrafo como uma linha só e use linha em branco onde quiser separar parágrafos.
 
+**Variável de `ClosedListEntity` é `EmbeddedOptionSet`, não `String`.** Segunda armadilha, que só o *type checker* do produto pega — depois do parse. Uma `Question` com
+
+```yaml
+      entity:
+        kind: EmbeddedEntity
+        definition:
+          kind: ClosedListEntity
+          items: [...]
+```
+
+produz uma variável tipada. Comparar direto com string literal (`=Topic.X = "Enviar"`) gera:
+
+> Comparação de tipos incompatível. Tipo: String, esperado: EmbeddedOptionSet
+
+Envolva em `Text()`, como o próprio agente antigo faz (`Meeting Preparation`, linha 1703):
+
+```yaml
+condition: =Text(Topic.Aprovacao) = "Enviar"
+```
+
+O validador rastreia isso — reprova toda `condition` que compara uma variável choice com string sem `Text()`.
+
 **Texto vs. Power Fx.** Nos campos de texto (`activity`, `prompt`), use interpolação — é o que os exports do seu agente fazem:
 
 ```yaml
