@@ -112,11 +112,11 @@ Nesta sequência exata:
 
 **Sim, são dois tópicos separados.** Um arquivo = um tópico. **Não cole os dois no mesmo.**
 
-Eles são as duas metades do mesmo ciclo:
+Eles cobrem **qualquer campo de governança** — não só data. Data de Go-Live, PGLS, fase (State), budget, benefit, payback, tempo de implementação, país, business benefit, IT Manager, note, e um modo avançado para qualquer outro reference name.
 
 ```
-cobranca-gestor      →  a IDA    (você manda a cobrança)
-resposta-do-gestor   ←  a VOLTA  (o gestor responde e o agente grava no DevOps)
+cobranca-gestor      →  a IDA    (audita, você escolhe o que cobrar, manda)
+resposta-do-gestor   ←  a VOLTA  (menu de qual campo, valida tipo, grava no DevOps)
 ```
 
 **Caminho, para cada um dos dois arquivos:**
@@ -137,13 +137,17 @@ Teste ponta a ponta **com você mesmo como destinatário**. Repare na ordem: can
 | # | Onde | Ação | Esperado |
 |---|---|---|---|
 | 1 | Painel de teste | `cobrar o gestor` | Pergunta o Work Item ID |
-| 2 | | `376` | Lê o DevOps, sugere um e-mail, pede confirmação |
-| 3 | | **seu próprio** e-mail | Mostra o rascunho e pergunta se pode enviar |
-| 4 | | **Cancelar** | Não envia nada ✅ |
-| 5 | | repetir e escolher **Enviar** | Chega no seu Teams, no chat com o AURA Agent |
-| 6 | Teams | `a nova data é 30/11/2026` | Dispara o segundo tópico, pede o ID |
-| 7 | | `376` | Mostra o de-para e pede confirmação |
-| 8 | | **Confirmar** | Grava — confira no DevOps |
+| 2 | | `376` | Lê o DevOps, **audita a governança e lista os gaps**, pede o que cobrar |
+| 3 | | ex.: `preencher budget e definir Go-Live` | Sugere um e-mail, pede confirmação |
+| 4 | | **seu próprio** e-mail | Mostra o rascunho e pergunta se pode enviar |
+| 5 | | **Cancelar** | Não envia nada ✅ (valida o portão antes do envio) |
+| 6 | | repetir e escolher **Enviar** | Chega no seu Teams, no chat com o AURA Agent |
+| 7 | Teams | `atualizar informação do projeto` | Dispara o segundo tópico, pede o ID |
+| 8 | | `376` | Menu: qual campo? (Go-Live, Budget, State, …) |
+| 9 | | Escolher **Project Total Budget** e digitar um valor | Mostra o de-para e pede confirmação |
+| 10 | | **Confirmar** | Grava — confira no DevOps |
+
+Teste depois com outros tipos de campo (State, Note, Country) para exercitar os cinco branches do menu.
 
 Só depois de tudo isso passar, teste com um gestor real.
 

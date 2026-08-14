@@ -1,6 +1,6 @@
 kind: AdaptiveDialog
 modelDescription: |-
-  Cobra o IT Manager responsável por um projeto do portfólio CDIO que está atrasado ou com falha de governança. Lê o estado atual do work item no Azure DevOps, monta um rascunho de cobrança pedindo a nova data de Go-Live, mostra o rascunho para o usuário aprovar, e só então envia a mensagem pelo Microsoft Teams para o chat pessoal do gestor com o agente. Use quando pedirem "cobrar o gestor", "avisar o responsável", "pedir a nova data", "mandar mensagem para o dono do projeto".
+  Cobra o IT Manager responsável por um projeto do portfólio CDIO sobre uma falha de governança — atraso, campo obrigatório em branco, budget/benefit faltando, PGLS infinito, ou qualquer outro problema detectado. Lê o work item no Azure DevOps, faz uma auditoria de governança para listar os problemas encontrados, deixa o usuário escolher qual cobrar, monta o rascunho e só envia pelo Microsoft Teams depois da aprovação explícita. Use quando pedirem "cobrar o gestor", "avisar o responsável", "cobrar governança", "pedir informação", "cobrar budget", "cobrar benefit", "pedir a nova data", "mandar mensagem para o dono do projeto".
 
 beginDialog:
   kind: OnRecognizedIntent
@@ -11,6 +11,10 @@ beginDialog:
       - cobrar o responsável do projeto
       - avise o gestor
       - avisar o responsável
+      - cobrar governança do projeto
+      - cobrar budget do projeto
+      - cobrar benefit do projeto
+      - pedir informação ao gestor
       - pedir a nova data de go-live
       - mandar mensagem para o gestor do projeto
       - solicitar atualização ao gestor
@@ -48,7 +52,61 @@ beginDialog:
         ="https://dev.azure.com/CDIO-IT-LATAM/CDIO%20Portfolio/_workitems/edit/" & Text(Topic.WorkItemId)
 
     # ------------------------------------------------------------------
-    # 3. Identificar o gestor a partir do dado real
+    # 3. Auditoria de governança — lista os problemas encontrados
+    # ------------------------------------------------------------------
+    - kind: SearchAndSummarizeContent
+      id: auditarGovernanca
+      variable: Topic.GapsGovernanca
+      userInput: |-
+        ="Você é o AURA Agent auditando a governança de um projeto do CDIO LATAM.
+
+        A partir dos dados abaixo, liste EM BULLETS os problemas de governança encontrados neste work item, considerando estas regras:
+
+        OBRIGATÓRIOS SEMPRE: Title, State, Assigned To, Description, Project Type, Business Benefit, Business Product Domain, BG or BU Engagement, Project IT Manager, IT Area, Country Deployed, Portfolio Year, Implementation Time in Months.
+
+        CONDICIONAIS:
+        - Specify Cross → obrigatório se BG or BU Engagement = 'Cross'
+        - Project Total Budget → a partir da fase '06 Plan Analyze'
+        - Project Benefit Value → a partir da fase '05 Cost Approv'; opcional se Business Benefit não for 'Value Added'
+        - Payback in Months, GoLive Date, PGLS End Date → a partir de '06 Plan Analyze'
+
+        ATRASOS E ANOMALIAS:
+        - GoLive Date vencida (anterior a hoje) e State < '10 Deployed' → atraso
+        - Parado >60 dias em '02 Scoping' → risco alto
+        - Parado >30 dias em '08 UAT' → risco alto
+        - PGLS End Date estourada e State ainda '09 PGLS' → PGLS infinito
+        - Watermelon: State parece verde mas Benefit vazio / zero
+
+        NUNCA SINALIZAR: Security Assessment, Clarity ID, Note, Tags.
+        NUNCA SINALIZAR se State for '10 Deployed' ou '11 Closed'.
+
+        Retorne no MÁXIMO 5 problemas, um por bullet, no formato:
+        - [Nome amigável do problema]: [o fato concreto extraído dos dados]
+
+        Se não houver problemas, responda EXATAMENTE: SEM_PROBLEMAS.
+
+        DADOS DO DEVOPS: [" & JSON(Topic.DevOpsFields) & "]"
+      additionalSources:
+        - value: =Topic.DevOpsFields
+      mode: Restricted
+
+    # ------------------------------------------------------------------
+    # 4. Se não achou problema, ainda deixa o usuário cobrar algo específico
+    # ------------------------------------------------------------------
+    - kind: Question
+      id: escolherFoco
+      variable: Topic.FocoDaCobranca
+      prompt: |-
+        📋 **Auditoria de governança — Work Item {Topic.WorkItemId}**
+
+        {Topic.GapsGovernanca}
+
+        ---
+        Descreva em uma linha o que você quer cobrar do gestor. Pode ser um dos problemas acima, uma combinação, ou outra coisa (ex.: "confirmação da fase atual", "novo scope").
+      entity: StringPrebuiltEntity
+
+    # ------------------------------------------------------------------
+    # 5. Identificar o gestor a partir do dado real
     # ------------------------------------------------------------------
     - kind: SearchAndSummarizeContent
       id: identificarGestor
@@ -75,7 +133,7 @@ beginDialog:
       entity: StringPrebuiltEntity
 
     # ------------------------------------------------------------------
-    # 4. Montar o rascunho da cobrança
+    # 6. Montar o rascunho focado no que o usuário escolheu cobrar
     # ------------------------------------------------------------------
     - kind: SearchAndSummarizeContent
       id: montarRascunho
@@ -83,13 +141,20 @@ beginDialog:
       userInput: |-
         ="Você é o AURA Agent, parceiro estratégico do CDIO LATAM. Escreva uma mensagem curta de Microsoft Teams, em português do Brasil, cobrando o gestor sobre este projeto.
 
+        FOCO DA COBRANÇA (o que o usuário quer cobrar): " & Text(Topic.FocoDaCobranca) & "
+
         REGRAS:
         - Tom direto, factual e profissional. Cobre o dado, nunca a pessoa.
-        - Máximo 5 linhas.
+        - Máximo 6 linhas.
         - Cite o nome do projeto e o Work Item " & Text(Topic.WorkItemId) & ".
-        - Diga o fato concreto (fase atual, data de Go-Live vencida, ou campo obrigatório em branco) usando APENAS o que está nos dados abaixo.
-        - NUNCA invente data, valor ou nome. Se um dado não estiver nos dados abaixo, não o mencione.
-        - Peça explicitamente a nova data de Go-Live no formato DD/MM/AAAA.
+        - Diga o fato concreto usando APENAS o que está nos dados abaixo. Se um dado não estiver, não o mencione.
+        - NUNCA invente data, valor, prazo ou nome.
+        - Peça EXPLICITAMENTE a informação que resolve o foco da cobrança:
+          * Se for data: peça no formato DD/MM/AAAA.
+          * Se for budget ou benefit: peça o valor em €.
+          * Se for state/fase: peça a fase atual (uma das 13 oficiais).
+          * Se for campo texto: peça o texto.
+          Não invente unidade nem formato — pergunte o que o CDIO precisa receber.
         - Termine com o link: " & Topic.UrlWorkItem & "
         - Retorne SOMENTE o texto da mensagem, sem título e sem comentários.
 
@@ -99,7 +164,7 @@ beginDialog:
       mode: Restricted
 
     # ------------------------------------------------------------------
-    # 5. APROVAÇÃO OBRIGATÓRIA — nada é enviado antes daqui
+    # 7. APROVAÇÃO OBRIGATÓRIA — nada é enviado antes daqui
     # ------------------------------------------------------------------
     - kind: Question
       id: aprovarEnvio
@@ -109,6 +174,7 @@ beginDialog:
 
         **Para:** {Topic.EmailGestor}
         **Work Item:** {Topic.WorkItemId}
+        **Foco:** {Topic.FocoDaCobranca}
 
         ---
         {Topic.Rascunho}
@@ -132,9 +198,8 @@ beginDialog:
           condition: =Text(Topic.Aprovacao) = "Enviar"
           actions:
             # ----------------------------------------------------------
-            # 6. Enviar pelo Teams
-            #    poster / location / bot já estão fixos na configuração
-            #    da tool. Aqui passamos só destinatário e texto.
+            # 8. Enviar pelo Teams
+            #    poster / location / bot já estão fixos na tool.
             # ----------------------------------------------------------
             - kind: BeginDialog
               id: enviarTeams
@@ -151,9 +216,9 @@ beginDialog:
             - kind: SendActivity
               id: confirmarEnvio
               activity: |-
-                ✅ Cobrança enviada para **{Topic.EmailGestor}** sobre o work item **{Topic.WorkItemId}**.
+                ✅ Cobrança enviada para **{Topic.EmailGestor}** sobre o work item **{Topic.WorkItemId}** (foco: {Topic.FocoDaCobranca}).
 
-                Quando ele responder com a nova data, eu trago para você confirmar antes de gravar no DevOps.
+                Quando o gestor responder com a informação, eu trago para você confirmar antes de gravar no DevOps.
 
       elseActions:
         - kind: SendActivity

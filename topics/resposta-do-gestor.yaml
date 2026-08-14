@@ -1,40 +1,282 @@
 kind: AdaptiveDialog
 modelDescription: |-
-  Trata a resposta de um IT Manager que foi cobrado sobre um projeto atrasado e está informando a nova data de Go-Live. Extrai e valida a data, mostra a mudança de-para com o valor atual do Azure DevOps, pede confirmação explícita e só então grava o campo Custom.GoLiveDate no work item. Use quando alguém informar uma nova data para um projeto, disser "a nova data é", "vai para", "remarcamos para", "o go-live mudou". NÃO use para consultar ou analisar projeto — use Project Deep Dive.
+  Grava uma atualização de governança num work item do Azure DevOps do portfólio CDIO — não é só data. Cobre data de Go-Live, data de PGLS, fase (State), budget, benefit, payback, tempo de implementação, país, business benefit, IT Manager, note e qualquer outro campo (via reference name). Lê o valor atual, mostra a mudança de-para e exige confirmação explícita antes de gravar. Use quando alguém informar uma atualização para um projeto — nova data, novo budget, novo benefit, novo state, ou qualquer outra correção que o gestor esteja passando. NÃO use para consultar ou analisar projeto — use Project Deep Dive.
 
 beginDialog:
   kind: OnRecognizedIntent
   id: main
   intent:
     triggerQueries:
+      - atualizar informação do projeto
       - a nova data é
-      - a nova data de go-live é
       - o go-live mudou para
       - remarcamos para
-      - vai para
-      - atualizar a data de go-live
-      - mudar a data de entrega do projeto
+      - novo budget do projeto
+      - o benefit é
+      - o payback é
+      - o state agora é
+      - a fase agora é
+      - o gestor mandou a informação
+      - atualizar governança do projeto
+      - corrigir dado do projeto
 
   actions:
     # ------------------------------------------------------------------
-    # 1. De qual work item estamos falando, e qual a data
+    # 1. Qual work item
     # ------------------------------------------------------------------
     - kind: Question
       id: perguntarId
       variable: Topic.WorkItemId
       prompt: |-
-        Perfeito. De qual projeto é essa data? Me passe o **Work Item ID** (só o número, ex.: 376).
+        Perfeito. De qual projeto é essa atualização? Me passe o **Work Item ID** (só o número, ex.: 376).
       entity: NumberPrebuiltEntity
 
+    # ------------------------------------------------------------------
+    # 2. Qual campo — menu fechado dos mais comuns + "outro"
+    # ------------------------------------------------------------------
     - kind: Question
-      id: perguntarData
-      variable: Topic.NovaData
+      id: perguntarCampo
+      variable: Topic.CampoEscolhido
       prompt: |-
-        Qual é a **nova data de Go-Live**? (formato DD/MM/AAAA)
-      entity: DateTimePrebuiltEntity
+        Qual informação você quer atualizar?
+      entity:
+        kind: EmbeddedEntity
+        definition:
+          kind: ClosedListEntity
+          items:
+            - id: GoLive
+              displayName: Go-Live Date
+            - id: PGLS
+              displayName: PGLS End Date
+            - id: State
+              displayName: State (fase)
+            - id: Budget
+              displayName: Project Total Budget
+            - id: Benefit
+              displayName: Project Benefit Value
+            - id: Payback
+              displayName: Payback in Months
+            - id: Implementation
+              displayName: Implementation Time in Months
+            - id: Country
+              displayName: Country Deployed
+            - id: BusinessBenefit
+              displayName: Business Benefit
+            - id: ITManager
+              displayName: Project IT Manager
+            - id: AssignedTo
+              displayName: Assigned To
+            - id: Note
+              displayName: Note / observação
+            - id: Outro
+              displayName: Outro campo (avançado)
 
     # ------------------------------------------------------------------
-    # 2. Ler o valor atual antes de propor a mudança
+    # 3. Coleta o novo valor no TIPO CERTO
+    #    Cinco branches por TIPO de dado, não um por campo — reduz repetição.
+    #    Cada branch define: Topic.ReferenceName, Topic.NovoValor,
+    #    Topic.ValorParaApi e Topic.ValorParaExibir.
+    # ------------------------------------------------------------------
+    - kind: ConditionGroup
+      id: coletarValor
+      conditions:
+
+        # --- TIPO DATA ---------------------------------------------------
+        - id: tipoData
+          condition: |-
+            =Text(Topic.CampoEscolhido) in ["Go-Live Date", "PGLS End Date"]
+          actions:
+            - kind: Question
+              id: perguntarData
+              variable: Topic.NovoValor
+              prompt: |-
+                Qual é a nova **{Topic.CampoEscolhido}**? (formato DD/MM/AAAA)
+              entity: StringPrebuiltEntity
+            - kind: SetVariable
+              id: mapearReferenceData
+              variable: Topic.ReferenceName
+              value: |-
+                =Switch(Text(Topic.CampoEscolhido),
+                  "Go-Live Date", "Custom.GoLiveDate",
+                  "PGLS End Date", "Custom.PGLSEndDate")
+            - kind: SetVariable
+              id: valorApiData
+              variable: Topic.ValorParaApi
+              value: =Text(DateValue(Topic.NovoValor), "yyyy-mm-dd")
+            - kind: SetVariable
+              id: valorExibirData
+              variable: Topic.ValorParaExibir
+              value: =Text(Topic.NovoValor)
+
+        # --- TIPO NÚMERO (moeda, meses, ano) ---------------------------
+        - id: tipoNumero
+          condition: |-
+            =Text(Topic.CampoEscolhido) in ["Project Total Budget", "Project Benefit Value", "Payback in Months", "Implementation Time in Months"]
+          actions:
+            - kind: Question
+              id: perguntarNumero
+              variable: Topic.NovoValor
+              prompt: |-
+                Qual o novo valor de **{Topic.CampoEscolhido}**? (só o número, sem € nem "meses")
+              entity: NumberPrebuiltEntity
+            - kind: SetVariable
+              id: mapearReferenceNumero
+              variable: Topic.ReferenceName
+              value: |-
+                =Switch(Text(Topic.CampoEscolhido),
+                  "Project Total Budget", "Custom.ProjectTotalBudget",
+                  "Project Benefit Value", "Custom.ProjectBenefitValue",
+                  "Payback in Months", "Custom.PaybackinMonths",
+                  "Implementation Time in Months", "Custom.ImplementionTimeinMonths")
+            - kind: SetVariable
+              id: valorApiNumero
+              variable: Topic.ValorParaApi
+              value: =Text(Topic.NovoValor)
+            - kind: SetVariable
+              id: valorExibirNumero
+              variable: Topic.ValorParaExibir
+              value: =Text(Topic.NovoValor)
+
+        # --- TIPO STATE (fase) — lista fechada oficial de 13 --------------
+        - id: tipoState
+          condition: =Text(Topic.CampoEscolhido) = "State (fase)"
+          actions:
+            - kind: Question
+              id: perguntarState
+              variable: Topic.NovoState
+              prompt: |-
+                Qual é a nova fase do projeto?
+              entity:
+                kind: EmbeddedEntity
+                definition:
+                  kind: ClosedListEntity
+                  items:
+                    - id: s00
+                      displayName: 00 Cancelled
+                    - id: s01
+                      displayName: 01 Idea
+                    - id: s02
+                      displayName: 02 Scoping
+                    - id: s03
+                      displayName: 03 Scope Approv
+                    - id: s04
+                      displayName: 04 Costing
+                    - id: s05
+                      displayName: 05 Cost Approv
+                    - id: s06
+                      displayName: 06 Plan Analyze
+                    - id: s07
+                      displayName: 07 Design Build
+                    - id: s08
+                      displayName: 08 UAT
+                    - id: s09
+                      displayName: 09 PGLS
+                    - id: s10
+                      displayName: 10 Deployed
+                    - id: s11
+                      displayName: 11 Closed
+                    - id: s12
+                      displayName: 12 On Holding
+            - kind: SetVariable
+              id: mapearReferenceState
+              variable: Topic.ReferenceName
+              value: ="System.State"
+            - kind: SetVariable
+              id: valorApiState
+              variable: Topic.ValorParaApi
+              value: =Text(Topic.NovoState)
+            - kind: SetVariable
+              id: valorExibirState
+              variable: Topic.ValorParaExibir
+              value: =Text(Topic.NovoState)
+
+        # --- TIPO BUSINESS BENEFIT — Compliance | Value Added -----------
+        - id: tipoBB
+          condition: =Text(Topic.CampoEscolhido) = "Business Benefit"
+          actions:
+            - kind: Question
+              id: perguntarBB
+              variable: Topic.NovoBB
+              prompt: |-
+                Qual o novo Business Benefit?
+              entity:
+                kind: EmbeddedEntity
+                definition:
+                  kind: ClosedListEntity
+                  items:
+                    - id: bbCompliance
+                      displayName: Compliance
+                    - id: bbValueAdded
+                      displayName: Value Added
+            - kind: SetVariable
+              id: mapearReferenceBB
+              variable: Topic.ReferenceName
+              value: ="Custom.BusinessBenefit"
+            - kind: SetVariable
+              id: valorApiBB
+              variable: Topic.ValorParaApi
+              value: =Text(Topic.NovoBB)
+            - kind: SetVariable
+              id: valorExibirBB
+              variable: Topic.ValorParaExibir
+              value: =Text(Topic.NovoBB)
+
+        # --- TIPO TEXTO (país, IT Manager, Assigned To, Note) ------------
+        - id: tipoTexto
+          condition: |-
+            =Text(Topic.CampoEscolhido) in ["Country Deployed", "Project IT Manager", "Assigned To", "Note / observação"]
+          actions:
+            - kind: Question
+              id: perguntarTexto
+              variable: Topic.NovoValor
+              prompt: |-
+                Qual o novo valor de **{Topic.CampoEscolhido}**?
+              entity: StringPrebuiltEntity
+            - kind: SetVariable
+              id: mapearReferenceTexto
+              variable: Topic.ReferenceName
+              value: |-
+                =Switch(Text(Topic.CampoEscolhido),
+                  "Country Deployed", "Custom.CountryDeployed",
+                  "Project IT Manager", "Custom.ProjectITManager",
+                  "Assigned To", "System.AssignedTo",
+                  "Note / observação", "Custom.Note")
+            - kind: SetVariable
+              id: valorApiTexto
+              variable: Topic.ValorParaApi
+              value: =Text(Topic.NovoValor)
+            - kind: SetVariable
+              id: valorExibirTexto
+              variable: Topic.ValorParaExibir
+              value: =Text(Topic.NovoValor)
+
+      # --- OUTRO CAMPO (avançado) — reference name + valor livre --------
+      elseActions:
+        - kind: Question
+          id: perguntarReference
+          variable: Topic.ReferenceName
+          prompt: |-
+            Digite o **reference name completo** do campo (ex.: `Custom.RiskDescription`, `Custom.Stages`).
+
+            Lista de referência: skills/update-devops/references/campos-devops.md
+          entity: StringPrebuiltEntity
+        - kind: Question
+          id: perguntarValorLivre
+          variable: Topic.NovoValor
+          prompt: |-
+            Qual o novo valor de **{Topic.ReferenceName}**?
+          entity: StringPrebuiltEntity
+        - kind: SetVariable
+          id: valorApiLivre
+          variable: Topic.ValorParaApi
+          value: =Text(Topic.NovoValor)
+        - kind: SetVariable
+          id: valorExibirLivre
+          variable: Topic.ValorParaExibir
+          value: =Text(Topic.NovoValor)
+
+    # ------------------------------------------------------------------
+    # 4. Ler o valor atual antes de propor a mudança
     # ------------------------------------------------------------------
     - kind: BeginDialog
       id: lerWorkItem
@@ -48,38 +290,28 @@ beginDialog:
           rev: Topic.rev
           url: Topic.url
 
-    - kind: SearchAndSummarizeContent
-      id: lerDataAtual
-      variable: Topic.DataAtual
-      userInput: |-
-        ="A partir destes dados do Azure DevOps, retorne APENAS o valor atual do campo GoLive Date no formato DD/MM/AAAA, sem nenhum outro texto.
-        Se o campo estiver vazio, responda exatamente: EM_BRANCO.
-
-        DADOS: [" & JSON(Topic.DevOpsFields) & "]"
-      additionalSources:
-        - value: =Topic.DevOpsFields
-      mode: Restricted
-
     - kind: SetVariable
       id: montarUrl
       variable: Topic.UrlWorkItem
       value: |-
         ="https://dev.azure.com/CDIO-IT-LATAM/CDIO%20Portfolio/_workitems/edit/" & Text(Topic.WorkItemId)
 
-    - kind: SetVariable
-      id: formatarDataExibicao
-      variable: Topic.DataFormatada
-      value: =Text(Topic.NovaData, "dd/mm/yyyy")
+    - kind: SearchAndSummarizeContent
+      id: lerValorAtual
+      variable: Topic.ValorAtual
+      userInput: |-
+        ="A partir destes dados do Azure DevOps, retorne APENAS o valor atual do campo cujo reference name é '" & Topic.ReferenceName & "', sem nenhum outro texto.
+        - Se for uma data, formato DD/MM/AAAA.
+        - Se estiver vazio, responda exatamente: EM_BRANCO.
+        - Se o campo não existir nos dados, responda exatamente: NAO_ENCONTRADO.
 
-    # Formato enviado ao Azure DevOps. Se o PATCH recusar, troque para
-    # "dd/mm/yyyy" — veja topics/README.md, seção "Formato de data".
-    - kind: SetVariable
-      id: formatarDataApi
-      variable: Topic.DataApi
-      value: =Text(Topic.NovaData, "yyyy-mm-dd")
+        DADOS: [" & JSON(Topic.DevOpsFields) & "]"
+      additionalSources:
+        - value: =Topic.DevOpsFields
+      mode: Restricted
 
     # ------------------------------------------------------------------
-    # 3. CONFIRMAÇÃO OBRIGATÓRIA — nada é gravado antes daqui
+    # 5. CONFIRMAÇÃO OBRIGATÓRIA — nada é gravado antes daqui
     # ------------------------------------------------------------------
     - kind: Question
       id: confirmarGravacao
@@ -89,7 +321,7 @@ beginDialog:
 
         | Campo | De | Para |
         |---|---|---|
-        | GoLive Date | {Topic.DataAtual} | **{Topic.DataFormatada}** |
+        | `{Topic.ReferenceName}` | {Topic.ValorAtual} | **{Topic.ValorParaExibir}** |
 
         Confirma a gravação no Azure DevOps?
       entity:
@@ -109,13 +341,13 @@ beginDialog:
           condition: =Text(Topic.Confirmacao) = "Confirmar"
           actions:
             # ----------------------------------------------------------
-            # 4. Gravar no Azure DevOps
+            # 6. Gravar no Azure DevOps
             # ----------------------------------------------------------
             - kind: BeginDialog
               id: gravarDevOps
               input:
                 id: =Value(Topic.WorkItemId)
-                userEnteredFields: "={'Custom.GoLiveDate': Topic.DataApi}"
+                userEnteredFields: "={Topic.ReferenceName: Topic.ValorParaApi}"
               dialog: crdc4_AURAAgent.action.AzureDevOps-Atualizarumitemdetrabalho
               output:
                 binding:
@@ -127,7 +359,7 @@ beginDialog:
             - kind: SendActivity
               id: confirmarSucesso
               activity: |-
-                🚀 **DevOps atualizado!** O work item **{Topic.WorkItemId}** agora tem GoLive Date **{Topic.DataFormatada}**.
+                🚀 **DevOps atualizado!** O work item **{Topic.WorkItemId}** agora tem `{Topic.ReferenceName}` = **{Topic.ValorParaExibir}**.
 
                 🔗 [Revisar o work item]({Topic.UrlWorkItem})
 
@@ -135,4 +367,4 @@ beginDialog:
         - kind: SendActivity
           id: gravacaoCancelada
           activity: |-
-            Ok, não gravei nada. O work item continua com a data anterior.
+            Ok, não gravei nada. O work item continua com o valor anterior.

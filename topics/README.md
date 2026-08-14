@@ -2,12 +2,29 @@
 
 > ⚠️ **São dois tópicos separados.** Um arquivo = um tópico. **Não cole os dois no mesmo.** Eles são as duas metades do mesmo ciclo: um é a ida, o outro é a volta.
 
-Dois tópicos que fecham o ciclo que você descreveu: **detectar atraso → cobrar o gestor → receber a nova data → gravar no DevOps**.
+Dois tópicos que fecham o ciclo completo de governança: **detectar qualquer falha → cobrar o gestor → receber a informação → gravar no DevOps**.
+
+Cobrem **qualquer** campo de governança — data de Go-Live, data de PGLS, fase (State), budget, benefit, payback, tempo de implementação, país, business benefit, IT Manager, note, ou qualquer outro reference name via modo avançado.
 
 | Arquivo | O que faz |
 |---|---|
-| [`cobranca-gestor.yaml`](cobranca-gestor.yaml) | Você pede para cobrar um gestor. Lê o work item, monta o rascunho, **espera sua aprovação**, envia pelo Teams |
-| [`resposta-do-gestor.yaml`](resposta-do-gestor.yaml) | O gestor responde com a nova data. Valida, mostra o de-para, **espera confirmação**, grava `Custom.GoLiveDate` |
+| [`cobranca-gestor.yaml`](cobranca-gestor.yaml) | Você pede para cobrar. Lê o work item, **audita a governança** (lista atrasos, campos faltando, watermelons…), deixa você escolher o que cobrar, monta o rascunho, **espera sua aprovação**, envia pelo Teams |
+| [`resposta-do-gestor.yaml`](resposta-do-gestor.yaml) | O gestor responde com uma informação — data, valor, fase, texto. Menu escolhe **qual campo**, valida o tipo, mostra o de-para, **espera confirmação**, grava no reference name correto |
+
+### O que a resposta cobre
+
+Menu fechado no `resposta-do-gestor`, agrupado por tipo de dado — cinco branches em vez de um por campo:
+
+| Tipo | Campos |
+|---|---|
+| Data | Go-Live Date, PGLS End Date |
+| Número | Project Total Budget, Project Benefit Value, Payback in Months, Implementation Time in Months |
+| Fase (lista fechada de 13) | State |
+| Lista fechada Business Benefit | Compliance / Value Added |
+| Texto | Country Deployed, Project IT Manager, Assigned To, Note / observação |
+| Avançado | Qualquer outro — pergunta reference name e valor livre |
+
+O `System.State` é sempre gravado a partir da lista oficial das 13 fases — o produto **impede** que um valor fora da lista seja gravado, porque a `Question` usa `ClosedListEntity`.
 
 Ambos foram validados: **dialeto do Copilot Studio**, YAML parseável, root `kind: AdaptiveDialog`, ids de nó únicos, e **todas as tools referenciadas existem no `crdc4_AURAAgent`** com o schemaName exato. Rode você mesmo:
 
@@ -121,28 +138,7 @@ Não tenho acesso ao seu tenant. Estes trechos seguem a convenção do próprio 
 
 Os seus exports comprovam apenas `StringPrebuiltEntity` e `BooleanPrebuiltEntity`. As outras duas são entidades padrão do produto e o nome quase certamente está certo — mas não tenho como confirmar pelos seus arquivos, e o validador avisa sobre elas de propósito.
 
-**Se o editor reclamar dessas linhas**, troque por `StringPrebuiltEntity` e ajuste:
-
-| Onde | Troque | Por |
-|---|---|---|
-| `perguntarId` (nos dois tópicos) | `entity: NumberPrebuiltEntity` | `entity: StringPrebuiltEntity` |
-| `perguntarData` (`resposta-do-gestor`) | `entity: DateTimePrebuiltEntity` | `entity: StringPrebuiltEntity` |
-
-Com `StringPrebuiltEntity` na data, `Topic.NovaData` passa a ser texto, então os dois `SetVariable` de formatação mudam:
-
-```yaml
-    - kind: SetVariable
-      id: formatarDataExibicao
-      variable: Topic.DataFormatada
-      value: =Text(Topic.NovaData)
-
-    - kind: SetVariable
-      id: formatarDataApi
-      variable: Topic.DataApi
-      value: =Text(DateValue(Topic.NovaData), "yyyy-mm-dd")
-```
-
-O `=Value(Topic.WorkItemId)` do `BeginDialog` continua funcionando: ele já converte texto para número.
+**Se o editor reclamar dessas linhas**, troque por `StringPrebuiltEntity`. Onde aparece `NumberPrebuiltEntity` (todos os `perguntarId` e o `perguntarNumero` do branch de tipo número), a leitura por `=Value(Topic.X)` continua convertendo texto para número, então normalmente basta trocar a linha da `entity` e nada mais.
 
 ### 2. O binding dos campos do Teams
 
