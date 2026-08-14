@@ -1,0 +1,191 @@
+kind: AdaptiveDialog
+modelDescription: >-
+  Cobra o IT Manager responsável por um projeto do portfólio CDIO que está
+  atrasado ou com falha de governança. Lê o estado atual do work item no Azure
+  DevOps, monta um rascunho de cobrança pedindo a nova data de Go-Live, mostra o
+  rascunho para o usuário aprovar, e só então envia a mensagem pelo Microsoft
+  Teams para o chat pessoal do gestor com o agente. Use quando pedirem "cobrar o
+  gestor", "avisar o responsável", "pedir a nova data", "mandar mensagem para o
+  dono do projeto".
+
+inputType:
+  properties:
+    WorkItemId:
+      displayName: Work Item ID
+      description: O ID numérico do work item no Azure DevOps, se já for conhecido
+      type: Number
+
+beginDialog:
+  kind: OnRecognizedIntent
+  id: main
+  intent:
+    triggerQueries:
+      - cobrar o gestor
+      - cobrar o responsável do projeto
+      - avise o gestor
+      - avisar o responsável
+      - pedir a nova data de go-live
+      - mandar mensagem para o gestor do projeto
+      - solicitar atualização ao gestor
+
+  actions:
+    # ------------------------------------------------------------------
+    # 1. Garantir o Work Item ID
+    # ------------------------------------------------------------------
+    - kind: ConditionGroup
+      id: garantirId
+      conditions:
+        - id: semId
+          condition: =IsBlank(Topic.WorkItemId)
+          actions:
+            - kind: Question
+              id: perguntarId
+              variable: Topic.WorkItemId
+              prompt: >-
+                Qual o **Work Item ID** do projeto que você quer cobrar?
+                (só o número, ex.: 376)
+              entity: NumberPrebuiltEntity
+
+    # ------------------------------------------------------------------
+    # 2. Ler o estado atual no Azure DevOps (SILENT)
+    # ------------------------------------------------------------------
+    - kind: BeginDialog
+      id: lerWorkItem
+      input:
+        id: =Value(Topic.WorkItemId)
+      dialog: crdc4_AURAAgent.action.AzureDevOps-Obterosdetalhesdoitemdetrabalho
+      output:
+        binding:
+          fields: Topic.DevOpsFields
+          id: Topic.id
+          rev: Topic.rev
+          url: Topic.url
+
+    - kind: SetVariable
+      id: montarUrl
+      variable: Topic.UrlWorkItem
+      value: >-
+        ="https://dev.azure.com/CDIO-IT-LATAM/CDIO%20Portfolio/_workitems/edit/"
+        & Text(Topic.WorkItemId)
+
+    # ------------------------------------------------------------------
+    # 3. Identificar o gestor e o problema, a partir do dado real
+    # ------------------------------------------------------------------
+    - kind: SearchAndSummarizeContent
+      id: identificarGestor
+      variable: Topic.GestorSugerido
+      userInput: >-
+        ="A partir destes dados do Azure DevOps, retorne APENAS o endereço de
+        e-mail do responsável pelo work item, sem nenhum outro texto. Procure nos
+        campos 'Project IT Manager' e 'Assigned To'. Se não houver e-mail
+        identificável, responda exatamente: NAO_ENCONTRADO.
+        DADOS: [" & JSON(Topic.DevOpsFields) & "]"
+      additionalSources:
+        - value: =Topic.DevOpsFields
+      mode: Restricted
+
+    - kind: Question
+      id: confirmarEmail
+      variable: Topic.EmailGestor
+      prompt: >-
+        ="Para quem devo enviar a cobrança do work item **#" &
+        Text(Topic.WorkItemId) & "**?
+
+        Sugestão a partir do DevOps: **" & Text(Topic.GestorSugerido) & "**
+
+        Confirme ou digite o e-mail correto."
+      entity: StringPrebuiltEntity
+
+    # ------------------------------------------------------------------
+    # 4. Montar o rascunho da cobrança
+    # ------------------------------------------------------------------
+    - kind: SearchAndSummarizeContent
+      id: montarRascunho
+      variable: Topic.Rascunho
+      userInput: >-
+        ="Você é o AURA Agent, parceiro estratégico do CDIO LATAM. Escreva uma
+        mensagem curta de Microsoft Teams, em português do Brasil, cobrando o
+        gestor sobre este projeto.
+
+        REGRAS:
+        - Tom direto, factual e profissional. Cobre o dado, nunca a pessoa.
+        - Máximo 5 linhas.
+        - Cite o nome do projeto e o ID #" & Text(Topic.WorkItemId) & ".
+        - Diga o fato concreto (fase atual, data de Go-Live vencida, ou campo
+          obrigatório em branco) usando APENAS o que está nos dados abaixo.
+        - NUNCA invente data, valor ou nome. Se um dado não estiver nos dados
+          abaixo, não o mencione.
+        - Peça explicitamente a nova data de Go-Live no formato DD/MM/AAAA.
+        - Termine com o link: " & Topic.UrlWorkItem & "
+        - Retorne SOMENTE o texto da mensagem, sem título e sem comentários.
+
+        DADOS DO DEVOPS: [" & JSON(Topic.DevOpsFields) & "]"
+      additionalSources:
+        - value: =Topic.DevOpsFields
+      mode: Restricted
+
+    # ------------------------------------------------------------------
+    # 5. APROVAÇÃO OBRIGATÓRIA — nada é enviado antes daqui
+    # ------------------------------------------------------------------
+    - kind: Question
+      id: aprovarEnvio
+      variable: Topic.Aprovacao
+      prompt: >-
+        ="✉️ **Rascunho da cobrança**
+
+        **Para:** " & Text(Topic.EmailGestor) & "
+        **Work Item:** #" & Text(Topic.WorkItemId) & "
+
+        ---
+        " & Text(Topic.Rascunho) & "
+        ---
+
+        Posso enviar?"
+      entity:
+        kind: EmbeddedEntity
+        definition:
+          kind: ClosedListEntity
+          items:
+            - id: Enviar
+              displayName: Enviar
+            - id: Cancelar
+              displayName: Cancelar
+
+    - kind: ConditionGroup
+      id: decidirEnvio
+      conditions:
+        - id: aprovado
+          condition: =Topic.Aprovacao = "Enviar"
+          actions:
+            # ----------------------------------------------------------
+            # 6. Enviar pelo Teams
+            #    poster / location / bot já estão fixos na configuração
+            #    da tool. Aqui passamos só destinatário e texto.
+            # ----------------------------------------------------------
+            - kind: BeginDialog
+              id: enviarTeams
+              input:
+                body.recipient: =Topic.EmailGestor
+                body.messageBody: =Topic.Rascunho
+              dialog: crdc4_AURAAgent.action.MicrosoftTeams-Postarmensagememumchatoucanal
+              output:
+                binding:
+                  messageLink: Topic.LinkMensagem
+                  id: Topic.IdMensagem
+                  conversationId: Topic.IdConversa
+
+            - kind: SendActivity
+              id: confirmarEnvio
+              activity: >-
+                ="✅ Cobrança enviada para **" & Text(Topic.EmailGestor) &
+                "** sobre o work item **#" & Text(Topic.WorkItemId) & "**.
+
+                Quando ele responder com a nova data, eu trago para você
+                confirmar antes de gravar no DevOps."
+
+      elseActions:
+        - kind: SendActivity
+          id: envioCancelado
+          activity: >-
+            Ok, não enviei nada. Me diga o que quer ajustar no texto e eu
+            refaço o rascunho.

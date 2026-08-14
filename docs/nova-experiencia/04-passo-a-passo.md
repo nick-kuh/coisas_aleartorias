@@ -21,7 +21,7 @@ Tempo estimado: 2–3 horas na primeira vez.
 
 ## Etapa 1 — Settings (5 min)
 
-Aplique [`agent/settings-checklist.md`](../agent/settings-checklist.md). O essencial:
+Aplique [`agent/settings-checklist.md`](../../agent/settings-checklist.md). O essencial:
 
 | Onde | O quê |
 |---|---|
@@ -36,7 +36,7 @@ Aplique [`agent/settings-checklist.md`](../agent/settings-checklist.md). O essen
 
 ## Etapa 2 — Instruções (10 min)
 
-Abra **Instruções**, apague tudo, cole o conteúdo de [`agent/instructions.md`](../agent/instructions.md).
+Abra **Instruções**, apague tudo, cole o conteúdo de [`agent/instructions.md`](../../agent/instructions.md).
 
 ⚠️ **Não cole em editor de texto rico antes.** Foi assim que o `\*` e o `\_` entraram no seu arquivo atual. Copie do arquivo `.md` cru direto para o campo.
 
@@ -117,7 +117,7 @@ Isso cria `dist/*.zip`, um por skill.
 
 ## Etapa 6 — Greeting & prompts (5 min)
 
-Aplique [`agent/greeting-e-prompts.md`](../agent/greeting-e-prompts.md).
+Aplique [`agent/greeting-e-prompts.md`](../../agent/greeting-e-prompts.md).
 
 Aqui é onde voltam os 3 atalhos que no clássico eram `suggestedActions` do tópico de saudação. Colocados aqui, viram **chips clicáveis** de verdade; dentro do texto da skill eles são só texto.
 

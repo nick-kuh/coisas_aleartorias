@@ -1,0 +1,166 @@
+# 3. Teams — o agente conversando com o gestor
+
+Você perguntou: *"criei a ferramenta do Teams mas falta o campo Agent, e não aparece nada. Eu queria que fosse do próprio agente."*
+
+A resposta está no próprio arquivo exportado, e o cenário que você quer **funciona**.
+
+---
+
+## 3.1 Por que o dropdown está vazio
+
+No `botContent.yml` do AURA Agent, dentro do `dynamicInputSchema` da tool do Teams:
+
+```yaml
+bot:
+  displayName: Agent
+  description: Select your agent
+  isRequired: true
+  order: 0
+  dynamicValuesConfig:
+    capability: List      # ← dropdown populado por chamada ao conector
+  type: String
+```
+
+`dynamicValuesConfig: capability: List` significa que o dropdown **não é uma lista fixa** — ele é preenchido por uma chamada ao conector do Microsoft Teams, que devolve **os agentes do Copilot Studio publicados no Teams**.
+
+O seu AURA Agent foi criado em **13/08/2026** e nunca foi publicado no Teams. Por isso a lista volta vazia.
+
+**Não é bug. É ordem de operações.** Você precisa publicar antes de conseguir selecionar.
+
+E confirmando o que está no arquivo: `poster: Power Virtual Agents` e `location: powerva` são **exatamente** o par certo — correspondem a *Post as = Microsoft Copilot Studio agent* e *Post in = Chat with agent*, que é o que a Microsoft documenta para mensagem proativa. Você acertou essa parte.
+
+---
+
+## 3.2 Como popular o dropdown
+
+Quatro pré-requisitos, nesta ordem:
+
+| # | Onde | O quê |
+|---|---|---|
+| 1 | **Teams Admin Center** | Permitir apps personalizados no tenant. Depende do admin do Teams da Unilever — se estiver bloqueado, para aqui |
+| 2 | **Copilot Studio → Canais** | Ligar o canal **Microsoft Teams** para o AURA Agent |
+| 3 | **Copilot Studio → Publicar** | Publicar o agente. Sem versão publicada, o canal não vale |
+| 4 | **Teams** | Instalar o agente como app (**Abrir agente** / **Adicionar ao Teams**). Dependendo da política, pode exigir aprovação do admin |
+
+Feito isso, volte na tool → entrada **Agent** → o AURA Agent aparece no dropdown.
+
+> ⚠️ **A tool e o agente precisam estar no mesmo ambiente do Power Platform.** A mensagem proativa só funciona dentro do mesmo ambiente.
+
+---
+
+## 3.3 A mecânica que faz virar conversa de mão dupla
+
+Este é o ponto que destrava o seu cenário.
+
+A mensagem proativa **só pode ir para o chat pessoal do gestor com o agente** — não vai para canal, não vai para chat em grupo. Isso parece limitação, mas é justamente o que faz o resto funcionar:
+
+```
+   AURA detecta atraso no work item #12345
+              │
+              ▼
+   Teams · Post message
+   poster    = Microsoft Copilot Studio agent
+   location  = Chat with agent
+   bot       = AURA Agent
+   recipient = gestor@unilever.com
+              │
+              ▼
+   ┌──────────────────────────────────────┐
+   │  Chat 1:1 do GESTOR com o AURA Agent │
+   │                                       │
+   │  AURA:   "O Horizon 2 (#12345) está   │
+   │           com Go-Live vencido. Qual   │
+   │           a nova data?"               │
+   │                                       │
+   │  Gestor: "30/11/2026"    ← ele responde AQUI
+   └──────────────────────────────────────┘
+              │
+              ▼
+   A resposta chega ao AURA como um TURNO NORMAL de conversa.
+   O agente valida a data, confirma, e chama Update Project.
+              │
+              ▼
+   Azure DevOps: Custom.GoLiveDate = 30/11/2026
+```
+
+**Por que funciona:** a mensagem cai dentro de um chat *com o agente*. Tudo que o gestor escrever ali é entregue ao agente como mensagem de usuário comum. Você não precisa de webhook, polling, nem de ler a caixa de e-mail dele. O canal de volta já existe por construção.
+
+**O que você precisa construir:** o agente não sabe *por que* mandou a mensagem quando a resposta chega. Duas formas de resolver, e a segunda é a boa:
+
+1. **Contexto no texto.** Colocar `#12345` na mensagem e torcer para o modelo relacionar. Frágil.
+2. **Um tópico dedicado** que dispara quando alguém responde com uma data, pede o ID se não souber, valida o formato, confirma e grava. Determinístico.
+
+O tópico pronto está em [`topics/cobranca-gestor.yaml`](../../topics/cobranca-gestor.yaml).
+
+---
+
+## 3.4 Requisitos do lado do gestor
+
+| Requisito | Se não atender |
+|---|---|
+| Ter o AURA Agent instalado no Teams | A ação falha. O schema tem `installedError` para escolher entre **Fail** e **Succeed with status code** |
+| Estar no mesmo tenant | Não entrega |
+| Ter permissão de uso do agente (`accessControlPolicy: GroupMembership`) | Recebe a mensagem mas o agente não responde |
+
+👉 **Consequência prática:** antes de rodar cobrança para valer, os gestores precisam ter o agente instalado. Na primeira rodada, mande você mesmo o link de instalação para eles — ou peça ao admin do Teams para **pré-instalar** o app via política de setup.
+
+Configure `installedError` = **Succeed with status code**, para que uma cobrança em lote não morra inteira porque um gestor não instalou.
+
+---
+
+## 3.5 A escolha de autenticação
+
+Hoje a tool está com `mode: Invoker` (credencial do usuário final).
+
+| Modo | O que significa | Quando usar |
+|---|---|---|
+| **Invoker** (hoje) | A chamada ao conector usa a conexão do Teams **de quem está falando com o agente** | Cada pessoa precisa autorizar a própria conexão na primeira vez |
+| **Maker** | Usa a **sua** conexão para todos | Cobrança de governança disparada pelo time de estratégia — mais previsível |
+
+Note que isso é diferente de quem **assina** a mensagem: `poster = Microsoft Copilot Studio agent` faz a mensagem sair como **o AURA Agent** nos dois casos. O modo só decide de quem é a conexão que faz a chamada.
+
+**Recomendação:** trocar para **Maker**. Assim a cobrança não depende de cada usuário ter conectado o Teams, e o comportamento é o mesmo para todo mundo.
+
+---
+
+## 3.6 Se quiser automatizar de vez
+
+Hoje a cobrança é disparada por você, na conversa. Para virar rotina — *"toda segunda 8h, varra o portfólio e cobre quem está atrasado"* — o desenho é um **fluxo do Power Automate**:
+
+```
+Gatilho de recorrência (segunda, 8h)
+   └─> Power BI · executar DAX  → lista de projetos atrasados
+   └─> Aplicar a cada           → para cada projeto
+         └─> Teams · Post message (poster = Copilot Studio agent,
+                                   location = Chat with agent,
+                                   bot = AURA Agent,
+                                   recipient = gestor)
+```
+
+O fluxo precisa estar **no mesmo ambiente** do agente. E atenção aos limites de throttling do conector do Teams em lote grande — mandando para dezenas de gestores de uma vez, você bate limite e recebe erro.
+
+---
+
+## 3.7 Troubleshooting
+
+| Sintoma | Causa | Solução |
+|---|---|---|
+| Dropdown **Agent** vazio | Agente não publicado no Teams | §3.2, os 4 passos |
+| `We couldn't find your bot` | Agente e fluxo/tool em ambientes diferentes, ou agente despublicado | Confirme o ambiente; republique |
+| Ação falha para um gestor específico | Ele não tem o agente instalado | Peça instalação, ou use `installedError = Succeed with status code` |
+| Mensagem entregue mas o agente não responde à resposta | Gestor fora do grupo de acesso | Revise `accessControlPolicy: GroupMembership` |
+| Erro 502 / BadGateway | Falha transitória conhecida no conector | Repita; se persistir, recrie a conexão do Teams |
+| Erro de throttling em lote | Limite do conector do Teams | Espace os envios, ou processe em lotes menores |
+| Quer mandar para canal | **Não é suportado** | Proativa só vai para chat pessoal com o agente |
+
+---
+
+## Fontes
+
+- [Send proactive Microsoft Teams messages — Microsoft Learn](https://learn.microsoft.com/en-us/microsoft-copilot-studio/advanced-proactive-message)
+- [Connect and configure an agent for Teams and Microsoft 365 Copilot](https://learn.microsoft.com/en-us/microsoft-copilot-studio/publication-add-bot-to-microsoft-teams)
+- [Publish agents to channels and clients](https://learn.microsoft.com/en-us/microsoft-copilot-studio/guidance/channels)
+- [Quickstart: create a classic agent and publish it to Microsoft Teams](https://learn.microsoft.com/en-us/microsoft-copilot-studio/fundamentals-get-started-teams)
+- [Send a message in Teams using Power Automate](https://learn.microsoft.com/en-us/power-automate/teams/send-a-message-in-teams)
+
+➡️ O tópico pronto: [`topics/cobranca-gestor.yaml`](../../topics/cobranca-gestor.yaml)

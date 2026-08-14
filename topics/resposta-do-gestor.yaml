@@ -1,0 +1,143 @@
+kind: AdaptiveDialog
+modelDescription: >-
+  Trata a resposta de um IT Manager que foi cobrado sobre um projeto atrasado e
+  está informando a nova data de Go-Live. Extrai e valida a data, mostra a
+  mudança de-para com o valor atual do Azure DevOps, pede confirmação explícita
+  e só então grava o campo Custom.GoLiveDate no work item. Use quando alguém
+  informar uma nova data para um projeto, disser "a nova data é", "vai para",
+  "remarcamos para", "o go-live mudou". NÃO use para consultar ou analisar
+  projeto — use Project Deep Dive.
+
+beginDialog:
+  kind: OnRecognizedIntent
+  id: main
+  intent:
+    triggerQueries:
+      - a nova data é
+      - a nova data de go-live é
+      - o go-live mudou para
+      - remarcamos para
+      - vai para
+      - atualizar a data de go-live
+      - mudar a data de entrega do projeto
+
+  actions:
+    # ------------------------------------------------------------------
+    # 1. De qual work item estamos falando
+    # ------------------------------------------------------------------
+    - kind: Question
+      id: perguntarId
+      variable: Topic.WorkItemId
+      prompt: >-
+        Perfeito. De qual projeto é essa data? Me passe o **Work Item ID**
+        (só o número, ex.: 376).
+      entity: NumberPrebuiltEntity
+
+    - kind: Question
+      id: perguntarData
+      variable: Topic.NovaData
+      prompt: Qual é a **nova data de Go-Live**? (formato DD/MM/AAAA)
+      entity: DateTimePrebuiltEntity
+
+    # ------------------------------------------------------------------
+    # 2. Ler o valor atual antes de propor a mudança
+    # ------------------------------------------------------------------
+    - kind: BeginDialog
+      id: lerWorkItem
+      input:
+        id: =Value(Topic.WorkItemId)
+      dialog: crdc4_AURAAgent.action.AzureDevOps-Obterosdetalhesdoitemdetrabalho
+      output:
+        binding:
+          fields: Topic.DevOpsFields
+          id: Topic.id
+          rev: Topic.rev
+          url: Topic.url
+
+    - kind: SearchAndSummarizeContent
+      id: lerDataAtual
+      variable: Topic.DataAtual
+      userInput: >-
+        ="A partir destes dados do Azure DevOps, retorne APENAS o valor atual do
+        campo GoLive Date no formato DD/MM/AAAA, sem nenhum outro texto. Se o
+        campo estiver vazio, responda exatamente: EM_BRANCO.
+        DADOS: [" & JSON(Topic.DevOpsFields) & "]"
+      additionalSources:
+        - value: =Topic.DevOpsFields
+      mode: Restricted
+
+    - kind: SetVariable
+      id: formatarDataExibicao
+      variable: Topic.DataFormatada
+      value: =Text(Topic.NovaData, "dd/mm/yyyy")
+
+    # Formato enviado ao Azure DevOps. Se o PATCH recusar, troque para
+    # "dd/mm/yyyy" — veja topics/README.md, seção "Formato de data".
+    - kind: SetVariable
+      id: formatarDataApi
+      variable: Topic.DataApi
+      value: =Text(Topic.NovaData, "yyyy-mm-dd")
+
+    # ------------------------------------------------------------------
+    # 3. CONFIRMAÇÃO OBRIGATÓRIA — nada é gravado antes daqui
+    # ------------------------------------------------------------------
+    - kind: Question
+      id: confirmarGravacao
+      variable: Topic.Confirmacao
+      prompt: >-
+        ="📝 **Alteração proposta no Work Item #" & Text(Topic.WorkItemId) & "**
+
+        | Campo | De | Para |
+        |---|---|---|
+        | GoLive Date | " & Text(Topic.DataAtual) & " | **" &
+        Topic.DataFormatada & "** |
+
+        Confirma a gravação no Azure DevOps?"
+      entity:
+        kind: EmbeddedEntity
+        definition:
+          kind: ClosedListEntity
+          items:
+            - id: Confirmar
+              displayName: Confirmar
+            - id: Cancelar
+              displayName: Cancelar
+
+    - kind: ConditionGroup
+      id: decidirGravacao
+      conditions:
+        - id: confirmado
+          condition: =Topic.Confirmacao = "Confirmar"
+          actions:
+            # ----------------------------------------------------------
+            # 4. Gravar no Azure DevOps
+            # ----------------------------------------------------------
+            - kind: BeginDialog
+              id: gravarDevOps
+              input:
+                id: =Value(Topic.WorkItemId)
+                userEnteredFields: "={'Custom.GoLiveDate': Topic.DataApi}"
+              dialog: crdc4_AURAAgent.action.AzureDevOps-Atualizarumitemdetrabalho
+              output:
+                binding:
+                  fields: Topic.FieldsAtualizados
+                  id: Topic.idAtualizado
+                  rev: Topic.revAtualizada
+                  url: Topic.urlAtualizada
+
+            - kind: SendActivity
+              id: confirmarSucesso
+              activity: >-
+                ="🚀 **DevOps atualizado!** O work item **#" &
+                Text(Topic.WorkItemId) & "** agora tem GoLive Date **" &
+                Topic.DataFormatada & "**.
+
+                🔗 [Revisar o work
+                item](https://dev.azure.com/CDIO-IT-LATAM/CDIO%20Portfolio/_workitems/edit/"
+                & Text(Topic.WorkItemId) & ")"
+
+      elseActions:
+        - kind: SendActivity
+          id: gravacaoCancelada
+          activity: >-
+            Ok, não gravei nada. O work item continua com a data anterior.

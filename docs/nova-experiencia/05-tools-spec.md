@@ -302,7 +302,7 @@ System.ChangedBy, System.ChangedDate, Microsoft.VSTS.Common.StateChangeDate,
 System.TeamProject or System.WorkItemType.
 ```
 
-📎 A lista completa e verificada dos reference names está em [`skills/update-devops/references/campos-devops.md`](../skills/update-devops/references/campos-devops.md).
+📎 A lista completa e verificada dos reference names está em [`skills/update-devops/references/campos-devops.md`](../../skills/update-devops/references/campos-devops.md).
 
 ---
 
