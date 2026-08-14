@@ -93,22 +93,44 @@ def checar_dialeto(texto):
     return problemas
 
 
-def variaveis_de_closed_list(doc):
-    """Nomes de variáveis (`Topic.X` / `Global.X`) definidas por um `Question`
-    com `EmbeddedEntity`/`ClosedListEntity` — no Copilot Studio elas têm tipo
-    `EmbeddedOptionSet`, não `String`. Comparar com string literal exige `Text()`."""
-    achados = set()
+# entity → tipo inferido pelo type checker do Copilot Studio.
+TIPOS_DE_ENTITY = {
+    "StringPrebuiltEntity":   "String",
+    "NumberPrebuiltEntity":   "Number",
+    "BooleanPrebuiltEntity":  "Boolean",
+    "DateTimePrebuiltEntity": "DateTime",
+}
+
+
+def _tipo_da_entity(ent):
+    """Reduz a entity de uma Question ao tipo que o type checker infere.
+    Retorna None quando a entity não é reconhecida (não geramos alarme falso)."""
+    if isinstance(ent, str):
+        return TIPOS_DE_ENTITY.get(ent)
+    if isinstance(ent, dict):
+        if ent.get("kind") == "EmbeddedEntity":
+            defn = ent.get("definition") or {}
+            if defn.get("kind") in ("ClosedListEntity", "DynamicClosedListEntity"):
+                return "EmbeddedOptionSet"
+        return TIPOS_DE_ENTITY.get(ent.get("kind"))
+    return None
+
+
+def tipos_por_variavel(doc):
+    """Mapa `Topic.X` → lista de tipos inferidos, um por Question que a define.
+
+    Se aparecerem tipos diferentes para a mesma variável, o type checker do
+    Copilot Studio reprova com "A variável está sendo definida com um tipo
+    incorreto". Este mapa alimenta duas checagens: colisão de tipos e a regra
+    específica de `EmbeddedOptionSet` precisar de `Text()` na comparação."""
+    tipos = {}
 
     def anda(no):
         if isinstance(no, dict):
             if no.get("kind") == "Question" and isinstance(no.get("variable"), str):
-                ent = no.get("entity")
-                if isinstance(ent, dict) and ent.get("kind") == "EmbeddedEntity":
-                    defn = ent.get("definition", {})
-                    if isinstance(defn, dict) and defn.get("kind") in (
-                        "ClosedListEntity", "DynamicClosedListEntity"
-                    ):
-                        achados.add(no["variable"])
+                t = _tipo_da_entity(no.get("entity"))
+                if t is not None:
+                    tipos.setdefault(no["variable"], []).append(t)
             for v in no.values():
                 anda(v)
         elif isinstance(no, list):
@@ -116,7 +138,13 @@ def variaveis_de_closed_list(doc):
                 anda(item)
 
     anda(doc)
-    return achados
+    return tipos
+
+
+def variaveis_de_closed_list(doc):
+    """Variáveis que o produto tipa como `EmbeddedOptionSet` — reusa
+    `tipos_por_variavel`. Comparar com string literal exige `Text()`."""
+    return {var for var, ts in tipos_por_variavel(doc).items() if "EmbeddedOptionSet" in ts}
 
 
 def comparacoes_sem_text(texto, variaveis_option_set):
@@ -246,18 +274,31 @@ def main():
         else:
             print(f"  ids de nó: {len(ids)}, todos únicos")
 
-        # 3b. type check: ClosedListEntity → EmbeddedOptionSet, precisa de Text()
-        vars_choice = variaveis_de_closed_list(doc)
-        if vars_choice:
-            faltando = comparacoes_sem_text(texto, vars_choice)
-            for n, var, linha in faltando:
-                print(f"  ERRO tipo (linha {n}): {var} vem de ClosedListEntity")
-                print(f"       {linha[:70]}")
-                print(f"       -> envolva em Text(): condition: =Text({var}) = \"...\"")
-                print(f"       (padrão do export antigo: Text(Topic.MeetingArea))")
-                erros += 1
-            if not faltando:
-                print(f"  type check: OK ({len(vars_choice)} var(s) choice, todas com Text())")
+        # 3b. type check — o Copilot Studio faz isto no publish
+        tipos = tipos_por_variavel(doc)
+
+        # 3b.i colisão: mesma variável recebe tipos diferentes de Questions
+        colisoes = {var: sorted(set(ts)) for var, ts in tipos.items() if len(set(ts)) > 1}
+        for var, ts in colisoes.items():
+            print(f"  ERRO tipo: {var} recebe tipos diferentes ({', '.join(ts)})")
+            print(f"       -> cada variável tem UM tipo, fixado na primeira Question.")
+            print(f"       -> use variáveis separadas por branch (ex.: Topic.NovaData, Topic.NovoNumero)")
+            erros += 1
+
+        # 3b.ii EmbeddedOptionSet precisa de Text() na comparação
+        vars_choice = {var for var, ts in tipos.items() if "EmbeddedOptionSet" in ts}
+        faltando = comparacoes_sem_text(texto, vars_choice) if vars_choice else []
+        for n, var, linha in faltando:
+            print(f"  ERRO tipo (linha {n}): {var} vem de ClosedListEntity")
+            print(f"       {linha[:70]}")
+            print(f"       -> envolva em Text(): condition: =Text({var}) = \"...\"")
+            print(f"       (padrão do export antigo: Text(Topic.MeetingArea))")
+            erros += 1
+
+        if not colisoes and not faltando:
+            n_choice = len(vars_choice)
+            print(f"  type check: OK ({len(tipos)} var(s) tipadas" +
+                  (f", {n_choice} choice com Text())" if n_choice else ")"))
 
         if vocab is None:
             continue

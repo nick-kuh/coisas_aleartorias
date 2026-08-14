@@ -74,8 +74,10 @@ beginDialog:
     # ------------------------------------------------------------------
     # 3. Coleta o novo valor no TIPO CERTO
     #    Cinco branches por TIPO de dado, não um por campo — reduz repetição.
-    #    Cada branch define: Topic.ReferenceName, Topic.NovoValor,
-    #    Topic.ValorParaApi e Topic.ValorParaExibir.
+    #    Cada branch usa a SUA variável de leitura (NovaData, NovoNumero,
+    #    NovoState, NovoBB, NovoTexto, NovoLivre — uma por tipo, porque cada
+    #    variável tem UM tipo fixo) e converge em Topic.ReferenceName,
+    #    Topic.ValorParaApi e Topic.ValorParaExibir (todos String).
     # ------------------------------------------------------------------
     - kind: ConditionGroup
       id: coletarValor
@@ -88,7 +90,7 @@ beginDialog:
           actions:
             - kind: Question
               id: perguntarData
-              variable: Topic.NovoValor
+              variable: Topic.NovaData
               prompt: |-
                 Qual é a nova **{Topic.CampoEscolhido}**? (formato DD/MM/AAAA)
               entity: StringPrebuiltEntity
@@ -102,11 +104,11 @@ beginDialog:
             - kind: SetVariable
               id: valorApiData
               variable: Topic.ValorParaApi
-              value: =Text(DateValue(Topic.NovoValor), "yyyy-mm-dd")
+              value: =Text(DateValue(Topic.NovaData), "yyyy-mm-dd")
             - kind: SetVariable
               id: valorExibirData
               variable: Topic.ValorParaExibir
-              value: =Text(Topic.NovoValor)
+              value: =Text(Topic.NovaData)
 
         # --- TIPO NÚMERO (moeda, meses, ano) ---------------------------
         - id: tipoNumero
@@ -115,7 +117,7 @@ beginDialog:
           actions:
             - kind: Question
               id: perguntarNumero
-              variable: Topic.NovoValor
+              variable: Topic.NovoNumero
               prompt: |-
                 Qual o novo valor de **{Topic.CampoEscolhido}**? (só o número, sem € nem "meses")
               entity: NumberPrebuiltEntity
@@ -131,11 +133,11 @@ beginDialog:
             - kind: SetVariable
               id: valorApiNumero
               variable: Topic.ValorParaApi
-              value: =Text(Topic.NovoValor)
+              value: =Text(Topic.NovoNumero)
             - kind: SetVariable
               id: valorExibirNumero
               variable: Topic.ValorParaExibir
-              value: =Text(Topic.NovoValor)
+              value: =Text(Topic.NovoNumero)
 
         # --- TIPO STATE (fase) — lista fechada oficial de 13 --------------
         - id: tipoState
@@ -228,7 +230,7 @@ beginDialog:
           actions:
             - kind: Question
               id: perguntarTexto
-              variable: Topic.NovoValor
+              variable: Topic.NovoTexto
               prompt: |-
                 Qual o novo valor de **{Topic.CampoEscolhido}**?
               entity: StringPrebuiltEntity
@@ -244,11 +246,11 @@ beginDialog:
             - kind: SetVariable
               id: valorApiTexto
               variable: Topic.ValorParaApi
-              value: =Text(Topic.NovoValor)
+              value: =Text(Topic.NovoTexto)
             - kind: SetVariable
               id: valorExibirTexto
               variable: Topic.ValorParaExibir
-              value: =Text(Topic.NovoValor)
+              value: =Text(Topic.NovoTexto)
 
       # --- OUTRO CAMPO (avançado) — reference name + valor livre --------
       elseActions:
@@ -262,18 +264,18 @@ beginDialog:
           entity: StringPrebuiltEntity
         - kind: Question
           id: perguntarValorLivre
-          variable: Topic.NovoValor
+          variable: Topic.NovoLivre
           prompt: |-
             Qual o novo valor de **{Topic.ReferenceName}**?
           entity: StringPrebuiltEntity
         - kind: SetVariable
           id: valorApiLivre
           variable: Topic.ValorParaApi
-          value: =Text(Topic.NovoValor)
+          value: =Text(Topic.NovoLivre)
         - kind: SetVariable
           id: valorExibirLivre
           variable: Topic.ValorParaExibir
-          value: =Text(Topic.NovoValor)
+          value: =Text(Topic.NovoLivre)
 
     # ------------------------------------------------------------------
     # 4. Ler o valor atual antes de propor a mudança

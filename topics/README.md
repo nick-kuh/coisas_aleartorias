@@ -113,6 +113,20 @@ condition: =Text(Topic.Aprovacao) = "Enviar"
 
 O validador rastreia isso — reprova toda `condition` que compara uma variável choice com string sem `Text()`.
 
+**Uma variável, um tipo — fixado na primeira `Question`.** Terceira armadilha, também do *type checker*. Se `Topic.X` é escrita por duas `Question`s com entities diferentes:
+
+```yaml
+- kind: Question              # primeiro branch
+  variable: Topic.NovoValor
+  entity: StringPrebuiltEntity   # ← Topic.NovoValor vira String
+
+- kind: Question              # segundo branch, mesma variável
+  variable: Topic.NovoValor
+  entity: NumberPrebuiltEntity   # ← ERRO: "Atribuído: Number, esperado: String"
+```
+
+O tipo é decidido pela **primeira** atribuição e todas as outras precisam bater. Solução: variável por branch quando os branches produzem tipos diferentes — `Topic.NovaData` (String), `Topic.NovoNumero` (Number), `Topic.NovoTexto` (String), etc. Todos convergem em `Topic.ValorParaApi` (sempre String, via `Text()`) na hora da gravação. O validador rastreia o tipo de cada variável e reprova colisões.
+
 **Texto vs. Power Fx.** Nos campos de texto (`activity`, `prompt`), use interpolação — é o que os exports do seu agente fazem:
 
 ```yaml
