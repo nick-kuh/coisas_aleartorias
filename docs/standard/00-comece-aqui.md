@@ -147,7 +147,7 @@ Teste ponta a ponta **com você mesmo como destinatário**. Repare na ordem: can
 
 Só depois de tudo isso passar, teste com um gestor real.
 
-> 📎 Dois pontos que podem precisar de ajuste na primeira execução (binding dos campos do Teams e formato da data): [`topics/README.md`](../../topics/README.md), seção "Dois pontos que eu não consigo verificar daqui".
+> 📎 Três pontos que podem precisar de ajuste na primeira colagem ou execução — as entidades `NumberPrebuiltEntity`/`DateTimePrebuiltEntity`, o binding dos campos do Teams e o formato da data: [`topics/README.md`](../../topics/README.md), seção "Três pontos que eu não consigo verificar daqui". O mesmo arquivo traz as armadilhas do dialeto YAML do Copilot Studio.
 
 ---
 

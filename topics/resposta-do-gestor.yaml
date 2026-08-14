@@ -1,12 +1,6 @@
 kind: AdaptiveDialog
-modelDescription: >-
-  Trata a resposta de um IT Manager que foi cobrado sobre um projeto atrasado e
-  está informando a nova data de Go-Live. Extrai e valida a data, mostra a
-  mudança de-para com o valor atual do Azure DevOps, pede confirmação explícita
-  e só então grava o campo Custom.GoLiveDate no work item. Use quando alguém
-  informar uma nova data para um projeto, disser "a nova data é", "vai para",
-  "remarcamos para", "o go-live mudou". NÃO use para consultar ou analisar
-  projeto — use Project Deep Dive.
+modelDescription: |-
+  Trata a resposta de um IT Manager que foi cobrado sobre um projeto atrasado e está informando a nova data de Go-Live. Extrai e valida a data, mostra a mudança de-para com o valor atual do Azure DevOps, pede confirmação explícita e só então grava o campo Custom.GoLiveDate no work item. Use quando alguém informar uma nova data para um projeto, disser "a nova data é", "vai para", "remarcamos para", "o go-live mudou". NÃO use para consultar ou analisar projeto — use Project Deep Dive.
 
 beginDialog:
   kind: OnRecognizedIntent
@@ -23,20 +17,20 @@ beginDialog:
 
   actions:
     # ------------------------------------------------------------------
-    # 1. De qual work item estamos falando
+    # 1. De qual work item estamos falando, e qual a data
     # ------------------------------------------------------------------
     - kind: Question
       id: perguntarId
       variable: Topic.WorkItemId
-      prompt: >-
-        Perfeito. De qual projeto é essa data? Me passe o **Work Item ID**
-        (só o número, ex.: 376).
+      prompt: |-
+        Perfeito. De qual projeto é essa data? Me passe o **Work Item ID** (só o número, ex.: 376).
       entity: NumberPrebuiltEntity
 
     - kind: Question
       id: perguntarData
       variable: Topic.NovaData
-      prompt: Qual é a **nova data de Go-Live**? (formato DD/MM/AAAA)
+      prompt: |-
+        Qual é a **nova data de Go-Live**? (formato DD/MM/AAAA)
       entity: DateTimePrebuiltEntity
 
     # ------------------------------------------------------------------
@@ -57,14 +51,20 @@ beginDialog:
     - kind: SearchAndSummarizeContent
       id: lerDataAtual
       variable: Topic.DataAtual
-      userInput: >-
-        ="A partir destes dados do Azure DevOps, retorne APENAS o valor atual do
-        campo GoLive Date no formato DD/MM/AAAA, sem nenhum outro texto. Se o
-        campo estiver vazio, responda exatamente: EM_BRANCO.
+      userInput: |-
+        ="A partir destes dados do Azure DevOps, retorne APENAS o valor atual do campo GoLive Date no formato DD/MM/AAAA, sem nenhum outro texto.
+        Se o campo estiver vazio, responda exatamente: EM_BRANCO.
+
         DADOS: [" & JSON(Topic.DevOpsFields) & "]"
       additionalSources:
         - value: =Topic.DevOpsFields
       mode: Restricted
+
+    - kind: SetVariable
+      id: montarUrl
+      variable: Topic.UrlWorkItem
+      value: |-
+        ="https://dev.azure.com/CDIO-IT-LATAM/CDIO%20Portfolio/_workitems/edit/" & Text(Topic.WorkItemId)
 
     - kind: SetVariable
       id: formatarDataExibicao
@@ -84,15 +84,14 @@ beginDialog:
     - kind: Question
       id: confirmarGravacao
       variable: Topic.Confirmacao
-      prompt: >-
-        ="📝 **Alteração proposta no Work Item #" & Text(Topic.WorkItemId) & "**
+      prompt: |-
+        📝 **Alteração proposta no Work Item {Topic.WorkItemId}**
 
         | Campo | De | Para |
         |---|---|---|
-        | GoLive Date | " & Text(Topic.DataAtual) & " | **" &
-        Topic.DataFormatada & "** |
+        | GoLive Date | {Topic.DataAtual} | **{Topic.DataFormatada}** |
 
-        Confirma a gravação no Azure DevOps?"
+        Confirma a gravação no Azure DevOps?
       entity:
         kind: EmbeddedEntity
         definition:
@@ -127,17 +126,13 @@ beginDialog:
 
             - kind: SendActivity
               id: confirmarSucesso
-              activity: >-
-                ="🚀 **DevOps atualizado!** O work item **#" &
-                Text(Topic.WorkItemId) & "** agora tem GoLive Date **" &
-                Topic.DataFormatada & "**.
+              activity: |-
+                🚀 **DevOps atualizado!** O work item **{Topic.WorkItemId}** agora tem GoLive Date **{Topic.DataFormatada}**.
 
-                🔗 [Revisar o work
-                item](https://dev.azure.com/CDIO-IT-LATAM/CDIO%20Portfolio/_workitems/edit/"
-                & Text(Topic.WorkItemId) & ")"
+                🔗 [Revisar o work item]({Topic.UrlWorkItem})
 
       elseActions:
         - kind: SendActivity
           id: gravacaoCancelada
-          activity: >-
+          activity: |-
             Ok, não gravei nada. O work item continua com a data anterior.

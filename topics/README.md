@@ -9,7 +9,7 @@ Dois tópicos que fecham o ciclo que você descreveu: **detectar atraso → cobr
 | [`cobranca-gestor.yaml`](cobranca-gestor.yaml) | Você pede para cobrar um gestor. Lê o work item, monta o rascunho, **espera sua aprovação**, envia pelo Teams |
 | [`resposta-do-gestor.yaml`](resposta-do-gestor.yaml) | O gestor responde com a nova data. Valida, mostra o de-para, **espera confirmação**, grava `Custom.GoLiveDate` |
 
-Ambos foram validados: YAML parseável, root `kind: AdaptiveDialog`, ids de nó únicos, e **todas as tools referenciadas existem no `crdc4_AURAAgent`** com o schemaName exato. Rode você mesmo:
+Ambos foram validados: **dialeto do Copilot Studio**, YAML parseável, root `kind: AdaptiveDialog`, ids de nó únicos, e **todas as tools referenciadas existem no `crdc4_AURAAgent`** com o schemaName exato. Rode você mesmo:
 
 ```bash
 python3 scripts/validate-topics.py
@@ -43,11 +43,86 @@ Veja [`docs/standard/02-correcao-das-tools.md`](../docs/standard/02-correcao-das
 
 ---
 
-## ⚠️ Dois pontos que eu não consigo verificar daqui
+## O dialeto YAML do Copilot Studio
 
-Não tenho acesso ao seu tenant. Estes dois trechos seguem a convenção do próprio arquivo exportado, mas precisam de um teste real. Se o editor reclamar ou a execução falhar, é aqui.
+Isto custou um erro de parse na primeira versão, então vale registrar.
 
-### 1. O binding dos campos do Teams
+**O Copilot Studio não implementa YAML completo.** Ele implementa um subconjunto, e o editor de código recusa construções que qualquer validador YAML aprovaria. A mensagem de erro entrega o vocabulário aceito:
+
+```
+expected: UnquotedValue or QuotedStringValue or MultilineStringValue
+```
+
+Três tipos de valor. Só isso.
+
+| Construção | Vale? | Observação |
+|---|---|---|
+| `campo: valor` | ✅ | *UnquotedValue* |
+| `campo: "valor"` | ✅ | *QuotedStringValue* |
+| `campo: \|-` + bloco indentado | ✅ | *MultilineStringValue* — **é este que você usa para texto de várias linhas** |
+| `campo: >-` + bloco indentado | ❌ | *folded scalar*. YAML padrão, **não existe aqui** |
+| `&ancora` / `*alias` | ❌ | não aparece em nenhum export |
+| `!!tipo` | ❌ | idem |
+| `---` separando documentos | ❌ | um arquivo = um documento |
+
+**A armadilha do `>-`:** o parser não reconhece o token, sai consumindo o resto do arquivo procurando um valor válido, e só reclama no fim. **O erro aponta a última linha do arquivo, mas o problema está na primeira ocorrência.** Se você ver um erro apontando o fim do arquivo, procure um `>-`.
+
+Diferença prática entre os dois:
+
+- `>-` junta as linhas em uma só (é por isso que é tentador para texto corrido)
+- `|-` **preserva as quebras de linha**
+
+Como só `|-` existe, escreva cada parágrafo como uma linha só e use linha em branco onde quiser separar parágrafos.
+
+**Texto vs. Power Fx.** Nos campos de texto (`activity`, `prompt`), use interpolação — é o que os exports do seu agente fazem:
+
+```yaml
+activity: |-
+  ✅ Cobrança enviada para **{Topic.EmailGestor}**.
+```
+
+Guarde Power Fx (`="..." & Var & "..."`) para os campos que **são** Power Fx: `value`, `condition`, `userInput` e `input`. Concatenar string em campo de texto funciona, mas multiplica as chances de errar uma aspa.
+
+**O validador cobre isso.** `scripts/validate-topics.py` roda a checagem de dialeto antes do parse e reprova `>-`, âncoras, aliases, tags e multi-documento. Rode antes de colar:
+
+```bash
+python3 scripts/validate-topics.py
+```
+
+---
+
+## ⚠️ Três pontos que eu não consigo verificar daqui
+
+Não tenho acesso ao seu tenant. Estes trechos seguem a convenção do próprio arquivo exportado, mas precisam de um teste real. Se o editor reclamar ou a execução falhar, é aqui.
+
+### 1. As entidades `NumberPrebuiltEntity` e `DateTimePrebuiltEntity`
+
+Os seus exports comprovam apenas `StringPrebuiltEntity` e `BooleanPrebuiltEntity`. As outras duas são entidades padrão do produto e o nome quase certamente está certo — mas não tenho como confirmar pelos seus arquivos, e o validador avisa sobre elas de propósito.
+
+**Se o editor reclamar dessas linhas**, troque por `StringPrebuiltEntity` e ajuste:
+
+| Onde | Troque | Por |
+|---|---|---|
+| `perguntarId` (nos dois tópicos) | `entity: NumberPrebuiltEntity` | `entity: StringPrebuiltEntity` |
+| `perguntarData` (`resposta-do-gestor`) | `entity: DateTimePrebuiltEntity` | `entity: StringPrebuiltEntity` |
+
+Com `StringPrebuiltEntity` na data, `Topic.NovaData` passa a ser texto, então os dois `SetVariable` de formatação mudam:
+
+```yaml
+    - kind: SetVariable
+      id: formatarDataExibicao
+      variable: Topic.DataFormatada
+      value: =Text(Topic.NovaData)
+
+    - kind: SetVariable
+      id: formatarDataApi
+      variable: Topic.DataApi
+      value: =Text(DateValue(Topic.NovaData), "yyyy-mm-dd")
+```
+
+O `=Value(Topic.WorkItemId)` do `BeginDialog` continua funcionando: ele já converte texto para número.
+
+### 2. O binding dos campos do Teams
 
 Em `cobranca-gestor.yaml`:
 
@@ -61,7 +136,7 @@ A notação com ponto vem do próprio export do seu agente, que declara `propert
 
 **Se o editor recusar:** abra o nó `enviarTeams` no **editor visual**, e mapeie os dois campos pela interface — `Recipient` ← `Topic.EmailGestor` e `Message` ← `Topic.Rascunho`. O resto do tópico continua igual. O YAML é o esqueleto; esse mapeamento fino é mais seguro pela UI.
 
-### 2. O formato da data enviada ao DevOps
+### 3. O formato da data enviada ao DevOps
 
 Em `resposta-do-gestor.yaml`:
 
