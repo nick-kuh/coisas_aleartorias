@@ -1,5 +1,7 @@
 # Tópicos prontos para colar
 
+> ⚠️ **São dois tópicos separados.** Um arquivo = um tópico. **Não cole os dois no mesmo.** Eles são as duas metades do mesmo ciclo: um é a ida, o outro é a volta.
+
 Dois tópicos que fecham o ciclo que você descreveu: **detectar atraso → cobrar o gestor → receber a nova data → gravar no DevOps**.
 
 | Arquivo | O que faz |

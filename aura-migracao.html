@@ -384,16 +384,50 @@
 
 <section>
   <h2>A ordem do trabalho</h2>
-  <p class="sec-note">Da correção que destrava mais para a que destrava menos. Cada uma tem teste de aceite.</p>
+  <p class="sec-note">Organizado por <strong>dependência</strong>, não por assunto. O bloco A você faz sozinho hoje; o B depende de outra pessoa — e é por isso que o bloco 0 vem antes de tudo.</p>
 
+  <div class="callout">
+    <span class="clabel">⚡ Faça isto nos próximos 2 minutos</span>
+    <p>Abra o chamado pedindo liberação de <strong>app personalizado no Teams Admin Center</strong>. Sem isso o bloco B não acontece, e política de tenant costuma levar dias.</p>
+    <p>Peça agora e faça o bloco A enquanto espera. Se deixar para pedir depois de terminar as tools, perde a semana.</p>
+  </div>
+
+  <div class="scroller" style="margin-top:22px">
+    <table>
+      <thead><tr><th>Bloco</th><th>O quê</th><th>Tempo</th><th>Depende de</th></tr></thead>
+      <tbody>
+        <tr><td class="num">0</td><td>Pedir liberação no Teams Admin Center</td><td class="num">2 min</td><td><span class="pill warn">terceiros</span></td></tr>
+        <tr><td class="num">A</td><td><strong>4 correções de tool</strong> — é onde o agente destrava</td><td class="num">~40 min</td><td><span class="pill good">ninguém</span></td></tr>
+        <tr><td class="num">B</td><td>Publicar no Teams + completar a tool</td><td class="num">~20 min</td><td><span class="pill warn">bloco 0</span></td></tr>
+        <tr><td class="num">C</td><td>Colar os 2 tópicos</td><td class="num">~10 min</td><td><span class="pill warn">A e B</span></td></tr>
+        <tr><td class="num">D</td><td>Polimento (5º KPI, saudação em pt, web off)</td><td class="num">~15 min</td><td><span class="pill good">ninguém</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Bloco A — as quatro correções</h3>
   <ol class="steps">
     <li><b>Update Project</b><span>Adicionar <code>type</code> fixo e <code>userEnteredFields</code> com a descrição do formato JSON. Teste: mudar o Note de um work item de teste. <strong>Hoje não acontece nada.</strong></span></li>
     <li><b>Power BI Portfolio Database</b><span>Adicionar <code>query</code> como entrada dinâmica, com o dicionário de colunas. Teste: "quais são os watermelons?" fora do tópico de abertura.</span></li>
     <li><b>Obter detalhes do work item</b><span>Adicionar <code>id</code> e restaurar o <code>SILENT TOOL</code>. Teste: "me traz o work item 376" — o ID está no seu próprio log.</span></li>
     <li><b>Query Devops BU</b><span>Adicionar <code>queryId</code> com a tabela de GUIDs por BU.</span></li>
-    <li><b>Publicar no Teams</b><span>Admin center → canal Teams → publicar → instalar. Só então o agente aparece no dropdown, e você completa recipient e messageBody.</span></li>
-    <li><b>Colar os dois tópicos</b><span>Cobrança e resposta do gestor. Teste mandando para <strong>você mesmo</strong> primeiro, e cancelando antes de aprovar — para validar o portão antes de validar o envio.</span></li>
   </ol>
+
+  <h3>Bloco C — sim, são dois tópicos separados</h3>
+  <p class="col">Um arquivo = um tópico. <strong>Não cole os dois no mesmo.</strong> Eles são as duas metades do mesmo ciclo:</p>
+
+  <div class="grid2">
+    <div class="panel">
+      <h3>→ <code>cobranca-gestor</code></h3>
+      <p><strong>A ida.</strong> Você pede para cobrar. Ele lê o work item, monta o rascunho, <strong>espera sua aprovação</strong> e envia pelo Teams.</p>
+    </div>
+    <div class="panel">
+      <h3>← <code>resposta-do-gestor</code></h3>
+      <p><strong>A volta.</strong> O gestor responde com a data. Ele valida, mostra o de-para, <strong>espera confirmação</strong> e grava no DevOps.</p>
+    </div>
+  </div>
+
+  <p class="col" style="margin-top:16px">Em cada um: <strong>Tópicos → + Adicionar um tópico → Do zero → menu ⋯ → Abrir editor de código →</strong> apagar tudo, colar o <code>.yaml</code>, salvar.</p>
 
   <div class="callout" style="margin-top:26px">
     <span class="clabel">Por que fazer isso no standard vale a pena</span>

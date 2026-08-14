@@ -1,5 +1,7 @@
 # 2. Correção das tools — o que abrir e o que colar
 
+> 📌 **Este é o documento de referência.** Se você quer a ordem de execução — o que fazer primeiro, o que depende de terceiros e quando testar — comece por [`00-comece-aqui.md`](00-comece-aqui.md) e volte aqui para pegar os textos.
+
 Cinco tools a corrigir, em ordem de impacto. Cada uma tem o texto pronto para colar e o teste de aceite.
 
 **Onde:** Copilot Studio → AURA Agent → **Ferramentas** → clique na tool → **Entradas**.

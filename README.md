@@ -17,6 +17,20 @@ O agente `crdc4_AURAAgent` (13/08/2026) é uma boa reconstrução e **já funcio
 
 O que falta é um defeito único, repetido em 5 tools.
 
+### 👉 [**Comece por aqui: `00-comece-aqui.md`**](docs/standard/00-comece-aqui.md)
+
+O checklist linear — o que fazer, em que ordem, o que depende de terceiros e o teste que prova que cada bloco acabou. É o único documento que você precisa abrir para trabalhar; os outros são referência.
+
+| Bloco | O quê | Tempo | Depende de |
+|---|---|---|---|
+| **0** | Pedir liberação de app personalizado no Teams Admin Center | 2 min | — (mas destrava o B) |
+| **A** | 4 correções de tool — é onde o agente destrava | ~40 min | ninguém ✅ |
+| **B** | Publicar no Teams + completar a tool | ~20 min | Bloco 0 aprovado |
+| **C** | Colar os 2 tópicos | ~10 min | Blocos A e B |
+| **D** | Polimento | ~15 min | ninguém |
+
+### Referência
+
 | Documento | Para quê |
 |---|---|
 | [`01-diagnostico-aura-agent.md`](docs/standard/01-diagnostico-aura-agent.md) | Auditoria tool a tool, com a evidência tirada do seu próprio log de conversa |
