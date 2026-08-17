@@ -181,9 +181,20 @@ Mensagem sai como você, no seu chat 1:1 com o gestor. Não depende de nada exte
 |---|---|---|
 | `poster` | Valor personalizado | **`User`** *(trocar de "Microsoft Copilot Studio agent")* |
 | `location` | Valor personalizado | **`Group chat`** *(trocar de "Chat with agent")* |
-| `body.bot` | — | **remover a entrada inteira** (não é usada nesse modo) |
+| `body.bot` | — | 🔴 **REMOVER a entrada** — clique no `x` / "Remover entrada". Não basta deixar em branco |
 | **`body.recipient`** | Dinamicamente com IA | adicionar — e-mail do gestor |
 | **`body.messageBody`** | Dinamicamente com IA | adicionar — o texto |
+
+> ⚠️ **Sobre o `body.bot` — leia se a tool está dando erro.** Se a entrada já existe e está vazia, o YAML fica assim:
+>
+> ```yaml
+> - kind: ManualTaskInput
+>   propertyName: body.bot     # ← declarado como Valor personalizado, SEM value
+> ```
+>
+> Um `ManualTaskInput` obrigatório sem valor é fonte de erro em runtime. O campo `bot` é `isRequired: true` no schema do conector, mas **só é aplicável quando `poster: Power Virtual Agents`**. Com `poster: User` ele não tem função — e deixá-lo declarado e vazio é pior do que não tê-lo.
+>
+> **Remova a entrada inteira**, não apenas o valor.
 
 **Descrição da tool** (trocar a "Posta uma mensagem em um chat ou canal"):
 

@@ -1,5 +1,18 @@
 # 0. Comece aqui — o que fazer, na ordem
 
+> ## 🟢 Status em 17/08/2026 — o agente FUNCIONA
+>
+> O `botContent_73` confirma: análise de portfólio rodando ponta a ponta, com o modelo escrevendo DAX sozinho (`autoFilledArguments: ["query"]`). Zero exceptions.
+>
+> **Blocos A (quase todo) e D: ✅ feitos.** Restam **duas entradas de tool**, ~5 minutos:
+>
+> | Pendência | Onde | Efeito de não ter |
+> |---|---|---|
+> | `userEnteredFields` | `Update Project` | Não grava nada no DevOps |
+> | `body.recipient` + `body.messageBody`, e **remover** `body.bot` | `Teams — Postar mensagem` | Não envia mensagem |
+>
+> Detalhes: [`01-diagnostico-aura-agent.md`](01-diagnostico-aura-agent.md), seção "Estado atual". Textos para colar: [`02-correcao-das-tools.md`](02-correcao-das-tools.md), Correções 1 e 5A.
+
 Este é o único documento que você precisa abrir para trabalhar. Os outros são referência, e este remete a eles na hora certa.
 
 Divisão por **dependência**, não por assunto: o Bloco A você faz sozinho hoje; o Bloco B depende de outra pessoa.
@@ -44,52 +57,67 @@ Em cada entrada existe a coluna **"Preencher usando"**:
 
 Os textos completos para colar estão em [`02-correcao-das-tools.md`](02-correcao-das-tools.md) — abra ao lado.
 
-### A1 · `Update Project` 🔴 a mais urgente
+### A1 · `Update Project` 🟡 **1 item pendente**
 
-Hoje esta tool **não atualiza nada**: recebe o `id` e não tem onde receber o que mudar.
+Esta tool ainda **não grava nada**: recebe o `id` e não tem onde receber *o que* mudar.
 
-- [ ] Adicionar `type` → **Valor personalizado** → `IT Project`
-- [ ] Adicionar `userEnteredFields` → **Dinamicamente com IA** → colar a descrição ([Correção 1](02-correcao-das-tools.md#correção-1--update-project--mais-urgente))
-- [ ] Adicionar a descrição da entrada `id` (ela já existe, só está sem descrição)
+- [x] ~~Adicionar `type` → **Valor personalizado** → `IT Project`~~ ✅ feito
+- [x] ~~Adicionar a descrição da entrada `id`~~ ✅ feito
+- [ ] 🔴 **Adicionar `userEnteredFields`** → **Dinamicamente com IA** → colar a descrição ([Correção 1](02-correcao-das-tools.md#correção-1--update-project--mais-urgente))
 
-### A2 · `Power BI Portfolio Database` 🔴 destrava a análise
+> Detalhe que ajuda a achar: a descrição da própria tool já cita `userEnteredFields` em 3 das 4 regras críticas. O modelo lê a regra e não encontra o campo.
 
-A abertura funciona porque o tópico passa a query. Fora dela, o modelo não tem como escrever DAX.
+### A2 · `Power BI Portfolio Database` ✅ **CONCLUÍDA**
 
-- [ ] Adicionar `query` → **Dinamicamente com IA** → colar o dicionário de colunas ([Correção 2](02-correcao-das-tools.md#correção-2--power-bi-portfolio-database--destrava-a-análise))
+- [x] ~~Adicionar `query` → Dinamicamente com IA → dicionário de colunas~~ ✅
 
-### A3 · `Obter os detalhes do item de trabalho` 🔴
+**Comprovada em runtime:** o log mostra `autoFilledArguments: ["query"]` e o modelo escreveu um DAX com filtro Cross-BU correto. Foi a correção de maior impacto.
 
-- [ ] Adicionar `id` → **Dinamicamente com IA** → colar a descrição
-- [ ] Trocar a descrição da tool pelo texto `SILENT TOOL...` ([Correção 3](02-correcao-das-tools.md#correção-3--obter-os-detalhes-do-item-de-trabalho)) — é o que impede o agente de despejar JSON cru
+### A3 · `Obter os detalhes do item de trabalho` ✅ **CONCLUÍDA**
 
-### A4 · `Query Devops BU` e `Query Devops IT Area` 🟠
+- [x] ~~Adicionar `id` → Dinamicamente com IA + descrição~~ ✅
+- [x] ~~Trocar a descrição da tool pelo texto `SILENT TOOL...`~~ ✅
 
-- [ ] Em `Query Devops BU`: adicionar `queryId` → **Dinamicamente com IA** → colar a tabela de GUIDs por BU
-- [ ] Em `Query Devops IT Area`: o `queryId` já existe, só colar a descrição com os GUIDs por área
+### A4 · `Query Devops BU` e `Query Devops IT Area` ✅ **CONCLUÍDA**
+
+- [x] ~~`Query Devops BU`: adicionar `queryId` + tabela de GUIDs por BU~~ ✅
+- [x] ~~`Query Devops IT Area`: descrição do `queryId` com os GUIDs por área~~ ✅
 
 ### ✅ Terminei o Bloco A?
 
-No painel de teste, estas 4 perguntas têm que funcionar. **Hoje as quatro falham.**
-
-| # | Digite | Esperado |
-|---|---|---|
-| 1 | `mude o Note do work item <id de teste> para "teste AURA"` | Confirma e grava — **este é o teste decisivo** |
-| 2 | `quais são os projetos watermelon?` | Roda uma query DAX nova e responde |
-| 3 | `me traz os detalhes do work item 376` | Traz os campos, sem JSON cru |
-| 4 | `me lista os projetos de Personal Care` | Usa o Query ID de PC |
+| # | Digite | Esperado | Status |
+|---|---|---|---|
+| 1 | `mude o Note do work item <id de teste> para "teste AURA"` | Confirma e grava | 🔴 **falha** — falta `userEnteredFields` |
+| 2 | `quais são os projetos watermelon?` | Roda uma query DAX nova e responde | ✅ **funciona** |
+| 3 | `me traz os detalhes do work item 376` | Traz os campos, sem JSON cru | ✅ |
+| 4 | `me lista os projetos de Personal Care` | Usa o Query ID de PC | ✅ |
 
 > ⚠️ No teste 1, use um **work item de teste**, nunca um projeto real. É a única tool que grava.
 
 ---
 
-# 📢 BLOCO B — Teams (~20 min)
+# 📢 BLOCO B — Teams 🟡 **2 itens pendentes** (~5 min)
 
-> 💡 **Se o publish ainda não é possível** (aguardando aprovação, burocracia interna, etc.), use o **modo sem publicação**: configure a tool com `poster: User` + `location: Group chat`, sem `body.bot`. A mensagem sai como você, e você aciona o `respostadogestor` manualmente quando o gestor responder. Detalhes em [`topics/README.md`](../../topics/README.md), seção "Modo sem publicação". As correções A1–A4 e a Correção 5 nesse modo simplificado são o suficiente para o ciclo funcionar.
+> ✅ **Você já está no modo sem publicação** — `poster: User` e `location: Group chat` estão configurados. Não precisa publicar nada.
 
-> 🛑 **PARE AQUI SE** o chamado do Bloco 0 ainda não foi aprovado E você quer o modo publicado. Sem app personalizado liberado no tenant, o dropdown `Agent` continua vazio por mais que você tente.
+Faltam três ajustes na tool `Postar mensagem em um chat ou canal`:
 
-**Por que o dropdown `Agent` está vazio hoje:** ele é preenchido por uma chamada que lista **agentes publicados no Teams**. O seu nunca foi publicado. Não é bug — é ordem de operações.
+- [ ] 🔴 **REMOVER** a entrada `body.bot` — hoje está declarada como Valor personalizado **sem valor**. Ela só existe quando `poster: Power Virtual Agents`; com `poster: User` é inerte no melhor caso, e obrigatório-vazio no pior. **É a causa provável do erro que você viu.**
+- [ ] 🔴 **Adicionar** `body.recipient` → **Dinamicamente com IA** + descrição ([Correção 5A](02-correcao-das-tools.md#5a--modo-sem-publicação-recomendado-enquanto-o-publish-não-sair))
+- [ ] 🔴 **Adicionar** `body.messageBody` → **Dinamicamente com IA** + descrição
+- [ ] Trocar a descrição da tool (a atual, "Posta uma mensagem em um chat ou canal", é genérica e o orquestrador pode chamar sem querer)
+
+### ✅ Terminei o Bloco B?
+
+- [ ] `cobrar o gestor` → ID de teste → **seu próprio e-mail** → **Enviar** → a mensagem chega no seu Teams
+
+---
+
+## Bloco B alternativo — modo publicado (para o futuro)
+
+> 🛑 **Só faz sentido depois** que o chamado do Bloco 0 for aprovado e o agente for publicado + instalado no Teams. O modo sem publicação acima já resolve o ciclo.
+
+**Por que o dropdown `Agent` fica vazio antes disso:** ele é preenchido por uma chamada que lista **agentes publicados no Teams**. Não é bug — é ordem de operações.
 
 Nesta sequência exata:
 

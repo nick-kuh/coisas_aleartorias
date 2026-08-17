@@ -235,21 +235,29 @@ O ponto mais importante, e o motivo de valer a pena fazer no standard em vez da 
 
 ---
 
-## Roteiro de teste
+## Roteiro de teste — modo sem publicação
 
-Faça nesta ordem, e **com você mesmo como destinatário** nas duas primeiras rodadas.
+Faça nesta ordem, e **com você mesmo como destinatário** nas primeiras rodadas.
+
+Repare no passo 4: cancele **antes** de testar o envio. Valida o portão de aprovação sem gastar uma mensagem real.
 
 | # | Onde | Ação | Esperado |
 |---|---|---|---|
 | 1 | Painel de teste | `cobrar o gestor` | Pergunta o Work Item ID |
-| 2 | | responda `376` | Lê o DevOps, sugere um e-mail, pede confirmação |
-| 3 | | informe **seu próprio** e-mail | Mostra o rascunho e pergunta se pode enviar |
-| 4 | | escolha **Cancelar** | Não envia nada ✅ (teste o portão antes de testar o envio) |
-| 5 | | repita e escolha **Enviar** | Chega mensagem no seu Teams, no chat com o AURA Agent |
-| 6 | Teams, no chat com o agente | responda `a nova data é 30/11/2026` | Dispara `resposta-do-gestor`, pede o ID |
-| 7 | | responda `376` | Mostra o de-para e pede confirmação |
-| 8 | | **Confirmar** | Grava e devolve o link. Confira no DevOps |
-| 9 | Painel de teste | repita o passo 1 com o e-mail de um gestor real | Só depois de tudo acima passar |
+| 2 | | responda `376` | Audita a governança, lista os gaps, pergunta o que cobrar |
+| 3 | | ex.: `preencher budget e definir Go-Live` | Sugere um e-mail, pede confirmação |
+| 4 | | informe **seu próprio** e-mail → **Cancelar** | Não envia nada ✅ |
+| 5 | | repita e escolha **Enviar** | Chega no **seu chat 1:1** no Teams com o destinatário |
+| 6 | Teams | confira que a mensagem chegou e está em 1ª pessoa | Sai como você, sem se identificar como bot |
+| 7 | Painel de teste | `atualizar informação do projeto` | Dispara `resposta-do-gestor`, pede o ID |
+| 8 | | `376` → escolha **Project Total Budget** → valor | Mostra o de-para e pede confirmação |
+| 9 | | **Confirmar** | Grava e devolve o link. Confira no DevOps |
+| 10 | | repita o 7–9 com **Go-Live Date** e **State (fase)** | Exercita os outros branches do menu |
+| 11 | Painel de teste | repita o passo 1 com um gestor real | Só depois de tudo acima passar |
+
+> ⚠️ **A volta é manual neste modo.** O gestor responde no *seu* chat, não no do agente. Você lê e aciona o passo 7 quando quiser gravar. Ver "Modo sem publicação" acima.
+
+> ⚠️ Use um **work item de teste** nos passos 8–10 — é gravação real no DevOps.
 
 ---
 

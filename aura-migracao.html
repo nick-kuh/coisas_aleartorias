@@ -207,37 +207,85 @@
 
 <header class="mast">
   <p class="eyebrow">Copilot Studio · trilha standard</p>
-  <h1>AURA Agent: quase lá</h1>
-  <p class="lede">Depois de uma tentativa frustrada na experiência nova, o agente foi reconstruído no <strong>standard</strong> — e dessa vez a base está certa. O dashboard de abertura já roda ponta a ponta. O que falta é <strong>um erro só, repetido em cinco ferramentas</strong>.</p>
+  <h1>AURA Agent: funcionando</h1>
+  <p class="lede">Depois de uma tentativa frustrada na experiência nova, o agente foi reconstruído no <strong>standard</strong>. As correções foram aplicadas e <strong>o agente passou a funcionar</strong> — analisa portfólio, escreve o próprio DAX, cruza BUs. Faltam <strong>duas entradas de tool</strong> para fechar o ciclo de escrita.</p>
 
   <div class="board">
     <div class="cell">
-      <p class="k">Iniciativas carregadas</p>
-      <p class="v good">422</p>
-      <p class="note">A abertura funciona de verdade</p>
+      <p class="k">Análise de portfólio</p>
+      <p class="v good">funciona</p>
+      <p class="note">Modelo escreve o DAX sozinho</p>
     </div>
     <div class="cell">
-      <p class="k">Benefício total</p>
-      <p class="v good">€412,6 Mi</p>
-      <p class="note">Veio do Power BI, não é estimativa</p>
+      <p class="k">Iniciativas carregadas</p>
+      <p class="v good">422</p>
+      <p class="note">€412,6 Mi de benefício, dado real</p>
     </div>
     <div class="cell">
       <p class="k">Tools completas</p>
-      <p class="v warn">4 / 9</p>
-      <p class="note">Cinco estão sem inputs obrigatórios</p>
+      <p class="v warn">7 / 9</p>
+      <p class="note">Duas entradas pendentes</p>
     </div>
     <div class="cell">
-      <p class="k">Atualiza o DevOps?</p>
-      <p class="v bad">não</p>
-      <p class="note">Falta o campo que diz o que mudar</p>
+      <p class="k">Grava no DevOps?</p>
+      <p class="v bad">ainda não</p>
+      <p class="note">Falta <code>userEnteredFields</code></p>
     </div>
     <div class="cell">
-      <p class="k">Idioma</p>
-      <p class="v good">pt-BR</p>
-      <p class="note">Corrigido desde a tentativa anterior</p>
+      <p class="k">Envia pelo Teams?</p>
+      <p class="v bad">ainda não</p>
+      <p class="note">Faltam 2 campos, sobra <code>body.bot</code></p>
     </div>
   </div>
 </header>
+
+<section>
+  <h2>A prova de que funciona</h2>
+  <p class="sec-note">Não é mais previsão. O log de conversa do último export mostra o agente respondendo a <em>"traga para o portfolio de make de bpc"</em> com uma análise executiva completa.</p>
+
+  <div class="defects">
+    <div class="defect good">
+      <h3><span class="idx">runtime</span> O modelo escreveu o DAX sozinho</h3>
+      <pre>{"arguments": {"query": "EVALUATE FILTER('tabela', ...)"},
+ "autoFilledArguments": <span class="ok">["query"]</span>}   <span class="cm">← antes era []</span></pre>
+      <p>Esse campo é o placar da Correção 2. Enquanto vinha vazio, o modelo não tinha parâmetro para preencher — toda análise sob demanda estava morta. Agora ele compõe a query.</p>
+    </div>
+
+    <div class="defect good">
+      <h3><span class="idx">qualidade</span> E acertou as três regras difíceis</h3>
+      <pre>EVALUATE FILTER('tabela',
+  'tabela'[IT Area] = "Make (Business Operation)"
+  && (('tabela'[BG or BU Engagement] = "BW"
+    || 'tabela'[BG or BU Engagement] = "PC")
+  || ('tabela'[BG or BU Engagement] = "Cross"
+      && (SEARCH("BW", 'tabela'[Specify Cross], 1, 0) > 0
+       || SEARCH("PC", 'tabela'[Specify Cross], 1, 0) > 0))))</pre>
+      <p><strong>Acrônimo:</strong> traduziu <code>BPC</code> para BW + PC. <strong>Cross-BU:</strong> incluiu os <code>Cross</code> que mencionam BW ou PC no <code>[Specify Cross]</code>. <strong>Anti-alucinação:</strong> só colunas que existem.</p>
+      <p>O relatório nomeou projetos reais com ID e valor — South Pole (546) com ROI -80%, MIRAI Make (1252) sem budget, Automatic Goods Receipt (202) High Potential travado em On Holding — e ofereceu cobrar a gestora pelo Teams. <strong>Zero exceptions no log.</strong></p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>As duas pendências</h2>
+  <p class="sec-note">Cinco minutos de trabalho. Nada além disto separa o agente de estar completo.</p>
+
+  <div class="defects">
+    <div class="defect">
+      <h3><span class="idx">01</span> <code>userEnteredFields</code> na <code>Update Project</code></h3>
+      <p>É o campo que diz <strong>o que</strong> mudar. Sem ele a tool recebe só o <code>id</code> e não grava nada.</p>
+      <p>Detalhe que ajuda a achar: a descrição da própria tool <strong>já cita</strong> <code>userEnteredFields</code> em três das quatro regras críticas. O modelo lê a regra e não encontra o campo.</p>
+    </div>
+
+    <div class="defect">
+      <h3><span class="idx">02</span> <code>body.bot</code> sobrando na tool do Teams</h3>
+      <pre>- kind: ManualTaskInput
+  propertyName: <span class="hl">body.bot</span>     <span class="cm">← declarado, SEM value</span></pre>
+      <p><code>poster: User</code> e <code>location: Group chat</code> estão certos para o modo sem publicação. Mas <code>body.bot</code> continua declarado e vazio — e ele <strong>só existe</strong> quando <code>poster</code> é o Copilot Studio agent.</p>
+      <p>Um obrigatório vazio é a <strong>causa provável do erro</strong>. Remova a entrada inteira e adicione <code>body.recipient</code> e <code>body.messageBody</code>.</p>
+    </div>
+  </div>
+</section>
 
 <section>
   <h2>O que já está certo</h2>
@@ -283,40 +331,35 @@
     </div>
   </div>
 
-  <h3>As cinco</h3>
+  <h3>As cinco — e onde cada uma chegou</h3>
   <div class="scroller">
     <table>
-      <thead><tr><th>Tool</th><th>Falta</th><th>Tópico chama?</th><th>Efeito</th></tr></thead>
+      <thead><tr><th>Tool</th><th>Faltava</th><th>Hoje</th></tr></thead>
       <tbody>
         <tr>
           <td><code>Power BI Portfolio Database</code></td>
           <td class="num">query</td>
-          <td><span class="pill good">sim</span></td>
-          <td>Abertura funciona, mas o modelo <strong>não escreve DAX</strong> — morre toda análise sob demanda</td>
+          <td><span class="pill good">resolvida</span> — comprovada em runtime</td>
         </tr>
         <tr>
           <td><code>Obter detalhes do work item</code></td>
           <td class="num">id</td>
-          <td><span class="pill good">sim</span></td>
-          <td>Deep Dive funciona, mas o modelo não puxa work item sozinho</td>
+          <td><span class="pill good">resolvida</span> — e SILENT TOOL restaurado</td>
         </tr>
         <tr>
-          <td><code>Query Devops BU</code></td>
+          <td><code>Query Devops BU</code> / <code>IT Area</code></td>
           <td class="num">queryId</td>
-          <td><span class="pill bad">não</span></td>
-          <td>Inútil — promete filtrar por BU e não há onde passar o ID</td>
+          <td><span class="pill good">resolvidas</span> — ambas com os GUIDs</td>
         </tr>
         <tr>
           <td><code>Update Project</code></td>
           <td class="num">type, userEnteredFields</td>
-          <td><span class="pill bad">não</span></td>
-          <td><strong>Não atualiza nada.</strong> Recebe o id e não tem como dizer o que mudar</td>
+          <td><span class="pill warn">falta userEnteredFields</span></td>
         </tr>
         <tr>
           <td><code>Teams — Postar mensagem</code></td>
           <td class="num">body.bot, recipient, messageBody</td>
-          <td><span class="pill bad">não</span></td>
-          <td>Não envia</td>
+          <td><span class="pill warn">faltam 2, sobra body.bot</span></td>
         </tr>
       </tbody>
     </table>
@@ -405,12 +448,10 @@
     </table>
   </div>
 
-  <h3>Bloco A — as quatro correções</h3>
+  <h3>O que resta fazer</h3>
   <ol class="steps">
-    <li><b>Update Project</b><span>Adicionar <code>type</code> fixo e <code>userEnteredFields</code> com a descrição do formato JSON. Teste: mudar o Note de um work item de teste. <strong>Hoje não acontece nada.</strong></span></li>
-    <li><b>Power BI Portfolio Database</b><span>Adicionar <code>query</code> como entrada dinâmica, com o dicionário de colunas. Teste: "quais são os watermelons?" fora do tópico de abertura.</span></li>
-    <li><b>Obter detalhes do work item</b><span>Adicionar <code>id</code> e restaurar o <code>SILENT TOOL</code>. Teste: "me traz o work item 376" — o ID está no seu próprio log.</span></li>
-    <li><b>Query Devops BU</b><span>Adicionar <code>queryId</code> com a tabela de GUIDs por BU.</span></li>
+    <li><b><code>userEnteredFields</code> na Update Project</b><span>Dinamicamente com IA, com a descrição do formato JSON. Teste: mudar o Note de um work item de teste. <strong>Hoje não grava nada.</strong></span></li>
+    <li><b>Teams: remover <code>body.bot</code>, adicionar os outros dois</b><span>Remover a entrada <code>body.bot</code> (declarada e vazia), e adicionar <code>body.recipient</code> e <code>body.messageBody</code> como dinâmicos. Teste: cobrar mandando para você mesmo.</span></li>
   </ol>
 
   <h3>Bloco C — sim, são dois tópicos separados</h3>

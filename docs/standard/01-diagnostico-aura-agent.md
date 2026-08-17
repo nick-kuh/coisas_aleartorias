@@ -4,6 +4,84 @@ Auditoria do `botContent_69.zip` — agente `crdc4_AURAAgent`, criado em 13/08/2
 
 ---
 
+## 🟢 Estado atual — `botContent_73` (17/08/2026)
+
+**O agente funciona.** O diagnóstico abaixo foi confirmado em produção: aplicadas as correções, o comportamento previsto apareceu.
+
+### A prova, do `dialog.json`
+
+Usuário digitou *"traga para o portfolio de make de bpc"*. O agente chamou a `Power BI Portfolio Database` com:
+
+```json
+{"arguments": {"query": "EVALUATE FILTER('tabela', ...)"},
+ "autoFilledArguments": ["query"]}
+```
+
+**`autoFilledArguments: ["query"]`** — antes era `[]`. O modelo escreveu o DAX sozinho, que é exatamente o que a Correção 2 destravou. A query que ele produziu:
+
+```dax
+EVALUATE FILTER('tabela', 'tabela'[IT Area] = "Make (Business Operation)"
+  && (('tabela'[BG or BU Engagement] = "BW" || 'tabela'[BG or BU Engagement] = "PC")
+  || ('tabela'[BG or BU Engagement] = "Cross"
+      && (SEARCH("BW", 'tabela'[Specify Cross], 1, 0) > 0
+       || SEARCH("PC", 'tabela'[Specify Cross], 1, 0) > 0))))
+```
+
+Três regras das instruções seguidas à risca:
+- **Acrônimo:** traduziu `BPC` → `BW` + `PC`
+- **Cross-BU:** incluiu `Cross` com `SEARCH` em `[Specify Cross]`
+- **Anti-alucinação:** só colunas válidas, nenhuma inventada
+
+O relatório resultante nomeou projetos reais com ID e valor — South Pole (546) com ROI -80%, MIRAI Make (1252) Big Rock sem budget, Automatic Goods Receipt (202) High Potential travado em On Holding — e terminou oferecendo cobrar a gestora via Teams. **Zero exceptions no log.**
+
+### Placar das correções
+
+| Correção | Status |
+|---|---|
+| **A2** `Power BI Portfolio Database` | ✅ completa — **comprovada em runtime** |
+| **A3** `Obter detalhes do work item` | ✅ `id` + descrição, e SILENT TOOL restaurado |
+| **A4** `Query Devops BU` / `IT Area` | ✅ ambas com `queryId` + descrição |
+| **A1** `Update Project` | 🟡 `type` ✅, `id`+desc ✅ — **falta `userEnteredFields`** |
+| **A5** `Teams` | 🟡 `poster: User` ✅, `location: Group chat` ✅ — **faltam `body.recipient` e `body.messageBody`**, e `body.bot` sobrou |
+
+### Configurações (Bloco D) — aplicadas
+
+| Config | Antes | Agora |
+|---|---|---|
+| `contentModeration` | `Low` | ✅ `High` |
+| `optInUseLatestModels` | `false` | ✅ `true` |
+| `codeInterpreter` | ausente | ✅ `true` — cálculo determinístico recuperado |
+
+### As 2 pendências
+
+**1. `userEnteredFields` na `Update Project`.** É o campo que diz *o que* mudar. Sem ele a tool recebe só o `id` e não grava nada. Detalhe: a `modelDescription` da tool **já cita** `userEnteredFields` em 3 das 4 regras críticas — o modelo lê a instrução e não encontra o campo.
+
+**2. `body.bot` sobrando na tool do Teams.** Está declarado como `ManualTaskInput` **sem valor**:
+
+```yaml
+- kind: ManualTaskInput
+  propertyName: body.bot     # ← sem value
+```
+
+Esse campo só existe quando `poster: Power Virtual Agents`. Com `poster: User` ele é inerte no melhor caso, e um obrigatório vazio no pior — provável causa do erro observado. **Remover a entrada** e adicionar `body.recipient` + `body.messageBody`.
+
+Textos prontos em [`02-correcao-das-tools.md`](02-correcao-das-tools.md), Correções 1 e 5A.
+
+### Backlog (nada bloqueia)
+
+- 5º KPI `% High Potencial` não exibido no dashboard
+- Saudação do tópico ainda em inglês
+- Typo `[Project Total Budget**€**)]` nas instruções
+- `webBrowsing: true` — considerar desligar num agente de dado corporativo
+- `Project Deep Dive` ainda busca numa `'base mestra'` que não existe como fonte de conhecimento
+- `conversationStarters` vazio
+
+---
+
+## Diagnóstico original (`botContent_69`)
+
+---
+
 ## 1.1 O veredito
 
 Esta reconstrução está **muito melhor** do que a tentativa na experiência nova, e **já funciona parcialmente**. O `dialog.json` que veio junto é a prova.
