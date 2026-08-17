@@ -147,6 +147,46 @@ def variaveis_de_closed_list(doc):
     return {var for var, ts in tipos_por_variavel(doc).items() if "EmbeddedOptionSet" in ts}
 
 
+# Combinações válidas do conector Microsoft Teams "Post message in a chat or
+# channel". O próprio schema da action documenta a regra:
+#   "Use 'Chat with Flow bot' only when poster is 'Flow bot' or 'Power Virtual Agents'."
+# poster: User = signed-in user
+# poster: Flow bot = Power Automate bot
+# poster: Power Virtual Agents = Microsoft Copilot Studio agent publicado no Teams
+# location: Group chat / Channel / Chat with Flow bot ("powerva" no YAML)
+POSTER_LOCATION_VALIDO = {
+    "User":                 {"Group chat", "Channel"},
+    "Flow bot":             {"Group chat", "Channel", "Chat with Flow bot", "powerva"},
+    "Power Virtual Agents": {"Chat with Flow bot", "powerva"},
+}
+
+
+def teams_poster_location_coerente(doc):
+    """Encontra BeginDialog para a tool do Teams com par poster/location inválido."""
+    problemas = []
+
+    def anda(no):
+        if isinstance(no, dict):
+            if (no.get("kind") == "BeginDialog"
+                    and isinstance(no.get("dialog"), str)
+                    and "MicrosoftTeams-Postarmensagem" in no["dialog"]):
+                inp = no.get("input") or {}
+                poster = inp.get("poster")
+                location = inp.get("location")
+                if isinstance(poster, str) and isinstance(location, str):
+                    validos = POSTER_LOCATION_VALIDO.get(poster)
+                    if validos and location not in validos:
+                        problemas.append((poster, location, sorted(validos)))
+            for v in no.values():
+                anda(v)
+        elif isinstance(no, list):
+            for item in no:
+                anda(item)
+
+    anda(doc)
+    return problemas
+
+
 def comparacoes_sem_text(texto, variaveis_option_set):
     """Encontra `condition: =<Var> = "literal"` sem `Text()` envolvendo a variável."""
     problemas = []
@@ -295,7 +335,15 @@ def main():
             print(f"       (padrão do export antigo: Text(Topic.MeetingArea))")
             erros += 1
 
-        if not colisoes and not faltando:
+        # 3b.iii Teams: poster e location precisam ser coerentes
+        teams_ruins = teams_poster_location_coerente(doc)
+        for poster, location, validos in teams_ruins:
+            print(f"  ERRO Teams: poster '{poster}' + location '{location}' inválido")
+            print(f"       -> com poster='{poster}', location precisa ser um de: {', '.join(validos)}")
+            print(f"       (schema: \"Chat with Flow bot\" só vale com Flow bot ou Copilot Studio agent)")
+            erros += 1
+
+        if not colisoes and not faltando and not teams_ruins:
             n_choice = len(vars_choice)
             print(f"  type check: OK ({len(tipos)} var(s) tipadas" +
                   (f", {n_choice} choice com Text())" if n_choice else ")"))

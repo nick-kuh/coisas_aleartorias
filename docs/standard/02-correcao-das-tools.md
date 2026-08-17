@@ -169,33 +169,59 @@ NEVER invent a GUID.
 
 ## Correção 5 — `Teams — Postar mensagem` 🔴
 
-`poster` e `location` já estão certos. Faltam três coisas, e uma delas depende de publicar o agente primeiro.
+Duas versões: escolha a que corresponde à sua situação hoje.
 
-👉 **Guia completo:** [`03-teams-conversa-com-gestor.md`](03-teams-conversa-com-gestor.md)
+👉 **Guia completo com trade-offs:** [`03-teams-conversa-com-gestor.md`](03-teams-conversa-com-gestor.md) e [`../../topics/README.md`](../../topics/README.md), seção "Modo sem publicação"
 
-Resumo das entradas:
+### 5A — Modo SEM PUBLICAÇÃO (recomendado enquanto o publish não sair)
+
+Mensagem sai como você, no seu chat 1:1 com o gestor. Não depende de nada externo.
 
 | Entrada | Preencher usando | Valor |
 |---|---|---|
-| `poster` | Valor personalizado | `Microsoft Copilot Studio agent` ✅ já está |
-| `location` | Valor personalizado | `Chat with agent` ✅ já está |
-| **`body.bot`** (Agent) | Valor personalizado | 🔴 **AURA Agent** — só aparece no dropdown depois de publicar no Teams |
-| **`body.recipient`** | Dinamicamente com IA | 🔴 **adicionar** — e-mail do gestor |
-| **`body.messageBody`** | Dinamicamente com IA | 🔴 **adicionar** — o texto |
+| `poster` | Valor personalizado | **`User`** *(trocar de "Microsoft Copilot Studio agent")* |
+| `location` | Valor personalizado | **`Group chat`** *(trocar de "Chat with agent")* |
+| `body.bot` | — | **remover a entrada inteira** (não é usada nesse modo) |
+| **`body.recipient`** | Dinamicamente com IA | adicionar — e-mail do gestor |
+| **`body.messageBody`** | Dinamicamente com IA | adicionar — o texto |
 
-**Descrição de `body.recipient`:** `The email address of the Project IT Manager who must receive the message. Take it from [Project IT Manager] in Power BI or from Assigned To in Azure DevOps. NEVER guess an email address.`
+**Descrição da tool** (trocar a "Posta uma mensagem em um chat ou canal"):
 
-**Descrição de `body.messageBody`:** `The message text, already reviewed and approved by the requesting user. Must state the project name, the Work Item ID, the concrete problem and what is expected, and include the work item link.`
+```
+Sends a Microsoft Teams message on behalf of the signed-in user to a Project
+IT Manager, from the user's own 1:1 chat with the manager. Use ONLY after the
+user has reviewed and explicitly approved the message draft. Typical use:
+asking a manager for a new Go-Live date on a delayed project. NEVER call this
+tool to answer a question or to display information to the current user.
+```
 
-**Descrição da tool** (a atual, "Posta uma mensagem em um chat ou canal", é genérica demais e o orquestrador pode chamar sem querer):
+### 5B — Modo PUBLICADO (quando o publish sair)
+
+Mensagem sai como o AURA Agent, no chat 1:1 do gestor com o agente. Fecha o ciclo de mão dupla — a resposta do gestor volta ao agente.
+
+| Entrada | Preencher usando | Valor |
+|---|---|---|
+| `poster` | Valor personalizado | `Microsoft Copilot Studio agent` *(trocar de "User")* |
+| `location` | Valor personalizado | `Chat with agent` *(trocar de "Group chat")* |
+| **`body.bot`** (Agent) | Valor personalizado | selecionar **AURA Agent** — dropdown fica populado depois de publicar |
+| `body.recipient` | Dinamicamente com IA | idem |
+| `body.messageBody` | Dinamicamente com IA | idem |
+
+**Descrição da tool no modo publicado:**
 
 ```
 Sends a Microsoft Teams message from the AURA Agent to a Project IT Manager.
 Use ONLY after the requesting user has reviewed and explicitly approved the
-message draft. Typical use: asking a manager for a new Go-Live date on a delayed
-project. NEVER call this tool to answer a question or to display information to
-the current user.
+message draft. Typical use: asking a manager for a new Go-Live date on a
+delayed project. NEVER call this tool to answer a question or to display
+information to the current user.
 ```
+
+### Descrições das duas entradas dinâmicas (valem nos dois modos)
+
+**`body.recipient`:** `The email address of the Project IT Manager who must receive the message. Take it from [Project IT Manager] in Power BI or from Assigned To in Azure DevOps. NEVER guess an email address.`
+
+**`body.messageBody`:** `The message text, already reviewed and approved by the requesting user. Must state the project name, the Work Item ID, the concrete problem and what is expected, and include the work item link.`
 
 ---
 

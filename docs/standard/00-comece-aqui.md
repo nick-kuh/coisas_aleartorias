@@ -8,7 +8,7 @@ Divisão por **dependência**, não por assunto: o Bloco A você faz sozinho hoj
 |---|---|---|---|
 | **0** | Pedir liberação no Teams Admin Center | 2 min | — (mas destrava o B) |
 | **A** | 4 correções de tool | ~40 min | ninguém ✅ |
-| **B** | Publicar no Teams + completar a tool | ~20 min | **Bloco 0 aprovado** |
+| **B** | Publicar no Teams + completar a tool | ~20 min | **Bloco 0 aprovado** *(opcional — ver abaixo)* |
 | **C** | Colar os 2 tópicos | ~10 min | Blocos A e B |
 | **D** | Polimento (opcional) | ~15 min | ninguém |
 
@@ -83,9 +83,11 @@ No painel de teste, estas 4 perguntas têm que funcionar. **Hoje as quatro falha
 
 ---
 
-# 📢 BLOCO B — Teams (~20 min, depois da aprovação)
+# 📢 BLOCO B — Teams (~20 min)
 
-> 🛑 **PARE AQUI SE** o chamado do Bloco 0 ainda não foi aprovado. Sem app personalizado liberado no tenant, o dropdown continua vazio por mais que você tente.
+> 💡 **Se o publish ainda não é possível** (aguardando aprovação, burocracia interna, etc.), use o **modo sem publicação**: configure a tool com `poster: User` + `location: Group chat`, sem `body.bot`. A mensagem sai como você, e você aciona o `respostadogestor` manualmente quando o gestor responder. Detalhes em [`topics/README.md`](../../topics/README.md), seção "Modo sem publicação". As correções A1–A4 e a Correção 5 nesse modo simplificado são o suficiente para o ciclo funcionar.
+
+> 🛑 **PARE AQUI SE** o chamado do Bloco 0 ainda não foi aprovado E você quer o modo publicado. Sem app personalizado liberado no tenant, o dropdown `Agent` continua vazio por mais que você tente.
 
 **Por que o dropdown `Agent` está vazio hoje:** ele é preenchido por uma chamada que lista **agentes publicados no Teams**. O seu nunca foi publicado. Não é bug — é ordem de operações.
 

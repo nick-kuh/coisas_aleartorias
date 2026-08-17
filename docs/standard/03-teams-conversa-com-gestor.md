@@ -2,11 +2,78 @@
 
 Você perguntou: *"criei a ferramenta do Teams mas falta o campo Agent, e não aparece nada. Eu queria que fosse do próprio agente."*
 
-A resposta está no próprio arquivo exportado, e o cenário que você quer **funciona**.
+A resposta está no próprio arquivo exportado, e o cenário que você quer **funciona** — em dois modos:
+
+- **Modo sem publicação** (§3.0 abaixo) — funciona hoje mesmo, com dois trade-offs conhecidos. Escolha este se o publish ainda não é possível.
+- **Modo publicado** (§3.1 em diante) — o cenário completo de mão dupla automática, mas exige agente publicado E instalado no Teams.
 
 ---
 
-## 3.1 Por que o dropdown está vazio
+## 3.0 Modo sem publicação — quando o publish não é possível
+
+Se por processo burocrático, política do tenant ou aprovação de admin o agente ainda não está publicado, você **não precisa esperar** para começar a usar o ciclo de cobrança. O modo "sem publicação" usa a **sua** conexão do Teams:
+
+```
+   AURA identifica atraso e monta o rascunho
+              │
+              ▼
+   Teams · Post message
+   poster    = User             ← você
+   location  = Group chat       ← chat 1:1 com o gestor
+   recipient = gestor@unilever.com
+              │
+              ▼
+   ┌──────────────────────────────────────┐
+   │  Chat 1:1 do gestor com VOCÊ         │
+   │                                       │
+   │  Você:   "Oi, tudo bem? Sobre o      │
+   │           Horizon 2 (#12345)..."      │
+   │                                       │
+   │  Gestor: "30/11/2026"    ← responde para você
+   └──────────────────────────────────────┘
+              │
+              ▼   ← VOCÊ lê a resposta
+   Volte no agente, diga:
+   "atualizar informação do projeto"
+              │
+              ▼
+   respostadogestor: escolha o campo, informe o valor,
+   confirme → grava no DevOps
+```
+
+### Configuração da tool nesse modo
+
+| Entrada | Valor | Observação |
+|---|---|---|
+| `poster` | `User` | você é o remetente |
+| `location` | `Group chat` | envia num chat 1:1 (o produto cria se não existir) |
+| `body.bot` | — | **não usar** — só existe com `poster: Power Virtual Agents` |
+| `body.recipient` | Dinamicamente com IA | e-mail do gestor |
+| `body.messageBody` | Dinamicamente com IA | texto do rascunho aprovado |
+
+`authMode: Invoker` continua certo — a mensagem sai com a **sua** conexão do Teams.
+
+### Os dois trade-offs (leia com atenção)
+
+**1. A volta é manual, não automática.** No modo publicado, o gestor responde no chat com o agente e essa resposta vira turno de conversa. Aqui a resposta vai para o **seu** chat com ele — você é o "canal" da volta. Isso significa:
+
+- Você precisa **acompanhar** as respostas dos gestores no seu Teams.
+- Quando quiser gravar, **volte no Copilot Studio** e diga `atualizar informação do projeto` (dispara o `respostadogestor`).
+- O `respostadogestor` faz o trabalho: pergunta qual campo, valida o tipo, mostra de-para, confirma e grava.
+
+**2. O gestor vê "Nicolas mandou", não "AURA Agent".** A mensagem sai como se você tivesse digitado — o gestor não sabe que foi um agente que compôs. Pode ser bom (mais engajamento, menos parece automação) ou ruim (menos transparência sobre o uso de IA). O rascunho é escrito em primeira pessoa (`"Oi, tudo bem?"`), sem se identificar como bot.
+
+### Quando o publish sair, o que muda
+
+Três campos na tool do Teams, e o `cobrancagestor` volta ao rascunho em terceira pessoa. Detalhes na **Correção 5B** de [`02-correcao-das-tools.md`](02-correcao-das-tools.md). O `respostadogestor` continua igual — mas passa a poder ser disparado automaticamente pela resposta do gestor.
+
+---
+
+## 3.1 Modo publicado — por que o dropdown está vazio
+
+---
+
+## 3.1.1 Por que o dropdown está vazio
 
 No `botContent.yml` do AURA Agent, dentro do `dynamicInputSchema` da tool do Teams:
 

@@ -125,6 +125,8 @@ beginDialog:
       id: confirmarEmail
       variable: Topic.EmailGestor
       prompt: |-
+        Vou te mostrar o rascunho para você aprovar. Depois de aprovado, a mensagem sai do **SEU chat 1:1** com o gestor no Teams (aparece como você mandando).
+
         Para quem devo enviar a cobrança do work item **{Topic.WorkItemId}**?
 
         Sugestão a partir do DevOps: **{Topic.GestorSugerido}**
@@ -139,13 +141,14 @@ beginDialog:
       id: montarRascunho
       variable: Topic.Rascunho
       userInput: |-
-        ="Você é o AURA Agent, parceiro estratégico do CDIO LATAM. Escreva uma mensagem curta de Microsoft Teams, em português do Brasil, cobrando o gestor sobre este projeto.
+        ="Você é o AURA Agent auxiliando o usuário " & System.User.FirstName & " a redigir uma mensagem de Microsoft Teams que ELE mesmo vai enviar ao IT Manager, do chat 1:1 dele com o gestor. Escreva EM PRIMEIRA PESSOA, como se fosse " & System.User.FirstName & " digitando.
 
         FOCO DA COBRANÇA (o que o usuário quer cobrar): " & Text(Topic.FocoDaCobranca) & "
 
         REGRAS:
         - Tom direto, factual e profissional. Cobre o dado, nunca a pessoa.
         - Máximo 6 linhas.
+        - Comece com 'Oi, tudo bem?' (não invente o primeiro nome do gestor se não estiver nos dados).
         - Cite o nome do projeto e o Work Item " & Text(Topic.WorkItemId) & ".
         - Diga o fato concreto usando APENAS o que está nos dados abaixo. Se um dado não estiver, não o mencione.
         - NUNCA invente data, valor, prazo ou nome.
@@ -156,7 +159,7 @@ beginDialog:
           * Se for campo texto: peça o texto.
           Não invente unidade nem formato — pergunte o que o CDIO precisa receber.
         - Termine com o link: " & Topic.UrlWorkItem & "
-        - Retorne SOMENTE o texto da mensagem, sem título e sem comentários.
+        - Retorne SOMENTE o texto da mensagem, sem título, sem assinatura e sem comentários.
 
         DADOS DO DEVOPS: [" & JSON(Topic.DevOpsFields) & "]"
       additionalSources:
@@ -216,9 +219,9 @@ beginDialog:
             - kind: SendActivity
               id: confirmarEnvio
               activity: |-
-                ✅ Cobrança enviada para **{Topic.EmailGestor}** sobre o work item **{Topic.WorkItemId}** (foco: {Topic.FocoDaCobranca}).
+                ✅ Mensagem enviada do seu chat com **{Topic.EmailGestor}** no Teams sobre o work item **{Topic.WorkItemId}** (foco: {Topic.FocoDaCobranca}).
 
-                Quando o gestor responder com a informação, eu trago para você confirmar antes de gravar no DevOps.
+                Quando o gestor te responder no Teams, volte aqui e me diga **"atualizar informação do projeto"** — eu abro o fluxo de gravação no DevOps.
 
       elseActions:
         - kind: SendActivity

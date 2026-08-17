@@ -60,6 +60,42 @@ Veja [`docs/standard/02-correcao-das-tools.md`](../docs/standard/02-correcao-das
 
 ---
 
+## Modo sem publicação — como funciona
+
+Se o agente **ainda não foi publicado no Teams** (por processo burocrático, aprovação de admin, ou qualquer motivo), o ciclo continua funcionando com dois trade-offs. Basta configurar a tool do Teams em **modo User + Group chat**:
+
+| Entrada | Valor | Comentário |
+|---|---|---|
+| `poster` | **`User`** | mensagem sai como o usuário logado (você) |
+| `location` | **`Group chat`** | vai para o chat 1:1 do usuário com o destinatário |
+| `body.bot` | — | **remover a entrada** (só é usado com `poster: Power Virtual Agents`) |
+| `body.recipient` | Dinamicamente com IA | e-mail do gestor |
+| `body.messageBody` | Dinamicamente com IA | texto |
+
+### Os dois trade-offs
+
+1. **A mão dupla vira manual.** Quando o gestor te responder no Teams, essa resposta vai para o seu chat com ele — não chega no agente automaticamente. Você lê e, quando quiser gravar no DevOps, aciona o `respostadogestor` no Copilot Studio (`atualizar informação do projeto`). Ele grava com sua confirmação.
+
+2. **A mensagem sai como você.** O gestor vê "Nicolas mandou" e responde achando que é você. Por isso o rascunho do `cobrancagestor` é escrito em primeira pessoa, começando com "Oi, tudo bem?". Bom para engajamento, menos transparente sobre o uso do agente.
+
+### Quando publicar for possível
+
+Reverter para o modo publicado é rápido — três campos na tool do Teams:
+
+| Entrada | Modo sem publicação | Modo publicado (original) |
+|---|---|---|
+| `poster` | `User` | `Power Virtual Agents` (=Microsoft Copilot Studio agent) |
+| `location` | `Group chat` | `powerva` (=Chat with agent) |
+| `body.bot` | (não usar) | selecionar o **AURA Agent** no dropdown |
+
+E, no `cobrancagestor`, voltar o rascunho para 3ª pessoa (o agente falando por si) e mudar o aviso final para "quando ele responder no chat com o agente, a resposta chega aqui".
+
+### O validador cobre
+
+Nova regra: reprova combinações inválidas de `poster` × `location`. O próprio schema do conector diz que "Chat with Flow bot" (código `powerva` no YAML) só vale com `Flow bot` ou `Power Virtual Agents`. Se você inverter, o validador pega antes de colar.
+
+---
+
 ## O dialeto YAML do Copilot Studio
 
 Isto custou um erro de parse na primeira versão, então vale registrar.
