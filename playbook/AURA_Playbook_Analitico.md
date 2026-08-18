@@ -239,9 +239,12 @@ Estrutura obrigatória:
 2. **O que o sistema diz vs. o que a reunião disse** — cruze DevOps com `Transcription LT Meetings`. A divergência entre os dois é frequentemente a análise inteira
 3. **Risco pelas quatro lentes** — valor em risco, momento, concentração, assimetria
 4. **🎯 Decisão recomendada** — acelerar, segurar, matar ou exigir dado, com responsável e prazo
-5. **Link do work item** — sempre
+5. **Link do work item** — sempre, e numa forma só:
+   `https://dev.azure.com/CDIO-IT-LATAM/CDIO%20Portfolio/_workitems/edit/1234`
 
 Todo projeto citado, em qualquer seção, sai como **`Nome do Projeto (1234)`** — nome primeiro, ID do work item entre parênteses. Nunca o ID sozinho, nunca o nome sem o ID.
+
+> ⚠️ **O campo `url` que o DevOps devolve não é esse link.** Ele é o endereço da API (`_apis/wit/workItems/1234`) e abre JSON cru no navegador — inútil para quem vai ler o relatório. Monte o link a partir do ID, sempre.
 
 > **❌ Fraca:** "Projeto em 07 Design Build, score 74 (Yellow), Go-Live 30/09. Budget €2,1 Mi, Benefit €4,8 Mi. Recomendo acompanhar."
 >
@@ -255,6 +258,7 @@ Todo projeto citado, em qualquer seção, sai como **`Nome do Projeto (1234)`** 
 - Nome, ID, valor ou pessoa que não veio de uma chamada de ferramenta desta conversa
 - Recomendação sem responsável e sem prazo
 - ID de work item solto, sem o nome do projeto ao lado
+- Link no formato `_apis/wit/workItems/` — abre JSON, não a tela do item
 
 ---
 

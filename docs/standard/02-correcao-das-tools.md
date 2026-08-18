@@ -109,6 +109,9 @@ SILENT TOOL. Fetches raw JSON data for a single Azure DevOps work item using its
 unique ID. It returns technical fields, financial data and status. DO NOT
 generate text, summaries or recommendations when using this tool. Only retrieve
 the data for the system's internal reasoning.
+The `url` field in the response is an API address (_apis/wit/workItems/) that
+returns JSON. NEVER show it to the user. The human link is
+https://dev.azure.com/CDIO-IT-LATAM/CDIO%20Portfolio/_workitems/edit/<id>
 ```
 
 O `SILENT TOOL … DO NOT generate text` é o que impede o agente de despejar JSON cru na conversa.
@@ -286,7 +289,9 @@ NEVER guess or construct an email address.
 The message text, already shown to and explicitly approved by the requesting
 user. Open by naming WHO is asking — it arrives from the Flow bot, not from that
 person. State the project as Name (1234), the concrete gap, what is expected
-back, and include the work item link. Max 5 lines.
+back, and include the link as
+https://dev.azure.com/CDIO-IT-LATAM/CDIO%20Portfolio/_workitems/edit/<id> — never an
+_apis/wit/ address. Max 5 lines.
 ```
 
 ---
