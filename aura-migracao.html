@@ -442,7 +442,7 @@
         <tr><td class="num">0</td><td>Pedir liberação no Teams Admin Center</td><td class="num">2 min</td><td><span class="pill warn">terceiros</span></td></tr>
         <tr><td class="num">A</td><td><strong>4 correções de tool</strong> — é onde o agente destrava</td><td class="num">~40 min</td><td><span class="pill good">ninguém</span></td></tr>
         <tr><td class="num">B</td><td>Publicar no Teams + completar a tool</td><td class="num">~20 min</td><td><span class="pill warn">bloco 0</span></td></tr>
-        <tr><td class="num">C</td><td>Colar os 2 tópicos</td><td class="num">~10 min</td><td><span class="pill warn">A e B</span></td></tr>
+        <tr><td class="num">C</td><td>Migrar para a <strong>arquitetura de 3 camadas</strong></td><td class="num">~20 min</td><td><span class="pill good">bloco A</span></td></tr>
         <tr><td class="num">D</td><td>Polimento (5º KPI, saudação em pt, web off)</td><td class="num">~15 min</td><td><span class="pill good">ninguém</span></td></tr>
       </tbody>
     </table>
@@ -454,32 +454,46 @@
     <li><b>Teams: remover <code>body.bot</code>, adicionar os outros dois</b><span>Remover a entrada <code>body.bot</code> (declarada e vazia), e adicionar <code>body.recipient</code> e <code>body.messageBody</code> como dinâmicos. Teste: cobrar mandando para você mesmo.</span></li>
   </ol>
 
-  <h3>Bloco C — sim, são dois tópicos separados</h3>
-  <p class="col">Um arquivo = um tópico. <strong>Não cole os dois no mesmo.</strong> Eles são as duas metades do mesmo ciclo:</p>
+  <h3>Bloco C — os tópicos saíram</h3>
+  <p class="col"><strong>Os dois tópicos foram descontinuados.</strong> Eles prendiam o agente: uma vez disparado por frase-gatilho, um tópico executa o script do início ao fim e o agente perde a capacidade de raciocinar dentro dele. Para cobrança, isso é o oposto do desejado — quem decide <em>se</em>, <em>quando</em> e <em>o que</em> cobrar deveria ser a análise.</p>
 
-  <div class="grid2">
-    <div class="panel">
-      <h3>→ <code>cobranca-gestor</code></h3>
-      <p><strong>A ida.</strong> Você pede para cobrar. Ele lê o work item, monta o rascunho, <strong>espera sua aprovação</strong> e envia pelo Teams.</p>
-    </div>
-    <div class="panel">
-      <h3>← <code>resposta-do-gestor</code></h3>
-      <p><strong>A volta.</strong> O gestor responde com a data. Ele valida, mostra o de-para, <strong>espera confirmação</strong> e grava no DevOps.</p>
-    </div>
+  <div class="callout">
+    <span class="clabel">A prova de que instrução funciona já estava no seu log</span>
+    <p>No <code>botContent_73</code>, <strong>sem nenhum tópico envolvido</strong>, o agente terminou a análise de Make/BPC oferecendo espontaneamente cobrar a governança com a gestora via Teams. Ele já fazia o que o tópico prometia. O tópico estava tirando capacidade, não dando.</p>
   </div>
 
-  <p class="col" style="margin-top:16px">Em cada um: <strong>Tópicos → + Adicionar um tópico → Do zero → menu ⋯ → Abrir editor de código →</strong> apagar tudo, colar o <code>.yaml</code>, salvar.</p>
+  <h3>As três camadas</h3>
+  <p class="col">A terceira camada já funcionava no seu agente e passou despercebida: <strong>a descrição do input</strong>. Foi ela que fez o DAX sair correto — e o <code>autoFilledArguments: ["query"]</code> prova que foi o modelo escrevendo, não o tópico passando.</p>
+
+  <div class="scroller" style="margin-top:22px">
+    <table>
+      <thead><tr><th>Camada</th><th>Carrega quando</th><th>O que vai nela</th><th>Garantia</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Instruções</strong> <span class="num">6.440 chars</span></td><td>sempre</td><td>persona, roteamento, inegociáveis, as 4 lentes, protocolo Teams</td><td><span class="pill good">total</span></td></tr>
+        <tr><td><strong>Descrição de input</strong></td><td>quando o modelo considera a tool</td><td>DAX, reference names, as 13 fases, formatos, read-only</td><td><span class="pill good">alta</span></td></tr>
+        <tr><td><strong>Playbook</strong> <span class="num">SharePoint</span></td><td>busca semântica, sob demanda</td><td>frameworks, matriz por fase, exemplos fraco vs forte</td><td><span class="pill warn">probabilística</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="col" style="margin-top:16px">As instruções antigas tinham <strong>8.096 caracteres</strong> contra um limite de ~8.000 — e o truncamento comia o <em>fim</em>, justamente onde estavam os formatos de relatório e os campos obrigatórios. O agente não estava burro: estava lendo instruções incompletas. As novas têm <strong>6.440</strong>.</p>
 
   <div class="callout" style="margin-top:26px">
-    <span class="clabel">Por que fazer isso no standard vale a pena</span>
-    <p>Aqui o <code>Question</code> e o <code>ConditionGroup</code> <strong>executam</strong>. A aprovação antes de mandar mensagem para outra pessoa, e a confirmação antes de gravar no DevOps, são portões reais — não instruções que o modelo pode contornar.</p>
-    <p>Na experiência nova, com skills, isso viraria texto. Essa diferença é o argumento mais forte a favor da trilha que você escolheu.</p>
+    <span class="clabel">O Potencial deixa de ser manchete</span>
+    <p>Os relatórios reservavam uma seção inteira para <strong>explicar a nota</strong> em vez de usá-la. Agora o score é insumo de triagem e a análise passa por quatro lentes: <strong>valor em risco</strong>, <strong>momento</strong>, <strong>concentração</strong> e <strong>assimetria</strong>.</p>
+    <p>A releitura que mais muda o tom: <code>Incomplete</code> deixa de ser categoria de nota e vira <strong>sinal de cobrança</strong>. Significa que o gestor deve dado — nunca que o projeto é fraco.</p>
+  </div>
+
+  <div class="callout" style="margin-top:26px">
+    <span class="clabel">Sendo direto sobre o custo da troca</span>
+    <p>Um <code>ConditionGroup</code> de tópico <strong>executa</strong> — não tem como contornar. Uma instrução é seguida quase sempre. Para envio de mensagem e escrita no DevOps, "quase sempre" é um risco real, e é o preço da flexibilidade.</p>
+    <p>A mitigação: as duas restrições foram para a <strong>camada de descrição de input</strong>, a que já provou aderência neste agente. E os dois <code>.yaml</code> seguem versionados — se uma escrita indevida acontecer, recriar o <code>resposta-do-gestor</code> é o caminho de volta.</p>
   </div>
 </section>
 
 <footer>
   <p>Todo GUID, <code>operationId</code>, coluna DAX e reference name <code>Custom.*</code> foi extraído dos exports do próprio agente e conferido linha a linha. Nada foi inventado. Onde não deu para verificar sem acesso ao tenant — o binding dos campos do Teams e o formato de data do <code>Custom.GoLiveDate</code> — está marcado explicitamente, com o teste para descobrir e o que trocar.</p>
-  <p>Documentação, tópicos em YAML e validadores no branch <code>claude/copilot-studio-agent-migration-9l6mcq</code>.</p>
+  <p>Documentação, instruções, playbook e validadores no branch <code>claude/copilot-studio-agent-migration-9l6mcq</code>. Os tópicos em YAML seguem lá como histórico.</p>
 </footer>
 
 </div>
