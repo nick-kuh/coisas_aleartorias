@@ -6,11 +6,15 @@
 
 ## Por que mudar
 
-### 1. As instruções antigas estavam truncadas
+### 1. As instruções antigas estavam na fronteira do limite
 
-**8.096 caracteres**, acima do limite de ~8.000 do Copilot Studio. O corte come o **fim** do texto — e o fim era justamente onde moravam os formatos de relatório, o bypass de onboarding e a lista de campos obrigatórios.
+**8.096 caracteres**, medidos e idênticos em oito exports diferentes. O limite documentado do Copilot Studio para instruções fica na faixa de **8.000** — ou seja, o texto estava exatamente em cima da fronteira.
 
-O agente não estava "burro". Estava lendo instruções incompletas.
+> ⚠️ **Sendo preciso sobre o que sei e o que não sei:** os 8.096 são medição minha, conferida. Já o *truncamento* eu **não consigo provar** — o export guarda o texto inteiro, e se o corte acontece, acontece em runtime, onde não tenho visibilidade. Tratei como fato antes de verificar; o correto é: risco alto e não confirmado.
+>
+> O que **é** medível, e sozinho já justifica a reescrita: a redundância. `FinalScore` explicado 4×, `10 Deployed`/`11 Closed` 5×, "never flag missing" 3×, Cross-BU 4×. A §2 sozinha gastava ~2.000 caracteres com um dicionário de dados que **já existia** na descrição do input `query`.
+
+As novas têm **6.367** — 21% mais enxutas, sem perder cobertura de regra.
 
 ### 2. Tópico é prisão, não capacidade
 
@@ -24,11 +28,11 @@ No log do `botContent_73`, **sem nenhum tópico envolvido**, o agente terminou u
 
 ## As três camadas
 
-| Camada | Carrega quando | O que vai nela | Garantia |
-|---|---|---|---|
-| **Instruções** (6.440 chars) | sempre, toda mensagem | persona, roteamento, inegociáveis, as 4 lentes, protocolo Teams | ✅ **total** |
-| **Descrição de tool/input** | quando o modelo considera aquela tool | DAX, reference names, fases válidas, formatos, read-only | ✅ **alta** |
-| **SharePoint (playbook)** | busca semântica, sob demanda | frameworks analíticos, definições, exemplos, matriz completa | ⚠️ **probabilística** |
+| Camada | Orçamento | Carrega quando | O que vai nela | Garantia |
+|---|---|---|---|---|
+| **Instruções** | ~8.000 no total *(usando 6.367)* | sempre, toda mensagem | persona, roteamento, inegociáveis, as 4 lentes, protocolo Teams | ✅ **total** |
+| **Descrição de tool/input** | **1.024 por entrada** | quando o modelo considera aquela tool | DAX, reference names, fases válidas, formatos, read-only | ✅ **alta** |
+| **SharePoint (playbook)** | sem limite prático | busca semântica, sob demanda | frameworks analíticos, definições, exemplos, matriz completa | ⚠️ **probabilística** |
 
 ### A camada do meio é a descoberta
 
@@ -41,7 +45,9 @@ A descrição de input **já funcionava no seu agente e passou despercebida**. F
 
 `autoFilledArguments` é o campo que separa "o tópico passou isso" de "o modelo escreveu isso". Aqui foi o modelo.
 
-Por que essa camada é boa: carrega **só quando relevante**, é lida no momento exato da decisão, e **não consome o orçamento de 8.000 caracteres das instruções**. É onde ficam as restrições que antes só o `ConditionGroup` do tópico garantia.
+Por que essa camada é boa: carrega **só quando relevante**, é lida no momento exato da decisão, e **não consome o orçamento das instruções**. É onde ficam as restrições que antes só o `ConditionGroup` do tópico garantia.
+
+> ⚠️ **Mas ela é a camada mais apertada das três: 1.024 caracteres por entrada.** Confirmado na prática — uma descrição maior que isso é recusada. É pouco espaço, e por isso o que vai nela precisa ser **escolhido**, não empilhado. Cada linha a mais aqui expulsa outra.
 
 ### ⚠️ Correção de expectativa sobre o SharePoint
 
@@ -79,6 +85,19 @@ Toda regra que saiu das instruções tem que reaparecer em outra camada. Item a 
 | Nunca inventar dado | instruções §9 **+** aviso no topo do playbook | ✅ dupla |
 | Nunca expor query, GUID, JSON | instruções §9 | ✅ total |
 | **Mecânica do FinalScore** | **eliminada por decisão** — playbook §1 define o novo uso | ⚪ intencional |
+
+### O que a compressão para 1.024 tirou das descrições
+
+O teto por entrada obrigou a escolher. Duas regras saíram das descrições — as duas continuam cobertas:
+
+| Regra | Saiu de | Continua em |
+|---|---|---|
+| `10 Deployed`/`11 Closed` nunca sinalizar | `userEnteredFields` | instruções §5 **+** playbook §2 — é regra de **análise**, não de escrita |
+| Exemplo DAX completo do filtro Cross-BU | `query` (virou regra em texto) | instruções §3 **+** [`dax-cookbook.md`](../../skills/portfolio-overview/references/dax-cookbook.md) |
+
+A segunda tem respaldo empírico: o log do `botContent_73` mostra o modelo escrevendo `SEARCH("BW", 'tabela'[Specify Cross], 1, 0) > 0` sozinho, sem o exemplo na descrição.
+
+Uma remoção de capacidade real, declarada: a coluna `[Budget Formatado]` saiu da lista do `query`. É valor pré-formatado para exibição, e o agente formata a própria saída — `[Project Total Budget]` e `[Budget Value]` cobrem as contas.
 
 ### As duas garantias que os tópicos davam
 
@@ -122,7 +141,7 @@ A última linha é deliberada. Sem ela o agente pode citar os exemplos do playbo
 
 ## O que fazer, na prática
 
-1. **Instruções** — copiar [`agent/instructions-standard.md`](../../agent/instructions-standard.md) inteiro e colar em Copilot Studio → AURA Agent → **Instruções**, substituindo tudo. São 6.440 caracteres, cabem sem truncar.
+1. **Instruções** — copiar [`agent/instructions-standard.md`](../../agent/instructions-standard.md) inteiro e colar em Copilot Studio → AURA Agent → **Instruções**, substituindo tudo. São 6.367 caracteres, contra 8.096 das antigas.
 2. **Descrições de input** — aplicar as duas expandidas em [`02-correcao-das-tools.md`](02-correcao-das-tools.md): `userEnteredFields` (Correção 1) e `query` (Correção 2).
 3. **SharePoint** — subir [`playbook/AURA_Playbook_Analitico.docx`](../../playbook/AURA_Playbook_Analitico.docx) na biblioteca do CDIO LATAM, cadastrar como fonte de conhecimento e colar a descrição acima.
 4. **Tópicos** — os dois seguem no repositório como histórico, mas saem do caminho crítico. Se já estiverem colados no agente, podem ser removidos.

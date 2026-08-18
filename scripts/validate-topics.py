@@ -17,6 +17,11 @@ Checagens:
   3. estrutura— ids de nó únicos
   4. vocabulário — `kind:` de nó e entidades conferidos contra um export real
   5. referências — toda tool citada em `dialog:` existe no agente exportado
+  6. limites  — descrição de entrada <= 1024 chars, instruções <= 8000 chars
+
+O produto trunca silenciosamente o que passa do limite, e o corte come o FIM
+do texto — justamente onde costumam ficar as regras mais restritivas. Por isso
+a checagem 6 mede em vez de confiar na memória.
 
 Uso:
     python3 scripts/validate-topics.py [--referencia caminho/para/botContent.yml]
@@ -248,6 +253,64 @@ def vocabulario(conteudos):
     return {"kinds": kinds, "entidades": entidades}
 
 
+# ---------------------------------------------------------------- limites
+# Tetos do produto, confirmados contra o export do agente ao vivo
+# (botContent_75: descrição do `query` com 940 chars, `userEnteredFields` 570).
+LIMITE_DESCRICAO = 1024
+LIMITE_INSTRUCOES = 8000
+MARGEM_APERTADA = 74          # avisa quando sobra menos que isto
+
+DOC_TOOLS = "docs/standard/02-correcao-das-tools.md"
+DOC_INSTRUCOES = "agent/instructions-standard.md"
+
+# Blocos coláveis: um marcador em negrito seguido de uma cerca ```
+MARCADOR = re.compile(
+    r"\*\*Descrição d[ao] (?:entrada|tool)[^*]*\*\*[^\n]*\n+```\n(.*?)\n```",
+    re.S,
+)
+
+
+def checar_limites(raiz):
+    """Mede os textos que o usuário cola no Copilot Studio."""
+    erros = avisos = 0
+
+    doc = raiz / DOC_TOOLS
+    if doc.exists():
+        texto = doc.read_text(encoding="utf-8")
+        blocos = MARCADOR.findall(texto)
+        print(f"\n=== limites de descrição ({len(blocos)} bloco(s) colável(is)) ===")
+        for bloco in blocos:
+            corpo = bloco.strip()
+            n = len(corpo)
+            rotulo = corpo.split("\n")[0][:44].rstrip() + "…"
+            if n > LIMITE_DESCRICAO:
+                print(f"  ERRO: {n}/{LIMITE_DESCRICAO} — estoura {n - LIMITE_DESCRICAO} | {rotulo}")
+                erros += 1
+            elif LIMITE_DESCRICAO - n < MARGEM_APERTADA:
+                print(f"  aviso: {n}/{LIMITE_DESCRICAO} — só {LIMITE_DESCRICAO - n} de folga | {rotulo}")
+                avisos += 1
+            else:
+                print(f"  OK {n}/{LIMITE_DESCRICAO} (folga {LIMITE_DESCRICAO - n}) | {rotulo}")
+    else:
+        print(f"\n  aviso: {DOC_TOOLS} não encontrado — limites de descrição não medidos")
+        avisos += 1
+
+    instr = raiz / DOC_INSTRUCOES
+    if instr.exists():
+        n = len(instr.read_text(encoding="utf-8"))
+        print(f"\n=== instruções ===")
+        if n > LIMITE_INSTRUCOES:
+            print(f"  ERRO: {n}/{LIMITE_INSTRUCOES} — estoura {n - LIMITE_INSTRUCOES}, o fim será truncado")
+            erros += 1
+        else:
+            print(f"  OK {n}/{LIMITE_INSTRUCOES} (folga {LIMITE_INSTRUCOES - n})")
+    else:
+        print(f"\n  aviso: {DOC_INSTRUCOES} não encontrado — instruções não medidas")
+        avisos += 1
+
+    return erros, avisos
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--referencia", type=pathlib.Path,
@@ -369,6 +432,10 @@ def main():
             else:
                 print(f"  ERRO: tool inexistente no agente — {ref}")
                 erros += 1
+
+    e_lim, a_lim = checar_limites(pathlib.Path(__file__).resolve().parent.parent)
+    erros += e_lim
+    avisos += a_lim
 
     print("\n" + "-" * 58)
     if erros:

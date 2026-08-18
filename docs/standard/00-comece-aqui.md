@@ -17,7 +17,7 @@
 >
 > Os dois tópicos foram **descontinuados**. O agente passa a decidir sozinho, guiado por três camadas: instruções enxutas + descrição de input + playbook no SharePoint. O **Bloco C mudou de assunto** — não cole mais os tópicos.
 >
-> Motivo curto: as instruções antigas estavam **truncadas** (8.096 caracteres, limite ~8.000), e tópico prende o agente num fluxo determinístico. O desenho completo: [`05-arquitetura-3-camadas.md`](05-arquitetura-3-camadas.md).
+> Motivo curto: as instruções antigas estavam **na fronteira do limite** (8.096 caracteres, com o teto documentado na faixa de 8.000) e cheias de repetição, e tópico prende o agente num fluxo determinístico. O desenho completo: [`05-arquitetura-3-camadas.md`](05-arquitetura-3-camadas.md).
 
 Este é o único documento que você precisa abrir para trabalhar. Os outros são referência, e este remete a eles na hora certa.
 
@@ -150,11 +150,11 @@ Nesta sequência exata:
 
 **O que muda:** em vez de prender o agente num fluxo, você dá a ele instruções que cabem, restrições no lugar certo e um playbook profundo para consultar. O porquê de cada camada está em [`05-arquitetura-3-camadas.md`](05-arquitetura-3-camadas.md).
 
-| Camada | Onde vive | Garantia |
-|---|---|---|
-| Instruções (6.440 chars) | Copilot Studio → Instruções | ✅ carrega sempre |
-| Descrição de input | Ferramentas → Entradas | ✅ carrega quando a tool é considerada |
-| Playbook | SharePoint → fonte de conhecimento | ⚠️ busca semântica, sob demanda |
+| Camada | Onde vive | Orçamento | Garantia |
+|---|---|---|---|
+| Instruções | Copilot Studio → Instruções | ~8.000 *(usando 6.367)* | ✅ carrega sempre |
+| Descrição de input | Ferramentas → Entradas | **1.024 por entrada** | ✅ carrega quando a tool é considerada |
+| Playbook | SharePoint → fonte de conhecimento | sem limite prático | ⚠️ busca semântica, sob demanda |
 
 ### C1 · Colar as instruções novas
 
@@ -162,7 +162,7 @@ Nesta sequência exata:
 2. **Apagar tudo** e colar o conteúdo de [`agent/instructions-standard.md`](../../agent/instructions-standard.md)
 3. Salvar
 
-São **6.440 caracteres** — cabem sem truncar. As antigas tinham 8.096 e o fim estava sendo cortado.
+São **6.367 caracteres**, contra **8.096** das antigas — 21% mais enxutas, com a mesma cobertura de regra.
 
 - [ ] Instruções substituídas
 

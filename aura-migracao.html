@@ -467,16 +467,27 @@
 
   <div class="scroller" style="margin-top:22px">
     <table>
-      <thead><tr><th>Camada</th><th>Carrega quando</th><th>O que vai nela</th><th>Garantia</th></tr></thead>
+      <thead><tr><th>Camada</th><th>Orçamento</th><th>Carrega quando</th><th>O que vai nela</th><th>Garantia</th></tr></thead>
       <tbody>
-        <tr><td><strong>Instruções</strong> <span class="num">6.440 chars</span></td><td>sempre</td><td>persona, roteamento, inegociáveis, as 4 lentes, protocolo Teams</td><td><span class="pill good">total</span></td></tr>
-        <tr><td><strong>Descrição de input</strong></td><td>quando o modelo considera a tool</td><td>DAX, reference names, as 13 fases, formatos, read-only</td><td><span class="pill good">alta</span></td></tr>
-        <tr><td><strong>Playbook</strong> <span class="num">SharePoint</span></td><td>busca semântica, sob demanda</td><td>frameworks, matriz por fase, exemplos fraco vs forte</td><td><span class="pill warn">probabilística</span></td></tr>
+        <tr><td><strong>Instruções</strong></td><td class="num">~8.000 <span style="color:var(--faint)">(usa 6.367)</span></td><td>sempre</td><td>persona, roteamento, inegociáveis, as 4 lentes, protocolo Teams</td><td><span class="pill good">total</span></td></tr>
+        <tr><td><strong>Descrição de input</strong></td><td class="num">1.024 <span style="color:var(--faint)">por entrada</span></td><td>quando o modelo considera a tool</td><td>DAX, reference names, as 13 fases, formatos, read-only</td><td><span class="pill good">alta</span></td></tr>
+        <tr><td><strong>Playbook</strong> <span class="num">SharePoint</span></td><td>sem limite prático</td><td>busca semântica, sob demanda</td><td>frameworks, matriz por fase, exemplos fraco vs forte</td><td><span class="pill warn">probabilística</span></td></tr>
       </tbody>
     </table>
   </div>
 
-  <p class="col" style="margin-top:16px">As instruções antigas tinham <strong>8.096 caracteres</strong> contra um limite de ~8.000 — e o truncamento comia o <em>fim</em>, justamente onde estavam os formatos de relatório e os campos obrigatórios. O agente não estava burro: estava lendo instruções incompletas. As novas têm <strong>6.440</strong>.</p>
+  <p class="col" style="margin-top:16px">As instruções antigas tinham <strong>8.096 caracteres</strong>, medidos e idênticos em oito exports — em cima do teto documentado, que fica na faixa de 8.000. As novas têm <strong>6.367</strong>, 21% mais enxutas e com a mesma cobertura de regra.</p>
+
+  <div class="callout" style="margin-top:26px">
+    <span class="clabel">O que eu sei, e o que eu não sei</span>
+    <p>Os 8.096 são medição conferida. Já o <strong>truncamento eu não consigo provar</strong> — o export guarda o texto inteiro, e se o corte acontece é em runtime, onde não tenho visibilidade. Afirmei como fato antes de verificar; o correto é <em>risco alto e não confirmado</em>.</p>
+    <p>O que <strong>é</strong> medível, e sozinho justifica a reescrita: <code>FinalScore</code> explicado 4×, <code>10 Deployed</code>/<code>11 Closed</code> 5×, Cross-BU 4×. Uma seção inteira gastava ~2.000 caracteres com um dicionário de dados que já existia na descrição do input <code>query</code>.</p>
+  </div>
+
+  <div class="callout" style="margin-top:26px">
+    <span class="clabel">A camada do meio é a mais apertada</span>
+    <p>Cada descrição de entrada tem teto de <strong>1.024 caracteres</strong>. É alta garantia e <strong>baixa capacidade</strong> — o que vai nela precisa ser escolhido, não empilhado, porque cada linha a mais expulsa outra.</p>
+  </div>
 
   <div class="callout" style="margin-top:26px">
     <span class="clabel">O Potencial deixa de ser manchete</span>

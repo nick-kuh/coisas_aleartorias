@@ -1,5 +1,7 @@
 # 2. Correção das tools — o que abrir e o que colar
 
+> ⚠️ **Cada descrição de entrada tem teto de 1.024 caracteres.** Os textos abaixo já vêm medidos, com a folga anotada. Se você editar algum, meça antes de colar — `python3 scripts/validate-topics.py` faz isso.
+
 > 📌 **Este é o documento de referência.** Se você quer a ordem de execução — o que fazer primeiro, o que depende de terceiros e quando testar — comece por [`00-comece-aqui.md`](00-comece-aqui.md) e volte aqui para pegar os textos.
 
 Cinco tools a corrigir, em ordem de impacto. Cada uma tem o texto pronto para colar e o teste de aceite.
@@ -28,7 +30,7 @@ Hoje esta tool **não consegue atualizar nada**: recebe o `id` e não tem onde r
 | **`type`** | Valor personalizado | `IT Project` 🔴 **adicionar** |
 | **`userEnteredFields`** | Dinamicamente com IA | 🔴 **adicionar** + descrição abaixo |
 
-**Descrição da entrada `id`:**
+**Descrição da entrada `id`:**  `179/1024`
 
 ```
 The unique numeric ID of the Azure DevOps Work Item (e.g., 12345). Use the
@@ -36,39 +38,15 @@ The unique numeric ID of the Azure DevOps Work Item (e.g., 12345). Use the
 before calling this tool.
 ```
 
-**Descrição da entrada `userEnteredFields`** — cole literalmente:
+**Descrição da entrada `userEnteredFields`** — cole literalmente:  `996/1024`
 
 ```
-A JSON object of key-value pairs where each key is the FULL Azure DevOps field
-reference name and each value is the new value to set.
-Valid keys include: "System.State", "System.AssignedTo", "System.History",
-"Custom.GoLiveDate", "Custom.PGLSEndDate", "Custom.BusinessBenefit",
-"Custom.ProjectTotalBudget", "Custom.ProjectBenefitValue", "Custom.PaybackinMonths",
-"Custom.ImplementionTimeinMonths", "Custom.SpecifyCross", "Custom.CountryDeployed",
-"Custom.ProjectITManager", "Custom.PortfolioYear", "Custom.Note".
-ONLY include the specific field(s) the user asked to change.
-Do NOT include unchanged fields.
-
-"System.State" accepts ONLY these 13 exact strings: "00 Cancelled", "01 Idea",
-"02 Scoping", "03 Scope Approv", "04 Costing", "05 Cost Approv", "06 Plan Analyze",
-"07 Design Build", "08 UAT", "09 PGLS", "10 Deployed", "11 Closed", "12 On Holding".
-Never invent a value, never abbreviate, never drop the numeric prefix.
-
-"10 Deployed" and "11 Closed" are delivered projects. Never write to them to fill
-missing fields, and never report them as having governance gaps.
-
-FORMATS: dates as YYYY-MM-DD. Money and month counts as plain numbers, with no
-currency symbol and no thousands separator.
-
-Do NOT include read-only fields: System.CreatedBy, System.CreatedDate,
-System.ChangedBy, System.ChangedDate, System.TeamProject, System.WorkItemType,
-Microsoft.VSTS.Common.StateChangeDate, Microsoft.VSTS.Common.ActivatedBy,
-Microsoft.VSTS.Common.ActivatedDate, Microsoft.VSTS.Common.ClosedBy,
-Microsoft.VSTS.Common.ClosedDate, Microsoft.VSTS.Common.ResolvedBy,
-Microsoft.VSTS.Common.ResolvedDate. Sending any of them makes the PATCH fail.
-
-NEVER call this tool before showing the user the exact change (current value ->
-new value) and receiving an explicit confirmation.
+A JSON object whose keys are FULL Azure DevOps reference names and whose values are the new values. Examples: "System.State", "System.AssignedTo", "Custom.GoLiveDate", "Custom.ProjectTotalBudget", "Custom.ProjectBenefitValue", "Custom.Note".
+Include ONLY the field(s) the user asked to change.
+"System.State" accepts ONLY these 13 strings: "00 Cancelled", "01 Idea", "02 Scoping", "03 Scope Approv", "04 Costing", "05 Cost Approv", "06 Plan Analyze", "07 Design Build", "08 UAT", "09 PGLS", "10 Deployed", "11 Closed", "12 On Holding". Never invent, abbreviate or drop the numeric prefix.
+FORMATS: dates as YYYY-MM-DD. Money and months as plain numbers, no symbol, no separator.
+NEVER send read-only fields: System.CreatedBy, System.CreatedDate, System.ChangedBy, System.ChangedDate, System.TeamProject, System.WorkItemType, or any Microsoft.VSTS.Common audit field. The PATCH fails.
+NEVER call this tool before showing the user the exact before -> after change and getting explicit confirmation.
 ```
 
 📎 Lista completa e conferida dos reference names `Custom.*`: [`skills/update-devops/references/campos-devops.md`](../../skills/update-devops/references/campos-devops.md)
@@ -89,31 +67,13 @@ O dashboard de abertura funciona porque o tópico passa a query. Fora dele, o mo
 | `datasetid` | Valor personalizado | `afe9436e-b892-45a8-a3c0-e816f3e13258` ✅ já está |
 | **`query`** | Dinamicamente com IA | 🔴 **adicionar** + descrição abaixo |
 
-**Descrição da entrada `query`** — é este texto que ensina o modelo a escrever DAX válido:
+**Descrição da entrada `query`** — é este texto que ensina o modelo a escrever DAX válido:  `989/1024`
 
 ```
-Return ONLY the raw DAX string. DO NOT use markdown code blocks (```dax) or any
-other formatting. MUST start with EVALUATE. Table MUST ALWAYS be 'tabela'.
-Valid Columns: [Work Item Id], [Title], [Short Name], [Project IT Manager],
-[State], [N State], [StatusProjeto], [Project Type], [IT Area],
-[BG or BU Engagement], [Specify Cross], [FinalScore], [Potencial],
-[Business Benefit], [Budget Formatado], [Project Total Budget], [Budget Value],
-[Benefit Value], [Payback in Months], [Implemention Time in Months],
-[Country Deployed], [GoLive Date], [PGLS End Date], [Portfolio Year].
-RULES: 1) Macro overview: use SUMMARIZECOLUMNS. 2) Specific/risk projects: use
-CALCULATETABLE or FILTER. 3) NEVER invent columns. 4) Default [Project Type]
-filter is 'Big Rock' unless the user asks otherwise.
-5) CROSS-BU RULE, mandatory: a filter on [BG or BU Engagement] MUST also catch the
-Cross projects that name that BU in [Specify Cross]. Never filter a BU without it:
-'tabela'[BG or BU Engagement] = "PC" || ('tabela'[BG or BU Engagement] = "Cross"
-&& SEARCH("PC", 'tabela'[Specify Cross], 1, 0) > 0)
-6) Translate BU acronyms BEFORE writing the filter: BPC = BW + PC; HPC = HC + PC;
-HPF = HC + PC + Foods. For several BUs use IN {"BW","PC"} plus one SEARCH per BU
-on [Specify Cross].
-7) Active projects are [N State] < 10. [N State] 10 and 11 are delivered and must
-never be listed as risks or governance gaps.
-Closed domains: [StatusProjeto] = Deployed | Delayed | In PGLS | Ending this
-Quarter | On Time | No Information. [Business Benefit] = Compliance | Value Added.
+Return ONLY raw DAX, no markdown fences. MUST start with EVALUATE. Table is always 'tabela'.
+Columns: [Work Item Id], [Title], [Short Name], [Project IT Manager], [State], [N State], [StatusProjeto], [Project Type], [IT Area], [BG or BU Engagement], [Specify Cross], [FinalScore], [Potencial], [Business Benefit], [Project Total Budget], [Budget Value], [Benefit Value], [Payback in Months], [Implemention Time in Months], [Country Deployed], [GoLive Date], [PGLS End Date], [Portfolio Year].
+RULES: 1) Overview: SUMMARIZECOLUMNS. 2) Specific/risk: CALCULATETABLE or FILTER. 3) NEVER invent columns. 4) Default [Project Type] is 'Big Rock'. 5) Active projects are [N State] < 10. 6) BU acronyms: BPC = BW + PC, HPC = HC + PC, HPF = HC + PC + Foods. 7) A BU filter MUST also catch Cross projects naming it in [Specify Cross], via SEARCH.
+Domains: [StatusProjeto] = Deployed | Delayed | In PGLS | Ending this Quarter | On Time | No Information. [Business Benefit] = Compliance | Value Added.
 ```
 
 📎 Receitas prontas (watermelons, big rocks, governança, filtro Cross-BU): [`skills/portfolio-overview/references/dax-cookbook.md`](../../skills/portfolio-overview/references/dax-cookbook.md)
@@ -133,7 +93,7 @@ Quarter | On Time | No Information. [Business Benefit] = Compliance | Value Adde
 | `typeName` | Valor personalizado | `IT Project` ✅ |
 | **`id`** | Dinamicamente com IA | 🔴 **adicionar** |
 
-**Descrição da entrada `id`:**
+**Descrição da entrada `id`:**  `156/1024`
 
 ```
 The unique numeric ID of the Azure DevOps Work Item. Resolve the project name to
@@ -167,7 +127,7 @@ O `SILENT TOOL … DO NOT generate text` é o que impede o agente de despejar JS
 | `project` | Valor personalizado | `CDIO Portfolio` ✅ |
 | **`queryId`** | Dinamicamente com IA | 🔴 **adicionar** + descrição abaixo |
 
-**Descrição da entrada `queryId`:**
+**Descrição da entrada `queryId`:**  `365/1024`
 
 ```
 The GUID of the saved Azure DevOps query for a Business Unit. Pick from:
@@ -226,7 +186,7 @@ Mensagem sai como você, no seu chat 1:1 com o gestor. Não depende de nada exte
 >
 > **Remova a entrada inteira**, não apenas o valor.
 
-**Descrição da tool** (trocar a "Posta uma mensagem em um chat ou canal"):
+**Descrição da tool** (trocar a "Posta uma mensagem em um chat ou canal"):  `379/1024`
 
 ```
 Sends a Microsoft Teams message on behalf of the signed-in user to a Project
@@ -248,7 +208,7 @@ Mensagem sai como o AURA Agent, no chat 1:1 do gestor com o agente. Fecha o cicl
 | `body.recipient` | Dinamicamente com IA | idem |
 | `body.messageBody` | Dinamicamente com IA | idem |
 
-**Descrição da tool no modo publicado:**
+**Descrição da tool no modo publicado:**  `331/1024`
 
 ```
 Sends a Microsoft Teams message from the AURA Agent to a Project IT Manager.
