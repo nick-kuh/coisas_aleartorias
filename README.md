@@ -26,7 +26,7 @@ O checklist linear — o que fazer, em que ordem, o que depende de terceiros e o
 | **0** | Pedir liberação de app personalizado no Teams Admin Center | 2 min | — (mas destrava o B) |
 | **A** | 4 correções de tool — é onde o agente destrava | ~40 min | ninguém ✅ |
 | **B** | Publicar no Teams + completar a tool | ~20 min | Bloco 0 aprovado |
-| **C** | Colar os 2 tópicos | ~10 min | Blocos A e B |
+| **C** | Migrar para a arquitetura de 3 camadas | ~20 min | Bloco A |
 | **D** | Polimento | ~15 min | ninguém |
 
 ### Referência
@@ -37,7 +37,10 @@ O checklist linear — o que fazer, em que ordem, o que depende de terceiros e o
 | [`02-correcao-das-tools.md`](docs/standard/02-correcao-das-tools.md) | O que abrir e o que colar, com teste de aceite por tool |
 | [`03-teams-conversa-com-gestor.md`](docs/standard/03-teams-conversa-com-gestor.md) | Por que o dropdown **Agent** está vazio, e como o agente conversa com o gestor |
 | [`04-work-iq.md`](docs/standard/04-work-iq.md) | O que é, quanto custa, e por que ele **não** resolve a cobrança do gestor |
-| [`topics/`](topics/) | Dois tópicos em YAML, prontos para colar, que fecham o ciclo de cobrança |
+| [`05-arquitetura-3-camadas.md`](docs/standard/05-arquitetura-3-camadas.md) | Por que os tópicos saíram, as três camadas e o checklist de cobertura |
+| [`agent/instructions-standard.md`](agent/instructions-standard.md) | As instruções para colar — 6.440 caracteres, cabem sem truncar |
+| [`playbook/`](playbook/) | O playbook analítico (`.md` versionado + `.docx` para o SharePoint) |
+| [`topics/`](topics/) | ⛔ Os dois tópicos, **descontinuados** — mantidos como histórico e caminho de volta |
 
 ### O defeito, em uma frase
 

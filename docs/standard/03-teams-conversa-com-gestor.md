@@ -157,7 +157,7 @@ A mensagem proativa **só pode ir para o chat pessoal do gestor com o agente** �
 1. **Contexto no texto.** Colocar `#12345` na mensagem e torcer para o modelo relacionar. Frágil.
 2. **Um tópico dedicado** que dispara quando alguém responde com uma data, pede o ID se não souber, valida o formato, confirma e grava. Determinístico.
 
-O tópico pronto está em [`topics/cobranca-gestor.yaml`](../../topics/cobranca-gestor.yaml).
+⛔ **Descontinuado.** O tópico segue em [`topics/cobranca-gestor.yaml`](../../topics/cobranca-gestor.yaml) como histórico, mas a cobrança passou a ser feita pelas instruções — [`05-arquitetura-3-camadas.md`](05-arquitetura-3-camadas.md).
 
 ---
 
@@ -230,4 +230,4 @@ O fluxo precisa estar **no mesmo ambiente** do agente. E atenção aos limites d
 - [Quickstart: create a classic agent and publish it to Microsoft Teams](https://learn.microsoft.com/en-us/microsoft-copilot-studio/fundamentals-get-started-teams)
 - [Send a message in Teams using Power Automate](https://learn.microsoft.com/en-us/power-automate/teams/send-a-message-in-teams)
 
-➡️ O tópico pronto: [`topics/cobranca-gestor.yaml`](../../topics/cobranca-gestor.yaml)
+➡️ ⛔ O tópico foi **descontinuado**. O protocolo de cobrança vive agora na §7 das [instruções](../../agent/instructions-standard.md); o tópico fica como histórico em [`topics/`](../../topics/README.md).

@@ -41,13 +41,34 @@ before calling this tool.
 ```
 A JSON object of key-value pairs where each key is the FULL Azure DevOps field
 reference name and each value is the new value to set.
-Examples of valid keys: "System.State", "Custom.GoLiveDate", "Custom.BusinessBenefit",
-"Custom.Note", "Custom.ProjectTotalBudget", "Custom.Stages".
+Valid keys include: "System.State", "System.AssignedTo", "System.History",
+"Custom.GoLiveDate", "Custom.PGLSEndDate", "Custom.BusinessBenefit",
+"Custom.ProjectTotalBudget", "Custom.ProjectBenefitValue", "Custom.PaybackinMonths",
+"Custom.ImplementionTimeinMonths", "Custom.SpecifyCross", "Custom.CountryDeployed",
+"Custom.ProjectITManager", "Custom.PortfolioYear", "Custom.Note".
 ONLY include the specific field(s) the user asked to change.
 Do NOT include unchanged fields.
-Do NOT include read-only fields like System.CreatedBy, System.CreatedDate,
-System.ChangedBy, System.ChangedDate, Microsoft.VSTS.Common.StateChangeDate,
-System.TeamProject or System.WorkItemType.
+
+"System.State" accepts ONLY these 13 exact strings: "00 Cancelled", "01 Idea",
+"02 Scoping", "03 Scope Approv", "04 Costing", "05 Cost Approv", "06 Plan Analyze",
+"07 Design Build", "08 UAT", "09 PGLS", "10 Deployed", "11 Closed", "12 On Holding".
+Never invent a value, never abbreviate, never drop the numeric prefix.
+
+"10 Deployed" and "11 Closed" are delivered projects. Never write to them to fill
+missing fields, and never report them as having governance gaps.
+
+FORMATS: dates as YYYY-MM-DD. Money and month counts as plain numbers, with no
+currency symbol and no thousands separator.
+
+Do NOT include read-only fields: System.CreatedBy, System.CreatedDate,
+System.ChangedBy, System.ChangedDate, System.TeamProject, System.WorkItemType,
+Microsoft.VSTS.Common.StateChangeDate, Microsoft.VSTS.Common.ActivatedBy,
+Microsoft.VSTS.Common.ActivatedDate, Microsoft.VSTS.Common.ClosedBy,
+Microsoft.VSTS.Common.ClosedDate, Microsoft.VSTS.Common.ResolvedBy,
+Microsoft.VSTS.Common.ResolvedDate. Sending any of them makes the PATCH fail.
+
+NEVER call this tool before showing the user the exact change (current value ->
+new value) and receiving an explicit confirmation.
 ```
 
 📎 Lista completa e conferida dos reference names `Custom.*`: [`skills/update-devops/references/campos-devops.md`](../../skills/update-devops/references/campos-devops.md)
@@ -82,6 +103,15 @@ Valid Columns: [Work Item Id], [Title], [Short Name], [Project IT Manager],
 RULES: 1) Macro overview: use SUMMARIZECOLUMNS. 2) Specific/risk projects: use
 CALCULATETABLE or FILTER. 3) NEVER invent columns. 4) Default [Project Type]
 filter is 'Big Rock' unless the user asks otherwise.
+5) CROSS-BU RULE, mandatory: a filter on [BG or BU Engagement] MUST also catch the
+Cross projects that name that BU in [Specify Cross]. Never filter a BU without it:
+'tabela'[BG or BU Engagement] = "PC" || ('tabela'[BG or BU Engagement] = "Cross"
+&& SEARCH("PC", 'tabela'[Specify Cross], 1, 0) > 0)
+6) Translate BU acronyms BEFORE writing the filter: BPC = BW + PC; HPC = HC + PC;
+HPF = HC + PC + Foods. For several BUs use IN {"BW","PC"} plus one SEARCH per BU
+on [Specify Cross].
+7) Active projects are [N State] < 10. [N State] 10 and 11 are delivered and must
+never be listed as risks or governance gaps.
 Closed domains: [StatusProjeto] = Deployed | Delayed | In PGLS | Ending this
 Quarter | On Time | No Information. [Business Benefit] = Compliance | Value Added.
 ```

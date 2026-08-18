@@ -1,4 +1,18 @@
-# Tópicos prontos para colar
+# Tópicos — ⛔ DESCONTINUADOS, mantidos como histórico
+
+> ## ⛔ Não cole estes arquivos no agente
+>
+> Os dois tópicos foram **substituídos pela arquitetura de 3 camadas** — instruções + descrição de input + playbook no SharePoint. O desenho completo está em [`docs/standard/05-arquitetura-3-camadas.md`](../docs/standard/05-arquitetura-3-camadas.md).
+>
+> **Por quê:** tópico é um dialog determinístico. Uma vez disparado por uma frase-gatilho, executa o script do início ao fim e o agente perde a capacidade de raciocinar dentro dele. A decisão de **se**, **quando** e **o que** cobrar passou a vir da própria análise — como o agente já fazia espontaneamente no log do `botContent_73`, sem tópico nenhum.
+>
+> **Por que continuam aqui:** são o caminho de volta. O `ConditionGroup` de um tópico *executa* — não tem como o modelo contornar. Se a confirmação por instrução falhar na prática e uma escrita indevida acontecer no DevOps, recriar o `resposta-do-gestor` é a correção. Os dois seguem válidos no validador.
+>
+> Tudo abaixo desta linha descreve como eles funcionavam, e continua correto como referência técnica do dialeto YAML do Copilot Studio.
+
+---
+
+## (histórico) Tópicos prontos para colar
 
 > ⚠️ **São dois tópicos separados.** Um arquivo = um tópico. **Não cole os dois no mesmo.** Eles são as duas metades do mesmo ciclo: um é a ida, o outro é a volta.
 

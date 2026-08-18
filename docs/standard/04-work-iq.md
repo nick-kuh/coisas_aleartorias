@@ -77,7 +77,7 @@ Nos três casos é **enriquecimento do seu contexto**, não acesso ao dado de te
 **Não ligue agora.** Nesta ordem:
 
 1. Corrija as 5 tools ([`02-correcao-das-tools.md`](02-correcao-das-tools.md)) — é o que destrava o agente de verdade e custa zero.
-2. Publique no Teams e faça o ciclo de cobrança funcionar ([`03`](03-teams-conversa-com-gestor.md) + [`topics/cobranca-gestor.yaml`](../../topics/cobranca-gestor.yaml)) — também zero de custo adicional.
+2. Publique no Teams e faça o ciclo de cobrança funcionar ([`03`](03-teams-conversa-com-gestor.md) + protocolo Teams na §7 das [instruções](../../agent/instructions-standard.md)) — também zero de custo adicional.
 3. Só então, com o agente rodando e o volume de uso conhecido, leve o número de Copilot Credits para aprovação e avalie o Work IQ Calendar como primeiro passo.
 
 Ligar Work IQ antes de o básico funcionar é pagar por consumo para depurar problema de configuração de tool.

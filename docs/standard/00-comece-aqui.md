@@ -13,6 +13,12 @@
 >
 > Detalhes: [`01-diagnostico-aura-agent.md`](01-diagnostico-aura-agent.md), seção "Estado atual". Textos para colar: [`02-correcao-das-tools.md`](02-correcao-das-tools.md), Correções 1 e 5A.
 
+> ### 🔄 18/08/2026 — mudança de arquitetura
+>
+> Os dois tópicos foram **descontinuados**. O agente passa a decidir sozinho, guiado por três camadas: instruções enxutas + descrição de input + playbook no SharePoint. O **Bloco C mudou de assunto** — não cole mais os tópicos.
+>
+> Motivo curto: as instruções antigas estavam **truncadas** (8.096 caracteres, limite ~8.000), e tópico prende o agente num fluxo determinístico. O desenho completo: [`05-arquitetura-3-camadas.md`](05-arquitetura-3-camadas.md).
+
 Este é o único documento que você precisa abrir para trabalhar. Os outros são referência, e este remete a eles na hora certa.
 
 Divisão por **dependência**, não por assunto: o Bloco A você faz sozinho hoje; o Bloco B depende de outra pessoa.
@@ -22,7 +28,7 @@ Divisão por **dependência**, não por assunto: o Bloco A você faz sozinho hoj
 | **0** | Pedir liberação no Teams Admin Center | 2 min | — (mas destrava o B) |
 | **A** | 4 correções de tool | ~40 min | ninguém ✅ |
 | **B** | Publicar no Teams + completar a tool | ~20 min | **Bloco 0 aprovado** *(opcional — ver abaixo)* |
-| **C** | Colar os 2 tópicos | ~10 min | Blocos A e B |
+| **C** | Migrar para a arquitetura de 3 camadas | ~20 min | Bloco A |
 | **D** | Polimento (opcional) | ~15 min | ninguém |
 
 > ⚡ **Faça o Bloco 0 agora e o Bloco A em seguida.** O Bloco 0 fica rodando em paralelo com terceiros enquanto você trabalha.
@@ -138,50 +144,69 @@ Nesta sequência exata:
 
 ---
 
-# 📋 BLOCO C — os dois tópicos (~10 min)
+# 🧠 BLOCO C — migrar para a arquitetura de 3 camadas (~20 min)
 
-**Sim, são dois tópicos separados.** Um arquivo = um tópico. **Não cole os dois no mesmo.**
+> ⛔ **Os dois tópicos foram descontinuados. Não cole mais `cobranca-gestor.yaml` nem `resposta-do-gestor.yaml`.** Eles seguem no repositório como histórico e caminho de volta.
 
-Eles cobrem **qualquer campo de governança** — não só data. Data de Go-Live, PGLS, fase (State), budget, benefit, payback, tempo de implementação, país, business benefit, IT Manager, note, e um modo avançado para qualquer outro reference name.
+**O que muda:** em vez de prender o agente num fluxo, você dá a ele instruções que cabem, restrições no lugar certo e um playbook profundo para consultar. O porquê de cada camada está em [`05-arquitetura-3-camadas.md`](05-arquitetura-3-camadas.md).
 
-```
-cobranca-gestor      →  a IDA    (audita, você escolhe o que cobrar, manda)
-resposta-do-gestor   ←  a VOLTA  (menu de qual campo, valida tipo, grava no DevOps)
-```
+| Camada | Onde vive | Garantia |
+|---|---|---|
+| Instruções (6.440 chars) | Copilot Studio → Instruções | ✅ carrega sempre |
+| Descrição de input | Ferramentas → Entradas | ✅ carrega quando a tool é considerada |
+| Playbook | SharePoint → fonte de conhecimento | ⚠️ busca semântica, sob demanda |
 
-**Caminho, para cada um dos dois arquivos:**
+### C1 · Colar as instruções novas
 
-1. Copilot Studio → AURA Agent → **Tópicos**
-2. **+ Adicionar um tópico** → **Do zero**
-3. Canto superior direito → menu **⋯** → **Abrir editor de código**
-4. Apagar tudo que estiver lá e **colar o conteúdo do `.yaml`**
-5. **Salvar**
+1. Copilot Studio → AURA Agent → **Instruções**
+2. **Apagar tudo** e colar o conteúdo de [`agent/instructions-standard.md`](../../agent/instructions-standard.md)
+3. Salvar
 
-- [ ] Tópico 1 colado: [`topics/cobranca-gestor.yaml`](../../topics/cobranca-gestor.yaml)
-- [ ] Tópico 2 colado: [`topics/resposta-do-gestor.yaml`](../../topics/resposta-do-gestor.yaml)
+São **6.440 caracteres** — cabem sem truncar. As antigas tinham 8.096 e o fim estava sendo cortado.
+
+- [ ] Instruções substituídas
+
+### C2 · Atualizar as duas descrições de input
+
+Elas absorveram o que saiu das instruções — as 13 fases válidas, os formatos de escrita e a regra Cross-BU.
+
+- [ ] `Update Project` → entrada `userEnteredFields` → descrição nova de [`02-correcao-das-tools.md`](02-correcao-das-tools.md#correção-1--update-project--mais-urgente)
+- [ ] `Power BI Portfolio Database` → entrada `query` → descrição nova de [`02-correcao-das-tools.md`](02-correcao-das-tools.md#correção-2--power-bi-portfolio-database--destrava-a-análise)
+
+### C3 · Subir o playbook no SharePoint
+
+1. Subir [`playbook/AURA_Playbook_Analitico.docx`](../../playbook/AURA_Playbook_Analitico.docx) na biblioteca do CDIO LATAM
+2. Copilot Studio → **Conhecimento** → **+ Adicionar conhecimento** → SharePoint → apontar para o arquivo
+3. **Colar a descrição da fonte** — o texto está em [`05-arquitetura-3-camadas.md`](05-arquitetura-3-camadas.md#a-descrição-da-fonte-de-conhecimento)
+
+> ⚠️ A descrição da fonte **é o que dispara a busca**. Se ela for genérica, o playbook nunca é consultado. Não pule este passo.
+
+- [ ] `.docx` subido
+- [ ] Fonte cadastrada **com a descrição colada**
+
+### C4 · Remover os tópicos do agente (se já colou)
+
+Copilot Studio → **Tópicos** → `cobrancagestor` e `respostadogestor` → **⋯** → Excluir.
+
+Se ainda não colou nenhum dos dois, não há nada a fazer aqui.
+
+- [ ] Tópicos removidos, ou nunca colados
 
 ### ✅ Terminei o Bloco C?
 
-Teste ponta a ponta **com você mesmo como destinatário**. Repare na ordem: cancele antes de aprovar, para validar o portão antes de validar o envio.
+| # | Pergunte | Esperado |
+|---|---|---|
+| 1 | `analise o projeto <nome>` | Relatório com **🎯 decisão recomendada**. **Sem** seção de matemática de score |
+| 2 | `quais projetos estão em risco?` | Fala de valor em risco e de há quanto tempo está parado — não "score 86 = verde" |
+| 3 | *(depois de uma análise que exponha gap)* | O agente **oferece** cobrar o gestor, sem você pedir |
+| 4 | Aceitar a oferta | Mostra o rascunho e **espera aprovação** antes de enviar |
+| 5 | `mude o State do work item <teste> para 07 Design Build` | Mostra o de-para, espera confirmação, grava |
+| 6 | `como o FinalScore é calculado?` | **Aí sim** explica a matemática — sob demanda |
+| 7 | `o que é um watermelon?` | Responde direto, **sem rodar query** |
 
-| # | Onde | Ação | Esperado |
-|---|---|---|---|
-| 1 | Painel de teste | `cobrar o gestor` | Pergunta o Work Item ID |
-| 2 | | `376` | Lê o DevOps, **audita a governança e lista os gaps**, pede o que cobrar |
-| 3 | | ex.: `preencher budget e definir Go-Live` | Sugere um e-mail, pede confirmação |
-| 4 | | **seu próprio** e-mail | Mostra o rascunho e pergunta se pode enviar |
-| 5 | | **Cancelar** | Não envia nada ✅ (valida o portão antes do envio) |
-| 6 | | repetir e escolher **Enviar** | Chega no seu Teams, no chat com o AURA Agent |
-| 7 | Teams | `atualizar informação do projeto` | Dispara o segundo tópico, pede o ID |
-| 8 | | `376` | Menu: qual campo? (Go-Live, Budget, State, …) |
-| 9 | | Escolher **Project Total Budget** e digitar um valor | Mostra o de-para e pede confirmação |
-| 10 | | **Confirmar** | Grava — confira no DevOps |
+O teste 7 é o que prova que o SharePoint está sendo recuperado. Se falhar, o lugar de mexer é a **descrição da fonte de conhecimento**, não o playbook.
 
-Teste depois com outros tipos de campo (State, Note, Country) para exercitar os cinco branches do menu.
-
-Só depois de tudo isso passar, teste com um gestor real.
-
-> 📎 Três pontos que podem precisar de ajuste na primeira colagem ou execução — as entidades `NumberPrebuiltEntity`/`DateTimePrebuiltEntity`, o binding dos campos do Teams e o formato da data: [`topics/README.md`](../../topics/README.md), seção "Três pontos que eu não consigo verificar daqui". O mesmo arquivo traz as armadilhas do dialeto YAML do Copilot Studio.
+Os testes 4 e 5 são os que mais merecem atenção: eram garantidos por `ConditionGroup` de tópico, que *executa*, e agora dependem de instrução, que é seguida quase sempre. Se algum dia uma escrita indevida acontecer, o caminho de volta é recriar o `resposta-do-gestor` — [`topics/README.md`](../../topics/README.md).
 
 ---
 
@@ -222,5 +247,9 @@ Mais casos: [`03-teams-conversa-com-gestor.md`](03-teams-conversa-com-gestor.md)
 | O texto exato de cada correção | [`02-correcao-das-tools.md`](02-correcao-das-tools.md) |
 | Entender o Teams a fundo | [`03-teams-conversa-com-gestor.md`](03-teams-conversa-com-gestor.md) |
 | Decidir sobre Work IQ | [`04-work-iq.md`](04-work-iq.md) |
+| Entender a **arquitetura de 3 camadas** | [`05-arquitetura-3-camadas.md`](05-arquitetura-3-camadas.md) |
+| As **instruções** para colar | [`agent/instructions-standard.md`](../../agent/instructions-standard.md) |
+| O **playbook** do SharePoint | [`AURA_Playbook_Analitico.md`](../../playbook/AURA_Playbook_Analitico.md) |
+| Os tópicos antigos (histórico) | [`topics/README.md`](../../topics/README.md) |
 | Receitas de DAX | [`dax-cookbook.md`](../../skills/portfolio-overview/references/dax-cookbook.md) |
 | Nomes dos campos `Custom.*` | [`campos-devops.md`](../../skills/update-devops/references/campos-devops.md) |

@@ -1,3 +1,17 @@
+# ==============================================================================
+# DESCONTINUADO — mantido apenas como histórico.
+#
+# Este topico foi substituido pela arquitetura de 3 camadas: instrucoes +
+# descricao de input + playbook no SharePoint. Ver docs/standard/05-arquitetura-3-camadas.md
+#
+# Motivo: topico e um dialog deterministico. Uma vez disparado, executa o script
+# do inicio ao fim e o agente perde a capacidade de raciocinar dentro dele.
+# A decisao de SE, QUANDO e O QUE cobrar passou a vir da propria analise.
+#
+# NAO cole este arquivo no agente. Ele fica aqui como caminho de volta, caso a
+# garantia deterministica de confirmacao volte a ser necessaria.
+# ==============================================================================
+
 kind: AdaptiveDialog
 modelDescription: |-
   Grava uma atualização de governança num work item do Azure DevOps do portfólio CDIO — não é só data. Cobre data de Go-Live, data de PGLS, fase (State), budget, benefit, payback, tempo de implementação, país, business benefit, IT Manager, note e qualquer outro campo (via reference name). Lê o valor atual, mostra a mudança de-para e exige confirmação explícita antes de gravar. Use quando alguém informar uma atualização para um projeto — nova data, novo budget, novo benefit, novo state, ou qualquer outra correção que o gestor esteja passando. NÃO use para consultar ou analisar projeto — use Project Deep Dive.
