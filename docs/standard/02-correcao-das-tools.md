@@ -163,37 +163,65 @@ Duas versões: escolha a que corresponde à sua situação hoje.
 
 👉 **Guia completo com trade-offs:** [`03-teams-conversa-com-gestor.md`](03-teams-conversa-com-gestor.md) e [`../../topics/README.md`](../../topics/README.md), seção "Modo sem publicação"
 
-### 5A — Modo SEM PUBLICAÇÃO (recomendado enquanto o publish não sair)
+### 5A — Modo SEM PUBLICAÇÃO
 
-Mensagem sai como você, no seu chat 1:1 com o gestor. Não depende de nada externo.
+> ## 🔴 Corrigido em 18/08 — o `botContent_76` provou que a configuração anterior estava errada
+>
+> Eu recomendava `poster: User` + `location: Group chat`. **Isso devolve HTTP 404.** O log mostra o agente enviando o par correto do ponto de vista dele:
+>
+> ```json
+> { "poster": "User", "location": "Group chat",
+>   "body": { "recipient": "Nicolas.Kuhnast@unilever.com", "messageBody": "Oi, tudo bem? ..." } }
+> ```
+>
+> E o conector respondendo `404 · NotFound · ConnectorRequestFailure`, duas vezes.
+>
+> **A causa está no schema da própria tool:**
+>
+> ```yaml
+> recipient:
+>   displayName: Group chat
+>   description: Add conversation ID     # ← ID de conversa, não e-mail
+> ```
+>
+> Com `location: Group chat`, o `recipient` tem que ser um **ID de conversa** (`19:...@thread.v2`). O agente mandou um e-mail — certo para uma pessoa, errado para esse destino. O conector procurou um group chat com aquele nome e não achou.
+
+Mensagem sai do **Flow bot**, no chat 1:1 do gestor com o Flow bot. Não depende de publicar o agente.
 
 | Entrada | Preencher usando | Valor |
 |---|---|---|
-| `poster` | Valor personalizado | **`User`** *(trocar de "Microsoft Copilot Studio agent")* |
-| `location` | Valor personalizado | **`Group chat`** *(trocar de "Chat with agent")* |
-| `body.bot` | — | 🔴 **REMOVER a entrada** — clique no `x` / "Remover entrada". Não basta deixar em branco |
-| **`body.recipient`** | Dinamicamente com IA | adicionar — e-mail do gestor |
-| **`body.messageBody`** | Dinamicamente com IA | adicionar — o texto |
+| `poster` | **escolher na lista** | **`Flow bot`** 🔴 *(trocar de "User")* |
+| `location` | **escolher na lista** | **`Chat with Flow bot`** 🔴 *(trocar de "Group chat")* — a opção só aparece depois de trocar o `poster` |
+| `body.bot` | — | **REMOVER a entrada** — só existe quando `poster` = Microsoft Copilot Studio agent |
+| `body.recipient` | Dinamicamente com IA | ✅ **já funciona, não mexer** |
+| `body.messageBody` | Dinamicamente com IA | ✅ **já funciona, não mexer** |
 
-> ⚠️ **Sobre o `body.bot` — leia se a tool está dando erro.** Se a entrada já existe e está vazia, o YAML fica assim:
+> ⚠️ **Escolha pelos dropdowns, nunca digite o texto.** Os dois campos são `dynamicValuesConfig: capability: List` — o valor gravado é interno, não o rótulo da tela. Prova no seu próprio histórico: quando você escolheu "Chat with agent", o export gravou `location: powerva`.
+
+> ### ✅ Duas coisas que este export desmentiu
 >
-> ```yaml
-> - kind: ManualTaskInput
->   propertyName: body.bot     # ← declarado como Valor personalizado, SEM value
-> ```
+> Eu vinha afirmando as duas, e o log mostra o contrário:
 >
-> Um `ManualTaskInput` obrigatório sem valor é fonte de erro em runtime. O campo `bot` é `isRequired: true` no schema do conector, mas **só é aplicável quando `poster: Power Virtual Agents`**. Com `poster: User` ele não tem função — e deixá-lo declarado e vazio é pior do que não tê-lo.
+> | Eu dizia | O log mostra |
+> |---|---|
+> | "Faltam `body.recipient` e `body.messageBody` como entradas" | **Estão sendo enviados normalmente**, mesmo sem estarem declarados em `inputs:`. O orquestrador preenche pelo `dynamicInputSchema`. **Não há nada a adicionar.** |
+> | "`body.bot` vazio é a causa provável do erro" | Não é. A causa é o par `location`/`recipient`. Remover o `body.bot` continua valendo, mas é limpeza, não correção. |
+
+> ### 🎯 O teste que destrava tudo
 >
-> **Remova a entrada inteira**, não apenas o valor.
+> Troque o `poster` para **Flow bot** e abra o dropdown de `location`. **Se "Chat with Flow bot" aparecer**, o Flow bot está liberado no seu tenant e o caminho está aberto.
+>
+> **Se não aparecer**, o Flow bot está bloqueado por política e o único caminho é publicar o agente — vá para o **5B**. O Flow bot é first-party e existe onde há Power Automate, mas alguns tenants bloqueiam o app. Não tenho como verificar isso daqui.
 
 **Descrição da tool** (trocar a "Posta uma mensagem em um chat ou canal"):  `379/1024`
 
 ```
-Sends a Microsoft Teams message on behalf of the signed-in user to a Project
-IT Manager, from the user's own 1:1 chat with the manager. Use ONLY after the
-user has reviewed and explicitly approved the message draft. Typical use:
-asking a manager for a new Go-Live date on a delayed project. NEVER call this
-tool to answer a question or to display information to the current user.
+Sends a Microsoft Teams message to a Project IT Manager, delivered by the Flow
+bot into the manager's 1:1 chat. The message must say who is asking, because it
+arrives from a bot and not from the requesting user. Use ONLY after the user has
+reviewed and explicitly approved the draft. Typical use: asking a manager for a
+new Go-Live date on a delayed project. NEVER call this tool to answer a question
+or to display information to the current user.
 ```
 
 ### 5B — Modo PUBLICADO (quando o publish sair)
@@ -222,7 +250,7 @@ information to the current user.
 
 **`body.recipient`:** `The email address of the Project IT Manager who must receive the message. Take it from [Project IT Manager] in Power BI or from Assigned To in Azure DevOps. NEVER guess an email address.`
 
-**`body.messageBody`:** `The message text, already reviewed and approved by the requesting user. Must state the project name, the Work Item ID, the concrete problem and what is expected, and include the work item link.`
+**`body.messageBody`:** `The message text, already reviewed and approved by the requesting user. Must open by naming WHO is asking, because it arrives from the Flow bot and not from that person. Must state the project name, the Work Item ID, the concrete problem and what is expected, and include the work item link.`
 
 ---
 

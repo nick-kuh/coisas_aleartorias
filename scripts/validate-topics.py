@@ -258,6 +258,23 @@ def vocabulario(conteudos):
 # (botContent_75: descrição do `query` com 940 chars, `userEnteredFields` 570).
 LIMITE_DESCRICAO = 1024
 LIMITE_INSTRUCOES = 8000
+
+# O Copilot Studio NÃO guarda as instruções como você cola. Toda menção a uma
+# tool vira uma referência {System.Bot.Components.Actions.'…'.DisplayName}.
+# Medido no botContent_76: 8 menções inflaram o texto em +736 caracteres
+# (6.657 no arquivo -> 7.393 no agente). Ou seja, ~92 por menção.
+# Medir só o arquivo dá falsa folga — por isso a estimativa abaixo.
+#
+# A estimativa é deliberadamente CONSERVADORA: conta toda ocorrência do nome,
+# enquanto o produto converteu 8 de 11 no export real. Erra para o lado de
+# avisar cedo, que é o lado certo quando o custo do erro é texto truncado.
+INFLACAO_POR_MENCAO = 92
+TOOLS_DO_AGENTE = (
+    "Power BI Portfolio Database", "Power BI Master DB Search",
+    "DevOps Work Item Details", "Devops Query (Knowledge)",
+    "Query Devops IT Area", "Query Devops BU", "Update Project",
+    "Postar mensagem em um chat ou canal",
+)
 MARGEM_APERTADA = 74          # avisa quando sobra menos que isto
 
 DOC_TOOLS = "docs/standard/02-correcao-das-tools.md"
@@ -297,13 +314,18 @@ def checar_limites(raiz):
 
     instr = raiz / DOC_INSTRUCOES
     if instr.exists():
-        n = len(instr.read_text(encoding="utf-8"))
+        texto = instr.read_text(encoding="utf-8")
+        bruto = len(texto)
+        mencoes = sum(texto.count(t) for t in TOOLS_DO_AGENTE)
+        estimado = bruto + mencoes * INFLACAO_POR_MENCAO
         print(f"\n=== instruções ===")
-        if n > LIMITE_INSTRUCOES:
-            print(f"  ERRO: {n}/{LIMITE_INSTRUCOES} — estoura {n - LIMITE_INSTRUCOES}, o fim será truncado")
+        print(f"  arquivo: {bruto} chars · {mencoes} menção(ões) de tool "
+              f"(+{mencoes * INFLACAO_POR_MENCAO} ao colar, estimativa conservadora)")
+        if estimado > LIMITE_INSTRUCOES:
+            print(f"  ERRO: ~{estimado}/{LIMITE_INSTRUCOES} no agente — estoura {estimado - LIMITE_INSTRUCOES}")
             erros += 1
         else:
-            print(f"  OK {n}/{LIMITE_INSTRUCOES} (folga {LIMITE_INSTRUCOES - n})")
+            print(f"  OK ~{estimado}/{LIMITE_INSTRUCOES} no agente (folga {LIMITE_INSTRUCOES - estimado})")
     else:
         print(f"\n  aviso: {DOC_INSTRUCOES} não encontrado — instruções não medidas")
         avisos += 1

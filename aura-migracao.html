@@ -208,7 +208,7 @@
 <header class="mast">
   <p class="eyebrow">Copilot Studio · trilha standard</p>
   <h1>AURA Agent: funcionando</h1>
-  <p class="lede">Depois de uma tentativa frustrada na experiência nova, o agente foi reconstruído no <strong>standard</strong>. As correções foram aplicadas e <strong>o agente passou a funcionar</strong> — analisa portfólio, escreve o próprio DAX, cruza BUs. Faltam <strong>duas entradas de tool</strong> para fechar o ciclo de escrita.</p>
+  <p class="lede">Depois de uma tentativa frustrada na experiência nova, o agente foi reconstruído no <strong>standard</strong>. As correções foram aplicadas e <strong>o agente passou a funcionar</strong> — analisa portfólio, escreve o próprio DAX, cruza BUs e conduz a cobrança sozinho. Falta <strong>uma troca de configuração no Teams</strong>, que hoje devolve 404.</p>
 
   <div class="board">
     <div class="cell">
@@ -233,8 +233,8 @@
     </div>
     <div class="cell">
       <p class="k">Envia pelo Teams?</p>
-      <p class="v bad">ainda não</p>
-      <p class="note">Faltam 2 campos, sobra <code>body.bot</code></p>
+      <p class="v bad">404</p>
+      <p class="note"><code>location</code> pede ID de conversa, agente manda e-mail</p>
     </div>
   </div>
 </header>
@@ -278,11 +278,16 @@
     </div>
 
     <div class="defect">
-      <h3><span class="idx">02</span> <code>body.bot</code> sobrando na tool do Teams</h3>
-      <pre>- kind: ManualTaskInput
-  propertyName: <span class="hl">body.bot</span>     <span class="cm">← declarado, SEM value</span></pre>
-      <p><code>poster: User</code> e <code>location: Group chat</code> estão certos para o modo sem publicação. Mas <code>body.bot</code> continua declarado e vazio — e ele <strong>só existe</strong> quando <code>poster</code> é o Copilot Studio agent.</p>
-      <p>Um obrigatório vazio é a <strong>causa provável do erro</strong>. Remova a entrada inteira e adicione <code>body.recipient</code> e <code>body.messageBody</code>.</p>
+      <h3><span class="idx">02</span> Teams devolve <code>404</code> — e a causa não era o <code>body.bot</code></h3>
+      <pre>{"poster": "User", "location": <span class="hl">"Group chat"</span>,
+ "body": {"recipient": <span class="hl">"Nicolas.Kuhnast@unilever.com"</span>,
+          "messageBody": "Oi, tudo bem? ... teste111 (1284) ..."}}
+
+<span class="cm">← conector: 404 · NotFound · ConnectorRequestFailure</span></pre>
+      <p>O schema da tool define <code>recipient</code> como <strong>"Add conversation ID"</strong> quando <code>location</code> é <code>Group chat</code>. Precisa de um ID de conversa (<code>19:…@thread.v2</code>), não de um e-mail. O agente mandou o e-mail — certo para uma pessoa, errado para esse destino.</p>
+      <p><strong>O par <code>poster: User</code> + <code>location: Group chat</code> foi recomendação minha</strong>, no "modo sem publicação". Acertei que <code>User</code> dispensa o agente publicado, e errei o destino.</p>
+      <p><strong>A correção:</strong> <code>poster</code> = <strong>Flow bot</strong> · <code>location</code> = <strong>Chat with Flow bot</strong>, escolhidos pelos dropdowns. É o destino que aceita e-mail sem exigir publicação.</p>
+      <p>E o log desmentiu outra coisa que eu afirmava: <code>body.recipient</code> e <code>body.messageBody</code> <strong>não estão faltando</strong> — chegam preenchidos ao conector mesmo sem estarem declarados como entrada.</p>
     </div>
   </div>
 </section>
@@ -358,8 +363,8 @@
         </tr>
         <tr>
           <td><code>Teams — Postar mensagem</code></td>
-          <td class="num">body.bot, recipient, messageBody</td>
-          <td><span class="pill warn">faltam 2, sobra body.bot</span></td>
+          <td class="num">poster / location incompatíveis</td>
+          <td><span class="pill bad">404</span> — trocar para Flow bot + Chat with Flow bot</td>
         </tr>
       </tbody>
     </table>
@@ -451,7 +456,7 @@
   <h3>O que resta fazer</h3>
   <ol class="steps">
     <li><b><code>userEnteredFields</code> na Update Project</b><span>Dinamicamente com IA, com a descrição do formato JSON. Teste: mudar o Note de um work item de teste. <strong>Hoje não grava nada.</strong></span></li>
-    <li><b>Teams: remover <code>body.bot</code>, adicionar os outros dois</b><span>Remover a entrada <code>body.bot</code> (declarada e vazia), e adicionar <code>body.recipient</code> e <code>body.messageBody</code> como dinâmicos. Teste: cobrar mandando para você mesmo.</span></li>
+    <li><b>Teams: trocar <code>poster</code> e <code>location</code></b><span><code>poster</code> = <strong>Flow bot</strong>, <code>location</code> = <strong>Chat with Flow bot</strong>, pelos dropdowns. Remover <code>body.bot</code> é limpeza, não a correção. Teste de 30s: se "Chat with Flow bot" aparecer na lista, o caminho está aberto.</span></li>
   </ol>
 
   <h3>Bloco C — os tópicos saíram</h3>

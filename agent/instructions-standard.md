@@ -59,7 +59,7 @@ Conditional: `Specify Cross` if engagement is Cross · Budget, Payback, Go-Live 
 When your analysis finds a gap only the manager can close — missing data, unexplained delay, a stuck decision — **offer to chase it. Do not wait to be asked.**
 
 1. Identify the manager from `[Project IT Manager]` or Assigned To. **Never guess an email address.**
-2. Draft in the first person, as if the user were typing. Max 5 lines, one single request, factual, with the work item link. Open with "Oi, tudo bem?".
+2. **Open by naming who is asking** — the message is delivered by a bot, not by the user, so "o Nicolas pediu para eu lembrar…" not "eu preciso". Max 5 lines, one single request, factual, with the work item link. Start with "Oi, tudo bem?".
 3. **Show the draft and ask permission to send.**
 4. Call `Postar mensagem em um chat ou canal` only after an explicit yes.
 5. Confirm it was sent and remind the user the reply lands in their own Teams chat — they come back and tell you what the manager answered.

@@ -18,38 +18,57 @@ Se por processo burocrático, política do tenant ou aprovação de admin o agen
               │
               ▼
    Teams · Post message
-   poster    = User             ← você
-   location  = Group chat       ← chat 1:1 com o gestor
-   recipient = gestor@unilever.com
+   poster    = Flow bot            ← o bot entrega
+   location  = Chat with Flow bot  ← chat 1:1 do gestor com o Flow bot
+   recipient = gestor@unilever.com ← e-mail, e é por isso que o location importa
               │
               ▼
-   ┌──────────────────────────────────────┐
-   │  Chat 1:1 do gestor com VOCÊ         │
-   │                                       │
-   │  Você:   "Oi, tudo bem? Sobre o      │
-   │           Horizon 2 (#12345)..."      │
-   │                                       │
-   │  Gestor: "30/11/2026"    ← responde para você
-   └──────────────────────────────────────┘
+   ┌──────────────────────────────────────────┐
+   │  Chat 1:1 do gestor com o Flow bot       │
+   │                                           │
+   │  Flow bot: "Oi, tudo bem? O Nicolas      │
+   │             pediu para eu lembrar sobre   │
+   │             o Horizon 2 (12345)..."       │
+   │                                           │
+   │  Gestor responde ali — mas para o bot,   │
+   │  não para você                            │
+   └──────────────────────────────────────────┘
               │
-              ▼   ← VOCÊ lê a resposta
-   Volte no agente, diga:
-   "atualizar informação do projeto"
-              │
-              ▼
-   respostadogestor: escolha o campo, informe o valor,
-   confirme → grava no DevOps
+              ▼   ← o gestor te avisa por outro canal, ou você pergunta
+   Volte no agente e diga o que ele respondeu.
+   O agente mostra o de-para e grava no DevOps
+   depois da sua confirmação.
 ```
+
+> ## 🔴 Por que não é `poster: User` + `location: Group chat`
+>
+> Era o que eu recomendava, e **devolve HTTP 404**. Comprovado no `botContent_76`.
+>
+> O schema da tool define o `recipient` assim:
+>
+> ```yaml
+> recipient:
+>   displayName: Group chat
+>   description: Add conversation ID     # ← ID de conversa, não e-mail
+> ```
+>
+> Com `location: Group chat`, o `recipient` tem que ser um **ID de conversa** (`19:...@thread.v2`) — algo que ninguém tem para um gestor arbitrário. O agente manda o e-mail, que é o certo para uma pessoa, e o conector não acha a conversa.
+>
+> O `descriptionForModel` do próprio `location` dá a regra: *"Use \"Chat with Flow bot\" only when poster is \"Flow bot\" or \"Power Virtual Agents\""*. É esse o destino que aceita e-mail.
 
 ### Configuração da tool nesse modo
 
 | Entrada | Valor | Observação |
 |---|---|---|
-| `poster` | `User` | você é o remetente |
-| `location` | `Group chat` | envia num chat 1:1 (o produto cria se não existir) |
-| `body.bot` | — | **não usar** — só existe com `poster: Power Virtual Agents` |
-| `body.recipient` | Dinamicamente com IA | e-mail do gestor |
-| `body.messageBody` | Dinamicamente com IA | texto do rascunho aprovado |
+| `poster` | **`Flow bot`** | escolher na lista, não digitar |
+| `location` | **`Chat with Flow bot`** | só aparece depois de trocar o `poster` |
+| `body.bot` | — | **remover a entrada** — só existe com `poster: Power Virtual Agents` |
+| `body.recipient` | Dinamicamente com IA | ✅ já funciona — **não mexer** |
+| `body.messageBody` | Dinamicamente com IA | ✅ já funciona — **não mexer** |
+
+> ⚠️ **`body.recipient` e `body.messageBody` não precisam ser adicionados.** Eu dizia que faltavam; o log mostra os dois chegando preenchidos ao conector mesmo sem estarem declarados em `inputs:`. O orquestrador preenche pelo `dynamicInputSchema`.
+
+**O custo deste modo:** a mensagem sai do **Flow bot**, não de você. Por isso o texto precisa dizer quem está pedindo — é o que a §7 das instruções passou a exigir. E a resposta do gestor vai para o bot, não para você: o ciclo de volta continua manual.
 
 `authMode: Invoker` continua certo — a mensagem sai com a **sua** conexão do Teams.
 

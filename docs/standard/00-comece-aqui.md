@@ -1,17 +1,20 @@
 # 0. Comece aqui — o que fazer, na ordem
 
-> ## 🟢 Status em 17/08/2026 — o agente FUNCIONA
+> ## 🟢 Status em 18/08/2026 — o agente analisa; falta só o envio no Teams
 >
-> O `botContent_73` confirma: análise de portfólio rodando ponta a ponta, com o modelo escrevendo DAX sozinho (`autoFilledArguments: ["query"]`). Zero exceptions.
+> O `botContent_76` mostra o agente rodando bem: deep dive, panorama por owner, formato `Nome (id)`, e o **protocolo de cobrança seguido à risca** — ele percebeu sozinho que o IT Manager do item era o próprio usuário, levantou isso antes de redigir, mostrou o rascunho e só chamou a tool depois do "pode mandar".
 >
-> **Blocos A (quase todo) e D: ✅ feitos.** Restam **duas entradas de tool**, ~5 minutos:
+> **Uma pendência real:** o envio pelo Teams devolve **HTTP 404**.
 >
-> | Pendência | Onde | Efeito de não ter |
+> | Pendência | Onde | Causa |
 > |---|---|---|
-> | `userEnteredFields` | `Update Project` | Não grava nada no DevOps |
-> | `body.recipient` + `body.messageBody`, e **remover** `body.bot` | `Teams — Postar mensagem` | Não envia mensagem |
+> | `poster` e `location` incompatíveis com e-mail | `Teams — Postar mensagem` | `location: Group chat` exige **ID de conversa**; o agente manda e-mail (correto para uma pessoa) → 404 |
 >
-> Detalhes: [`01-diagnostico-aura-agent.md`](01-diagnostico-aura-agent.md), seção "Estado atual". Textos para colar: [`02-correcao-das-tools.md`](02-correcao-das-tools.md), Correções 1 e 5A.
+> **A correção:** `poster` = **Flow bot** · `location` = **Chat with Flow bot**, escolhidos pelos dropdowns. Bloco B abaixo.
+>
+> > ⚠️ **Duas coisas que eu vinha afirmando e este export desmentiu:** `body.recipient` e `body.messageBody` **não estão faltando** — o log prova que são enviados normalmente sem estarem declarados. E o `body.bot` vazio **não é** a causa do erro; remover continua valendo, mas é limpeza.
+>
+> Detalhe completo: [`02-correcao-das-tools.md`](02-correcao-das-tools.md), Correção 5A.
 
 > ### 🔄 18/08/2026 — mudança de arquitetura
 >
@@ -27,7 +30,7 @@ Divisão por **dependência**, não por assunto: o Bloco A você faz sozinho hoj
 |---|---|---|---|
 | **0** | Pedir liberação no Teams Admin Center | 2 min | — (mas destrava o B) |
 | **A** | 4 correções de tool | ~40 min | ninguém ✅ |
-| **B** | Publicar no Teams + completar a tool | ~20 min | **Bloco 0 aprovado** *(opcional — ver abaixo)* |
+| **B** | Corrigir `poster`/`location` da tool do Teams | ~3 min | ninguém ✅ |
 | **C** | Migrar para a arquitetura de 3 camadas | ~20 min | Bloco A |
 | **D** | Polimento (opcional) | ~15 min | ninguém |
 
@@ -102,20 +105,34 @@ Esta tool ainda **não grava nada**: recebe o `id` e não tem onde receber *o qu
 
 ---
 
-# 📢 BLOCO B — Teams 🟡 **2 itens pendentes** (~5 min)
+# 📢 BLOCO B — Teams 🔴 **1 correção** (~3 min)
 
-> ✅ **Você já está no modo sem publicação** — `poster: User` e `location: Group chat` estão configurados. Não precisa publicar nada.
+> 🔴 **A configuração que eu tinha recomendado está errada e devolve 404.** `poster: User` + `location: Group chat` exige um **ID de conversa** no `recipient` — e o agente manda e-mail, que é o certo para uma pessoa. O conector não acha a conversa e falha.
 
-Faltam três ajustes na tool `Postar mensagem em um chat ou canal`:
+Na tool `Postar mensagem em um chat ou canal` → **Entradas**:
 
-- [ ] 🔴 **REMOVER** a entrada `body.bot` — hoje está declarada como Valor personalizado **sem valor**. Ela só existe quando `poster: Power Virtual Agents`; com `poster: User` é inerte no melhor caso, e obrigatório-vazio no pior. **É a causa provável do erro que você viu.**
-- [ ] 🔴 **Adicionar** `body.recipient` → **Dinamicamente com IA** + descrição ([Correção 5A](02-correcao-das-tools.md#5a--modo-sem-publicação-recomendado-enquanto-o-publish-não-sair))
-- [ ] 🔴 **Adicionar** `body.messageBody` → **Dinamicamente com IA** + descrição
-- [ ] Trocar a descrição da tool (a atual, "Posta uma mensagem em um chat ou canal", é genérica e o orquestrador pode chamar sem querer)
+- [ ] 🔴 `poster` → **escolher na lista** → **`Flow bot`** *(estava `User`)*
+- [ ] 🔴 `location` → **escolher na lista** → **`Chat with Flow bot`** *(estava `Group chat`)* — a opção só aparece depois de trocar o `poster`
+- [ ] 🧹 **REMOVER** a entrada `body.bot` — só existe quando `poster` = Microsoft Copilot Studio agent. Limpeza, não é o que causava o erro
+- [ ] Trocar a descrição da tool ([Correção 5A](02-correcao-das-tools.md#5a--modo-sem-publicação))
+
+> ✅ **Não mexa em `body.recipient` nem `body.messageBody`.** O log do `botContent_76` prova que os dois já chegam preenchidos ao conector, mesmo sem estarem declarados como entrada. Eu dizia que faltavam; estava errado.
+
+> ### 🎯 O teste de 30 segundos que decide o caminho
+>
+> Troque o `poster` para **Flow bot** e abra o dropdown de `location`.
+>
+> - **Aparece "Chat with Flow bot"** → o Flow bot está liberado no tenant, siga
+> - **Não aparece** → o Flow bot está bloqueado por política e o único caminho é publicar o agente (Bloco B alternativo, abaixo)
+>
+> Não consigo verificar isso daqui — o Flow bot é first-party e existe onde há Power Automate, mas alguns tenants bloqueiam o app.
+
+**Como a mensagem chega:** do **Flow bot**, no chat 1:1 do gestor com o Flow bot — não de você. Por isso a §7 das instruções manda **dizer quem está pedindo** ("o Nicolas pediu para eu lembrar…"), em vez de escrever em primeira pessoa.
 
 ### ✅ Terminei o Bloco B?
 
-- [ ] `cobrar o gestor` → ID de teste → **seu próprio e-mail** → **Enviar** → a mensagem chega no seu Teams
+- [ ] `consegue mandar um teams para <gestor>` → `pode mandar` → a mensagem chega no Teams, **sem erro 404**
+- [ ] O texto recebido diz quem está pedindo
 
 ---
 
