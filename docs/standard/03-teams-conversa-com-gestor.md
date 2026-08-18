@@ -58,15 +58,17 @@ Se por processo burocrático, política do tenant ou aprovação de admin o agen
 
 ### Configuração da tool nesse modo
 
-| Entrada | Valor | Observação |
-|---|---|---|
-| `poster` | **`Flow bot`** | escolher na lista, não digitar |
-| `location` | **`Chat with Flow bot`** | só aparece depois de trocar o `poster` |
-| `body.bot` | — | **remover a entrada** — só existe com `poster: Power Virtual Agents` |
-| `body.recipient` | Dinamicamente com IA | ✅ já funciona — **não mexer** |
-| `body.messageBody` | Dinamicamente com IA | ✅ já funciona — **não mexer** |
+| Entrada | `kind` | Valor | Aceita descrição? |
+|---|---|---|---|
+| `poster` | `ManualTaskInput` | **`Flow bot`** — escolher na lista | ❌ valor fixo, o modelo não lê |
+| `location` | `ManualTaskInput` | **`Chat with Flow bot`** — só aparece depois do `poster` | ❌ idem |
+| `body.bot` | — | **remover** — só existe com `poster: Power Virtual Agents` | — |
+| `body.recipient` | `AutomaticTaskInput` | e-mail do gestor | ✅ **essencial** |
+| `body.messageBody` | `AutomaticTaskInput` | texto aprovado | ✅ **essencial** |
 
-> ⚠️ **`body.recipient` e `body.messageBody` não precisam ser adicionados.** Eu dizia que faltavam; o log mostra os dois chegando preenchidos ao conector mesmo sem estarem declarados em `inputs:`. O orquestrador preenche pelo `dynamicInputSchema`.
+> ⚠️ **Descrição só existe em `AutomaticTaskInput`.** Nos 30 inputs do agente: 6 de 6 dinâmicos têm descrição, 0 de 24 fixos têm. Descrever `poster: Flow bot` é escrever para ninguém.
+>
+> Sobre declarar `body.recipient` e `body.messageBody`: o log mostra que eles chegam ao conector **mesmo sem estarem declarados** — o orquestrador preenche pelo `dynamicInputSchema`. Mas declarar é melhor, porque é o que permite anexar a descrição. Os textos estão em [`02-correcao-das-tools.md`](02-correcao-das-tools.md#5a--modo-sem-publicação).
 
 **O custo deste modo:** a mensagem sai do **Flow bot**, não de você. Por isso o texto precisa dizer quem está pedindo — é o que a §7 das instruções passou a exigir. E a resposta do gestor vai para o bot, não para você: o ciclo de volta continua manual.
 

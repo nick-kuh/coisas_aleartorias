@@ -188,15 +188,39 @@ Duas versões: escolha a que corresponde à sua situação hoje.
 
 Mensagem sai do **Flow bot**, no chat 1:1 do gestor com o Flow bot. Não depende de publicar o agente.
 
-| Entrada | Preencher usando | Valor |
-|---|---|---|
-| `poster` | **escolher na lista** | **`Flow bot`** 🔴 *(trocar de "User")* |
-| `location` | **escolher na lista** | **`Chat with Flow bot`** 🔴 *(trocar de "Group chat")* — a opção só aparece depois de trocar o `poster` |
-| `body.bot` | — | **REMOVER a entrada** — só existe quando `poster` = Microsoft Copilot Studio agent |
-| `body.recipient` | Dinamicamente com IA | ✅ **já funciona, não mexer** |
-| `body.messageBody` | Dinamicamente com IA | ✅ **já funciona, não mexer** |
+| Entrada | `kind` no YAML | Preencher usando | Valor / descrição |
+|---|---|---|---|
+| `poster` | `ManualTaskInput` | **escolher na lista** | **`Flow bot`** 🔴 *(trocar de "User")* |
+| `location` | `ManualTaskInput` | **escolher na lista** | **`Chat with Flow bot`** 🔴 *(trocar de "Group chat")* — só aparece depois de trocar o `poster` |
+| `body.bot` | — | — | **REMOVER a entrada** — só existe com `poster` = Microsoft Copilot Studio agent |
+| `body.recipient` | `AutomaticTaskInput` | Dinamicamente com IA | declarar **+ colar a descrição** abaixo |
+| `body.messageBody` | `AutomaticTaskInput` | Dinamicamente com IA | declarar **+ colar a descrição** abaixo |
 
-> ⚠️ **Escolha pelos dropdowns, nunca digite o texto.** Os dois campos são `dynamicValuesConfig: capability: List` — o valor gravado é interno, não o rótulo da tela. Prova no seu próprio histórico: quando você escolheu "Chat with agent", o export gravou `location: powerva`.
+> ### Quais entradas aceitam descrição — e quais não
+>
+> Contando os 30 inputs declarados no seu agente, o padrão é absoluto:
+>
+> | `kind` | Quantos | Com `description` | Com `value` fixo |
+> |---|---|---|---|
+> | `AutomaticTaskInput` | 6 | **6 de 6** ✅ | 0 |
+> | `ManualTaskInput` | 24 | **0 de 24** | 23 |
+>
+> **Descrição só existe em `AutomaticTaskInput`.** Um `ManualTaskInput` tem valor fixo que você digitou — o modelo nunca preenche nem lê. Descrever `poster: User` é escrever para ninguém.
+>
+> Ou seja: em `poster` e `location`, **não perca tempo**. Em `body.recipient` e `body.messageBody`, a descrição é a **única** coisa que guia o modelo — é a mesma camada que fez o DAX passar a sair certo. Declarados e sem descrição, os dois são preenchidos às cegas.
+
+> ### ⚠️ `poster` e `location`: escolha na lista, nunca edite o YAML
+>
+> Os dois são `dynamicValuesConfig: capability: List`, e o valor gravado **não é o rótulo da tela**. O seu próprio histórico mostra que os casos se comportam diferente:
+>
+> | O que você escolheu | O que o export gravou |
+> |---|---|
+> | "Chat with agent" | `powerva` — **não** o rótulo |
+> | "Group chat" | `Group chat` — literal |
+>
+> Não dá para saber qual literal o "Chat with Flow bot" grava, e chutar quebra a tool. Escolher na lista resolve sozinho.
+>
+> Já os dois `AutomaticTaskInput` são texto livre — descrição pode ser editada à vontade.
 
 > ### ✅ Duas coisas que este export desmentiu
 >
@@ -248,9 +272,22 @@ information to the current user.
 
 ### Descrições das duas entradas dinâmicas (valem nos dois modos)
 
-**`body.recipient`:** `The email address of the Project IT Manager who must receive the message. Take it from [Project IT Manager] in Power BI or from Assigned To in Azure DevOps. NEVER guess an email address.`
+**Descrição da entrada `body.recipient`**  `212/1024`
 
-**`body.messageBody`:** `The message text, already reviewed and approved by the requesting user. Must open by naming WHO is asking, because it arrives from the Flow bot and not from that person. Must state the project name, the Work Item ID, the concrete problem and what is expected, and include the work item link.`
+```
+The email address of the Project IT Manager who must receive the message. Take
+it from [Project IT Manager] in Power BI or from Assigned To in Azure DevOps.
+NEVER guess or construct an email address.
+```
+
+**Descrição da entrada `body.messageBody`**  `297/1024`
+
+```
+The message text, already shown to and explicitly approved by the requesting
+user. Open by naming WHO is asking — it arrives from the Flow bot, not from that
+person. State the project as Name (1234), the concrete gap, what is expected
+back, and include the work item link. Max 5 lines.
+```
 
 ---
 

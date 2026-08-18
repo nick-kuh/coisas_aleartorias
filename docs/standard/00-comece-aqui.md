@@ -111,12 +111,20 @@ Esta tool ainda **não grava nada**: recebe o `id` e não tem onde receber *o qu
 
 Na tool `Postar mensagem em um chat ou canal` → **Entradas**:
 
-- [ ] 🔴 `poster` → **escolher na lista** → **`Flow bot`** *(estava `User`)*
-- [ ] 🔴 `location` → **escolher na lista** → **`Chat with Flow bot`** *(estava `Group chat`)* — a opção só aparece depois de trocar o `poster`
-- [ ] 🧹 **REMOVER** a entrada `body.bot` — só existe quando `poster` = Microsoft Copilot Studio agent. Limpeza, não é o que causava o erro
-- [ ] Trocar a descrição da tool ([Correção 5A](02-correcao-das-tools.md#5a--modo-sem-publicação))
+**Já feito** ✅ — `body.bot` removido · `body.recipient` e `body.messageBody` declarados como dinâmicos
 
-> ✅ **Não mexa em `body.recipient` nem `body.messageBody`.** O log do `botContent_76` prova que os dois já chegam preenchidos ao conector, mesmo sem estarem declarados como entrada. Eu dizia que faltavam; estava errado.
+**Falta:**
+
+- [ ] 🔴 `poster` → **escolher na lista** → **`Flow bot`** *(está `User`)*
+- [ ] 🔴 `location` → **escolher na lista** → **`Chat with Flow bot`** *(está `Group chat`)* — só aparece depois de trocar o `poster`
+- [ ] 🟠 Colar a **descrição** de `body.recipient` e de `body.messageBody` ([Correção 5A](02-correcao-das-tools.md#5a--modo-sem-publicação))
+- [ ] Trocar a descrição da tool
+
+> ### Descrição só vale em entrada dinâmica
+>
+> Nos 30 inputs do seu agente: **6 de 6** `AutomaticTaskInput` têm descrição, **0 de 24** `ManualTaskInput` têm.
+>
+> `poster` e `location` são de valor fixo — o modelo nunca os lê. **Descrever ali não faz nada.** Já `body.recipient` e `body.messageBody` estão declarados **sem descrição**, ou seja, hoje o modelo os preenche às cegas. É a mesma camada que fez o DAX passar a sair certo.
 
 > ### 🎯 O teste de 30 segundos que decide o caminho
 >

@@ -49,6 +49,21 @@ Por que essa camada é boa: carrega **só quando relevante**, é lida no momento
 
 > ⚠️ **Mas ela é a camada mais apertada das três: 1.024 caracteres por entrada.** Confirmado na prática — uma descrição maior que isso é recusada. É pouco espaço, e por isso o que vai nela precisa ser **escolhido**, não empilhado. Cada linha a mais aqui expulsa outra.
 
+### E ela só existe em entrada dinâmica
+
+Uma entrada de tool tem um de dois `kind`, e só um deles tem essa camada:
+
+| `kind` | O que é | Descrição |
+|---|---|---|
+| `AutomaticTaskInput` | o modelo preenche | ✅ **é onde a camada vive** |
+| `ManualTaskInput` | valor fixo que você digitou | ❌ não tem — o modelo nunca lê |
+
+Contado nos 30 inputs declarados no agente: **6 de 6** dinâmicos têm `description`; **0 de 24** fixos têm. O padrão é absoluto.
+
+A consequência prática: **entrada de valor fixo não é lugar de ensinar nada.** Se uma regra precisa chegar ao modelo e o campo relacionado é fixo, ela tem que ir para as instruções ou para a descrição de outra entrada dinâmica da mesma tool.
+
+E o contrário também vale: uma entrada dinâmica **sem** descrição é um buraco na camada — o modelo preenche por inferência, sem nada guiando.
+
 ### ⚠️ Correção de expectativa sobre o SharePoint
 
 O playbook **não é lido toda conversa**. Ele é recuperado por **busca semântica**: o agente consulta quando julga relevante, e recebe trechos, não o arquivo inteiro.
