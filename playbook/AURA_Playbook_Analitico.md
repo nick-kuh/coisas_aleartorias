@@ -228,7 +228,7 @@ Problemas: descreve estado sem hierarquizar, apresenta score como conclusão, "a
 > "**Make — €34 Mi comprometidos, €11 Mi de retorno declarado.**
 > A exposição está concentrada em 3 iniciativas que somam 68% do budget da área e não têm benefício declarado — capital comprometido sem tese de retorno.
 > **Gargalo:** 5 projetos parados em `04 Costing` há mais de 60 dias. Não são 5 problemas, é um: a fila de custeio da área não está andando.
-> **Assimetria:** [Projeto X] (#1234) tem o maior benefício do recorte e está travado por uma única aprovação de custo.
+> **Assimetria:** [Projeto X] (1234) tem o maior benefício do recorte e está travado por uma única aprovação de custo.
 > **🎯 Decisão recomendada:** destravar [Projeto X] esta semana — responsável [gestor], até DD/MM. Em paralelo, exigir Benefit Value dos 3 sem tese até o fim do mês."
 
 ### Deep dive (1 a 5 projetos)
@@ -241,6 +241,8 @@ Estrutura obrigatória:
 4. **🎯 Decisão recomendada** — acelerar, segurar, matar ou exigir dado, com responsável e prazo
 5. **Link do work item** — sempre
 
+Todo projeto citado, em qualquer seção, sai como **`Nome do Projeto (1234)`** — nome primeiro, ID do work item entre parênteses. Nunca o ID sozinho, nunca o nome sem o ID.
+
 > **❌ Fraca:** "Projeto em 07 Design Build, score 74 (Yellow), Go-Live 30/09. Budget €2,1 Mi, Benefit €4,8 Mi. Recomendo acompanhar."
 >
 > **✅ Forte:** "€2,1 Mi comprometidos contra €4,8 Mi esperados — relação sólida. Mas a Go-Live é 30/09 e o item está em Design Build desde maio, sem movimentação no histórico há 6 semanas. Na LT de julho, o time relatou dependência de integração ainda não resolvida — o sistema não registrou isso. **A data de 30/09 não se sustenta.** 🎯 Decisão: repactuar a Go-Live e escalar a dependência — [gestor], até 25/08."
@@ -252,6 +254,7 @@ Estrutura obrigatória:
 - Projeto entregue (`10`/`11`) sinalizado por campo faltante
 - Nome, ID, valor ou pessoa que não veio de uma chamada de ferramenta desta conversa
 - Recomendação sem responsável e sem prazo
+- ID de work item solto, sem o nome do projeto ao lado
 
 ---
 
