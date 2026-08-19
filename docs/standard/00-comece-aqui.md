@@ -1,20 +1,24 @@
 # 0. Comece aqui — o que fazer, na ordem
 
-> ## 🟢 Status em 18/08/2026 — o agente analisa; falta só o envio no Teams
+> ## 🟢 Status em 19/08/2026 — o Teams foi resolvido
 >
-> O `botContent_76` mostra o agente rodando bem: deep dive, panorama por owner, formato `Nome (id)`, e o **protocolo de cobrança seguido à risca** — ele percebeu sozinho que o IT Manager do item era o próprio usuário, levantou isso antes de redigir, mostrou o rascunho e só chamou a tool depois do "pode mandar".
+> O `botContent_77` confirma: `poster: Flow bot` + `location: Chat with Flow bot`, **zero erros no log**. E o schema do conector mudou sozinho, que é a prova de que pegou:
 >
-> **Uma pendência real:** o envio pelo Teams devolve **HTTP 404**.
+> ```yaml
+> recipient:
+>   displayName: Recipient                        # era "Group chat"
+>   description: Enter a name or email address    # era "Add conversation ID"
+> ```
 >
-> | Pendência | Onde | Causa |
+> Ele agora pede **nome ou e-mail** — exatamente o que o agente manda. O 404 acabou.
+>
+> **Abertos agora:**
+>
+> | O quê | Onde | Gravidade |
 > |---|---|---|
-> | `poster` e `location` incompatíveis com e-mail | `Teams — Postar mensagem` | `location: Group chat` exige **ID de conversa**; o agente manda e-mail (correto para uma pessoa) → 404 |
->
-> **A correção:** `poster` = **Flow bot** · `location` = **Chat with Flow bot**, escolhidos pelos dropdowns. Bloco B abaixo.
->
-> > ⚠️ **Duas coisas que eu vinha afirmando e este export desmentiu:** `body.recipient` e `body.messageBody` **não estão faltando** — o log prova que são enviados normalmente sem estarem declarados. E o `body.bot` vazio **não é** a causa do erro; remover continua valendo, mas é limpeza.
->
-> Detalhe completo: [`02-correcao-das-tools.md`](02-correcao-das-tools.md), Correção 5A.
+> | `Create Project` sem `title` — não cria nada | [`07`](07-criar-e-remover-projeto.md) | 🔴 a tool não funciona |
+> | `Remove Project` aponta para `DeleteWorkItemLinkAsync` — **não apaga projeto** | [`07`](07-criar-e-remover-projeto.md) | 🔴 faz outra coisa |
+> | Fluxo das transcrições da LT | [`06`](06-fluxo-transcricoes.md) | 🟠 novo |
 
 > ### 🔄 18/08/2026 — mudança de arquitetura
 >
@@ -33,6 +37,8 @@ Divisão por **dependência**, não por assunto: o Bloco A você faz sozinho hoj
 | **B** | Corrigir `poster`/`location` da tool do Teams | ~3 min | ninguém ✅ |
 | **C** | Migrar para a arquitetura de 3 camadas | ~20 min | Bloco A |
 | **D** | Polimento (opcional) | ~15 min | ninguém |
+| **E** | As duas tools novas | ~15 min | ninguém |
+| **F** | Transcrições da LT | ~20 min | ninguém |
 
 > ⚡ **Faça o Bloco 0 agora e o Bloco A em seguida.** O Bloco 0 fica rodando em paralelo com terceiros enquanto você trabalha.
 
@@ -105,35 +111,24 @@ Esta tool ainda **não grava nada**: recebe o `id` e não tem onde receber *o qu
 
 ---
 
-# 📢 BLOCO B — Teams 🔴 **1 correção** (~3 min)
+# 📢 BLOCO B — Teams ✅ **CONCLUÍDO**
 
-> 🔴 **A configuração que eu tinha recomendado está errada e devolve 404.** `poster: User` + `location: Group chat` exige um **ID de conversa** no `recipient` — e o agente manda e-mail, que é o certo para uma pessoa. O conector não acha a conversa e falha.
+Configuração final, confirmada no `botContent_77`:
 
-Na tool `Postar mensagem em um chat ou canal` → **Entradas**:
+| Entrada | Valor |
+|---|---|
+| `poster` | `Flow bot` |
+| `location` | `Chat with Flow bot` |
+| `body.recipient` | dinâmico, com descrição |
+| `body.messageBody` | dinâmico, com descrição |
+| `body.bot` | removido |
 
-**Já feito** ✅ — `body.bot` removido · `body.recipient` e `body.messageBody` declarados como dinâmicos
+> 📌 **O que deu errado no caminho, para não repetir:** eu tinha recomendado `poster: User` + `location: Group chat`. Esse par devolve **404**, porque com `Group chat` o `recipient` precisa ser um **ID de conversa**, e o agente manda e-mail. O histórico completo está em [`02-correcao-das-tools.md`](02-correcao-das-tools.md#5a--modo-sem-publicação).
 
-**Falta:**
+**Falta só o teste de ponta a ponta:**
 
-- [ ] 🔴 `poster` → **escolher na lista** → **`Flow bot`** *(está `User`)*
-- [ ] 🔴 `location` → **escolher na lista** → **`Chat with Flow bot`** *(está `Group chat`)* — só aparece depois de trocar o `poster`
-- [ ] 🟠 Colar a **descrição** de `body.recipient` e de `body.messageBody` ([Correção 5A](02-correcao-das-tools.md#5a--modo-sem-publicação))
-- [ ] Trocar a descrição da tool
+- [ ] `consegue mandar um teams para <gestor>` → `pode mandar` → chega no Teams, vindo do Flow bot
 
-> ### Descrição só vale em entrada dinâmica
->
-> Nos 30 inputs do seu agente: **6 de 6** `AutomaticTaskInput` têm descrição, **0 de 24** `ManualTaskInput` têm.
->
-> `poster` e `location` são de valor fixo — o modelo nunca os lê. **Descrever ali não faz nada.** Já `body.recipient` e `body.messageBody` estão declarados **sem descrição**, ou seja, hoje o modelo os preenche às cegas. É a mesma camada que fez o DAX passar a sair certo.
-
-> ### 🎯 O teste de 30 segundos que decide o caminho
->
-> Troque o `poster` para **Flow bot** e abra o dropdown de `location`.
->
-> - **Aparece "Chat with Flow bot"** → o Flow bot está liberado no tenant, siga
-> - **Não aparece** → o Flow bot está bloqueado por política e o único caminho é publicar o agente (Bloco B alternativo, abaixo)
->
-> Não consigo verificar isso daqui — o Flow bot é first-party e existe onde há Power Automate, mas alguns tenants bloqueiam o app.
 
 **Como a mensagem chega:** do **Flow bot**, no chat 1:1 do gestor com o Flow bot — não de você. Por isso a §7 das instruções manda **dizer quem está pedindo** ("o Nicolas pediu para eu lembrar…"), em vez de escrever em primeira pessoa.
 
@@ -264,6 +259,48 @@ Mais casos: [`03-teams-conversa-com-gestor.md`](03-teams-conversa-com-gestor.md)
 
 ---
 
+# 🆕 BLOCO E — as duas tools novas (~15 min)
+
+Detalhe e textos para colar: [`07-criar-e-remover-projeto.md`](07-criar-e-remover-projeto.md)
+
+### E1 · `Create Project` 🔴 hoje não cria nada
+
+Falta o `title`, que é **obrigatório** no schema do conector — é o mesmo defeito que a `Update Project` tinha.
+
+- [ ] `title` → Dinamicamente com IA + descrição
+- [ ] `description` → Dinamicamente com IA + descrição
+- [ ] `userEnteredFields` (aparece como **"Other Fields"**, em Advanced) → Dinamicamente com IA + descrição
+- [ ] Trocar a descrição da tool
+
+### E2 · `Remove Project` 🔴 não faz o que o nome diz
+
+```yaml
+modelDisplayName: Remove Project
+operationId: DeleteWorkItemLinkAsync    # ← apaga um LINK entre itens, não o item
+```
+
+- [ ] **Apagar a tool**
+- [ ] Usar `00 Cancelled` via `Update Project` para retirar projeto do portfólio
+
+Preserva histórico, auditoria e a série do Power BI — e não precisa de ferramenta nova. O porquê e a alternativa (se você quiser deleção real mesmo assim) estão no [`07`](07-criar-e-remover-projeto.md).
+
+---
+
+# 🎙️ BLOCO F — transcrições da LT no SharePoint (~20 min)
+
+Guia completo, passo a passo: [`06-fluxo-transcricoes.md`](06-fluxo-transcricoes.md)
+
+**O ponto de partida que muda tudo:** o Teams **já salva** a transcrição sozinho — no OneDrive do organizador (`Gravações`) ou no SharePoint do canal. Existe caminho **sem depender de admin**.
+
+- [ ] Criar a biblioteca `Transcricoes LT` com as colunas `DataReuniao` e `Origem`
+- [ ] Fluxo automatizado: gatilho no OneDrive → filtrar `.vtt` → limpar → gravar como `LT-AAAA-MM-DD.txt`
+- [ ] Apontar a fonte `Transcription LT Meetings` para a biblioteca, **com a descrição colada**
+- [ ] Testar: `o que foi decidido na LT sobre <projeto>?`
+
+A Rota B (Graph API) fica documentada para quando precisar varrer reuniões de vários organizadores — mas ela depende de três liberações de admin, e uma delas é um controle novo do Teams que muita gente não conhece.
+
+---
+
 ## Onde estão as outras coisas
 
 | Quero… | Vá para |
@@ -273,6 +310,8 @@ Mais casos: [`03-teams-conversa-com-gestor.md`](03-teams-conversa-com-gestor.md)
 | Entender o Teams a fundo | [`03-teams-conversa-com-gestor.md`](03-teams-conversa-com-gestor.md) |
 | Decidir sobre Work IQ | [`04-work-iq.md`](04-work-iq.md) |
 | Entender a **arquitetura de 3 camadas** | [`05-arquitetura-3-camadas.md`](05-arquitetura-3-camadas.md) |
+| Montar o fluxo das **transcrições** | [`06-fluxo-transcricoes.md`](06-fluxo-transcricoes.md) |
+| Ajustar **Create / Remove Project** | [`07-criar-e-remover-projeto.md`](07-criar-e-remover-projeto.md) |
 | As **instruções** para colar | [`agent/instructions-standard.md`](../../agent/instructions-standard.md) |
 | O **playbook** do SharePoint | [`AURA_Playbook_Analitico.md`](../../playbook/AURA_Playbook_Analitico.md) |
 | Os tópicos antigos (histórico) | [`topics/README.md`](../../topics/README.md) |

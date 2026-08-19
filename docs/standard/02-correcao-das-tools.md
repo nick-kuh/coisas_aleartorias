@@ -168,7 +168,13 @@ Duas versões: escolha a que corresponde à sua situação hoje.
 
 ### 5A — Modo SEM PUBLICAÇÃO
 
-> ## 🔴 Corrigido em 18/08 — o `botContent_76` provou que a configuração anterior estava errada
+> ## ✅ RESOLVIDO em 19/08 — confirmado no `botContent_77`
+>
+> `poster: Flow bot` + `location: Chat with Flow bot` aplicados, **zero erros no log**. E o schema do conector se reescreveu sozinho, que é a prova: o `recipient` deixou de pedir `Add conversation ID` e passou a pedir `Enter a name or email address`.
+>
+> O que está abaixo fica como histórico do diagnóstico.
+
+> ## 🔴 O erro que existia — o `botContent_76` provou que a configuração anterior estava errada
 >
 > Eu recomendava `poster: User` + `location: Group chat`. **Isso devolve HTTP 404.** O log mostra o agente enviando o par correto do ponto de vista dele:
 >
