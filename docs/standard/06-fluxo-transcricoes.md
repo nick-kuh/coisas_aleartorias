@@ -64,6 +64,46 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 
 # Rota A — automática, pela API do SharePoint
 
+> ## 📍 O fluxo atravessa DOIS lugares diferentes
+>
+> Isso confunde, então vale fixar antes de montar qualquer coisa:
+>
+> ```
+> ORIGEM — OneDrive do organizador
+> https://<tenant>-my.sharepoint.com/personal/<upn>/Documents/Recordings/reuniao.mp4
+>         │
+>         │  passos 1–5: gatilho no .mp4 · esperar · identificar · listar · baixar o VTT
+>         ▼
+>    limpeza (passos 6–9) — só texto, não toca em arquivo
+>         │
+>         ▼
+> DESTINO — site de equipe do CDIO LATAM
+> https://<tenant>.sharepoint.com/sites/<CDIO-LATAM>/Transcricoes LT/LT-2026-08-19.txt
+>         │
+>         ▼
+>    fonte de conhecimento do agente
+> ```
+>
+> | | Onde | O que acontece |
+> |---|---|---|
+> | **Origem** | OneDrive, pasta `Recordings` | o `.mp4` chega com a transcrição anexada |
+> | **Destino** | site do CDIO LATAM, `Transcricoes LT` | o `.txt` limpo é gravado, e é o que o agente lê |
+
+> ### 🔑 Por que a ação "…para o SharePoint" funciona num arquivo do OneDrive
+>
+> Porque **OneDrive for Business é um site SharePoint por baixo**. O endereço dele é:
+>
+> ```
+> https://<tenant>-my.sharepoint.com/personal/<upn com _ no lugar de . e @>
+> ```
+>
+> Exemplo: `nicolas.kuhnast@unilever.com` → `.../personal/nicolas_kuhnast_unilever_com`
+>
+> Então nos passos 4 e 5, o campo **"Endereço do site"** recebe **esse endereço do OneDrive**, não o do site de equipe. Não é gambiarra — é o mesmo produto.
+>
+> **E você não precisa acreditar em mim:** a URL que você capturar no DevTools já mostra o host certo. Se aparecer `-my.sharepoint.com`, está confirmado.
+
+
 ## 1. Preparar o destino no SharePoint
 
 1. No site do CDIO LATAM → **Novo → Biblioteca de documentos**
@@ -92,13 +132,15 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 
 ### Gatilho
 
-**SharePoint → Quando um arquivo é criado (somente propriedades)** — ou **OneDrive for Business**, se as LT forem reuniões privadas
+**OneDrive for Business → Quando um arquivo é criado (somente propriedades)**
 
 | Campo | Valor |
 |---|---|
 | Pasta | `/Gravações` (ou `/Recordings`, conforme o idioma da conta) |
 
-> ⚠️ O gatilho roda na conta de **quem conectar** — precisa ser a do organizador da LT. Se o organizador mudar, o fluxo para de ver os arquivos.
+É **OneDrive**, não SharePoint — a gravação de reunião agendada cai no OneDrive do organizador.
+
+> ⚠️ O gatilho roda na conta de **quem conectar o OneDrive** — precisa ser a do organizador da LT. Se o organizador mudar, o fluxo para de enxergar os arquivos. Ver a nota sobre reunião de canal no fim desta rota.
 
 ### Passo 1 — só o `.mp4`
 
@@ -122,14 +164,15 @@ O `.mp4` aparece na pasta **antes** de a transcrição terminar de processar. Se
 
 ### Passo 3 — identificar o vídeo
 
-**SharePoint → Obter metadados do arquivo**
+**OneDrive for Business → Obter metadados do arquivo**
 
 | Campo | Valor |
 |---|---|
-| Endereço do site | o site onde caiu a gravação |
 | Arquivo | `Identificador` do gatilho |
 
-É daqui que saem os identificadores para montar a URL. Compare com a URL que você pegou no DevTools: se os IDs não baterem no formato, use o molde do DevTools como referência.
+Também **OneDrive**, pela mesma razão do gatilho: é lá que o arquivo está.
+
+É daqui que saem os identificadores para montar a URL dos passos 4 e 5. Compare com a URL do DevTools — se o formato não bater, o molde do DevTools manda.
 
 ### Passo 4 — listar as transcrições do vídeo
 
@@ -137,9 +180,11 @@ O `.mp4` aparece na pasta **antes** de a transcrição terminar de processar. Se
 
 | Campo | Valor |
 |---|---|
-| Endereço do site | o site da gravação |
+| Endereço do site | 🔑 **o OneDrive**: `https://<tenant>-my.sharepoint.com/personal/<upn>` |
 | Método | `GET` |
 | URI | `_api/v2.1/drives/{driveId}/items/{itemId}/media/transcripts` |
+
+> 📌 Aqui está a parte que confunde: a ação chama "…para o **SharePoint**", mas o endereço é o do **OneDrive**. Está certo — OneDrive é um site SharePoint. Use o host que aparecer no DevTools.
 
 Devolve um JSON com a lista. **Compor** `TranscriptId`:
 
@@ -155,6 +200,7 @@ Pego a **última** de propósito: se a transcrição foi reiniciada no meio da r
 
 | Campo | Valor |
 |---|---|
+| Endereço do site | o mesmo do passo 4 — **o OneDrive** |
 | Método | `GET` |
 | URI | `_api/v2.1/drives/{driveId}/items/{itemId}/media/transcripts/@{outputs('TranscriptId')}/streamContent?format=text/vtt` |
 
@@ -223,13 +269,15 @@ Nicolas Kuhnast: Precisamos rever o Go-Live do Horizon 2
 join(body('Selecionar'), decodeUriComponent('%0A'))
 ```
 
-### Passo 10 — gravar no SharePoint
+### Passo 10 — gravar no SharePoint 🎯 **aqui muda de lugar**
+
+Até agora tudo aconteceu na **origem** (OneDrive). Deste passo em diante é o **destino**: o site de equipe do CDIO LATAM, que é o que o agente enxerga.
 
 **SharePoint → Criar arquivo**
 
 | Campo | Valor |
 |---|---|
-| Endereço do site | o site do CDIO LATAM |
+| Endereço do site | 🎯 **o site do CDIO LATAM** — `https://<tenant>.sharepoint.com/sites/<CDIO-LATAM>`, **não** o OneDrive dos passos 4 e 5 |
 | Caminho da pasta | `/Transcricoes LT` |
 | Nome do arquivo | expressão abaixo |
 | Conteúdo do arquivo | `outputs('TextoLimpo')` |
@@ -251,6 +299,14 @@ Resultado: `LT-2026-08-19.txt`.
 | Id | `ItemId` do passo anterior |
 | DataReuniao | `formatDateTime(triggerOutputs()?['body/LastModified'], 'yyyy-MM-dd')` |
 | Origem | `Teams` |
+
+> ## 💡 Uma alternativa que simplifica, se você topar mudar como a LT é convocada
+>
+> Se a LT virar **reunião de canal** de um time do CDIO LATAM, a gravação e a transcrição caem **direto no SharePoint daquele time** — o mesmo site do destino. O fluxo passa a ter um site só, e os passos 4 e 5 apontam para o mesmo lugar do passo 10.
+>
+> E resolve um risco que a montagem atual carrega calado: hoje tudo depende do OneDrive **de uma pessoa**. Se o organizador sair da empresa ou mudar de área, o histórico das LT vai junto com a conta dele.
+>
+> Não é o que você pediu, e muda como a reunião é criada — fica registrado com o trade-off na mesa.
 
 ## 3. Ligar no agente
 

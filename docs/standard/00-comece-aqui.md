@@ -290,7 +290,10 @@ Preserva histórico, auditoria e a série do Power BI — e não precisa de ferr
 
 Guia completo, passo a passo: [`06-fluxo-transcricoes.md`](06-fluxo-transcricoes.md)
 
-> **O que confunde:** a transcrição **não vira arquivo na pasta**. Ela é anexo do vídeo dentro do Stream — por isso `Recordings` mostra só o `.mp4`, e clicar abre o player. Isso é normal, não é defeito de configuração.
+> **Dois pontos que confundem:**
+>
+> 1. A transcrição **não vira arquivo na pasta**. É anexo do vídeo dentro do Stream — por isso `Recordings` mostra só o `.mp4`, e clicar abre o player. É normal, não é defeito.
+> 2. O fluxo atravessa **dois lugares**: a gravação está no **OneDrive** do organizador, e o texto limpo vai para o **site do CDIO LATAM**. Nos passos que leem a transcrição, o "Endereço do site" é o do **OneDrive** — que também é um site SharePoint (`<tenant>-my.sharepoint.com/personal/<upn>`).
 >
 > E ela **expira em 30 dias**. Copiar para o SharePoint é o que preserva o histórico das LT.
 
