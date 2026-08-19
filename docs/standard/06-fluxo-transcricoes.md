@@ -89,6 +89,30 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 > | **Origem** | OneDrive, pasta `Recordings` | o `.mp4` chega com a transcrição anexada |
 > | **Destino** | site do CDIO LATAM, `Transcricoes LT` | o `.txt` limpo é gravado, e é o que o agente lê |
 
+> ## 🔁 "Preciso fazer isso toda semana?" Não — a captura é **uma vez só**
+>
+> A URL parece um bloco único, mas tem quatro pedaços com destinos diferentes:
+>
+> ```
+> https://unilever-my.sharepoint.com/personal/nicolas_kuhnast_unilever_com
+> └─────────────────── FIXO — nunca muda ───────────────────┘
+>    /_api/v2.1/drives/b!AbCdEf123.../items/01XYZ789.../media/transcripts/GhIjKl.../streamContent?format=text/vtt
+>                      └─── FIXO ───┘      └── MUDA ──┘                  └── MUDA ──┘
+> ```
+>
+> | Pedaço | Muda? | De onde vem |
+> |---|---|---|
+> | Host + `/personal/<upn>` | **Nunca** | você digita **uma vez** no "Endereço do site" |
+> | `driveId` | **Nunca**, enquanto for o mesmo organizador | você digita **uma vez** na URI |
+> | `itemId` | **A cada reunião** | vem do **gatilho** — é o `.mp4` novo |
+> | `transcriptId` | **A cada reunião** | vem do **passo 4** |
+>
+> O **tenant é sempre o mesmo** — é a Unilever, não muda nunca. O `driveId` também não, porque é o mesmo OneDrive. Você captura no DevTools uma vez, guarda esses dois, e deixa os outros dois saírem dinamicamente do fluxo.
+>
+> Reunião semanal, quinzenal ou diária: tanto faz. A parte fixa é a mesma sempre.
+>
+> ⚠️ **O que quebraria isso:** trocar o organizador da LT. Aí o `/personal/<upn>` e o `driveId` viram outros, porque passa a ser o OneDrive de outra pessoa. É o mesmo risco da nota sobre reunião de canal, no fim desta rota.
+
 > ### 🔑 Por que a ação "…para o SharePoint" funciona num arquivo do OneDrive
 >
 > Porque **OneDrive for Business é um site SharePoint por baixo**. O endereço dele é:
@@ -117,16 +141,22 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 
 ## 2. Criar o fluxo
 
-> ### 🎯 Antes de tudo: pegue a URL real do seu tenant
+> ### 🎯 Antes de tudo: capture a URL real — **uma vez só**
 >
-> Eu confirmei a **forma** do endpoint, mas não consigo testar no seu ambiente. Em vez de você depender de eu ter acertado, leia a URL do seu próprio navegador — leva 30 segundos e é verdade de campo:
+> Eu confirmei a **forma** do endpoint, mas não consigo testar no seu ambiente. Em vez de você depender de eu ter acertado, leia a URL do seu próprio navegador.
 >
-> 1. Abra a gravação no Stream, com o painel **Transcrição** aberto
-> 2. **F12** → aba **Rede** (Network) → filtre por `transcripts`
-> 3. Recarregue a página
-> 4. A chamada que aparecer é **a URL exata**, com `driveId` e `itemId` reais do seu tenant
+> **Atenção:** a aba **Rede** normalmente **não vem aberta**. Se você vir só `Bem-vindo · Elementos · Console · Fontes`, ela está escondida atrás do botão `+`.
 >
-> Guarde essa URL. Ela é o molde dos passos 4 e 5, e é mais confiável do que qualquer coisa que eu escreva aqui.
+> 1. Abra a gravação no Stream, com o painel **Transcrição** visível
+> 2. **F12**
+> 3. Nas abas do DevTools, clique no **`+`** → escolha **Rede**
+> 4. Na caixa **Filtro** da aba Rede, digite `transcripts`
+> 5. **Feche e reabra o painel Transcrição** no player — isso redispara a chamada, e é mais confiável que recarregar a página
+> 6. Vai aparecer uma linha. Clique nela → aba **Cabeçalhos** → copie o **URL da solicitação**
+>
+> Se não achar o campo: **botão direito na linha → Copiar → Copiar link do endereço.**
+>
+> Se **nenhuma linha** aparecer, é porque o painel já estava carregado antes de você abrir a aba Rede. Feche e reabra o painel de novo — o filtro só captura o que passa depois de estar ligado.
 
 **Power Automate → Criar → Fluxo de nuvem automatizado**
 
@@ -173,6 +203,30 @@ O `.mp4` aparece na pasta **antes** de a transcrição terminar de processar. Se
 Também **OneDrive**, pela mesma razão do gatilho: é lá que o arquivo está.
 
 É daqui que saem os identificadores para montar a URL dos passos 4 e 5. Compare com a URL do DevTools — se o formato não bater, o molde do DevTools manda.
+
+### De-para: da URL capturada para os campos do fluxo
+
+Com a URL do DevTools na mão, é assim que ela se distribui:
+
+```
+https://unilever-my.sharepoint.com/personal/nicolas_kuhnast_unilever_com/_api/v2.1/drives/b!AbC.../items/01XYZ.../media/transcripts
+└──────────────── vai no "Endereço do site" ────────────────┘└──────────── vai na "URI" ────────────┘
+```
+
+| Campo no Power Automate | O que colar |
+|---|---|
+| **Endereço do site** (passos 4 e 5) | tudo **antes** de `/_api/` |
+| **URI do passo 4** | `_api/v2.1/drives/<seu driveId>/items/@{triggerOutputs()?['body/{Identifier}']}/media/transcripts` |
+| **URI do passo 5** | a mesma, mais `/@{outputs('TranscriptId')}/streamContent?format=text/vtt` |
+
+**Os dois únicos pedaços dinâmicos:**
+
+- `itemId` → sai do **gatilho** (o `.mp4` que acabou de chegar)
+- `transcriptId` → sai do **passo 4**
+
+O resto você digita uma vez e nunca mais toca.
+
+> ⚠️ Se o `itemId` do gatilho não bater com o formato que você viu no DevTools, o caminho é o passo 3 (**Obter metadados**) — o campo `Id` de lá é o que a API v2.1 espera. Compare os dois antes de sair mudando outra coisa.
 
 ### Passo 4 — listar as transcrições do vídeo
 
@@ -519,7 +573,8 @@ concat('LT-', formatDateTime(body('Passo_1')?['value'][0]?['start']?['dateTime']
 
 ## Checklist
 
-- [ ] URL real capturada no DevTools (F12 → Rede → `transcripts`)
+- [ ] URL real capturada no DevTools — **uma vez só** (F12 → `+` → Rede → filtro `transcripts`)
+- [ ] Host e `driveId` separados da URL, e guardados: são a parte que nunca muda
 - [ ] Chamada do passo 5 devolvendo o VTT cru — **é o portão, teste isolado antes do resto**
 - [ ] Biblioteca `Transcricoes LT` criada, com as colunas `DataReuniao` e `Origem`
 - [ ] Fluxo criado e testado numa reunião de teste, com transcrição ligada
