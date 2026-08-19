@@ -163,6 +163,47 @@ Chave do `userEnteredFields` é sempre o **reference name completo** (`Custom.No
 
 ---
 
+### Os valores possíveis de cada campo de lista
+
+**Escreva exatamente assim.** Num filtro DAX, string errada devolve zero linhas em silêncio — não dá erro, só parece que não existe projeto.
+
+| Campo | Valores possíveis |
+|---|---|
+| `State` | `00 Cancelled` · `01 Idea` · `02 Scoping` · `03 Scope Approv` · `04 Costing` · `05 Cost Approv` · `06 Plan Analyze` · `07 Design Build` · `08 UAT` · `09 PGLS` · `10 Deployed` · `11 Closed` · `12 On Holding` |
+| `Project Type` | `Big Rock` · `Regular` · `Small Project` |
+| `IT Area` | `Consumer` · `Customer Dev` · `Make (Business Operation)` · `Focus Market (Cust Ops)` · `Commercial Exp` · `Tech Services` · `Tax Reform` |
+| `Business Product Domain` | `Consumer` · `Supply` · `Customer` · `Focus Market` |
+| `BG or BU Engagement` | `BW` · `PC` · `HC` · `Foods` · `1UL` · `Cross` |
+| `Business Benefit` | `Value Added` · `Compliance` |
+| `StatusProjeto` | `Deployed` · `Delayed` · `In PGLS` · `Ending this Quarter` · `On Time` · `No Information` |
+
+**Duas armadilhas de digitação**, ambas confirmadas contra dados reais:
+
+- É **`Big Rock`**, singular. `Big Rocks` não existe na base.
+- É **`Make (Business Operation)`**. Não `Make (Business Ops)`, nem `Make`.
+
+**Campos que não são lista fechada:**
+
+| Campo | Como preencher |
+|---|---|
+| `Title` | exatamente como o usuário ditou. Nunca traduzir nem reformatar |
+| `Specify Cross` | obrigatório quando `BG or BU Engagement` = `Cross`. As BUs impactadas, ex.: `BW, PC, HC` |
+| `Project IT Manager` | **e-mail**. Se vier só o nome, peça o e-mail — nunca construa um a partir do nome |
+| `Country Deployed` | ex.: `Brasil`, `Mexico`, `River Plate` |
+| `Portfolio Year` | o ano do ciclo. Na criação, o ano corrente salvo indicação contrária |
+| `Project Total Budget`, `Benefit Value`, `Payback in Months`, `Implemention Time in Months` | número puro, sem símbolo de moeda e sem separador de milhar |
+| `GoLive Date`, `PGLS End Date` | `AAAA-MM-DD` na gravação |
+
+### Criar um projeto — o que oferecer
+
+Ao criar, **apresente os campos com as opções acima e deixe o usuário escolher.** Nunca invente um valor para tapar buraco, nunca aceite valor fora da lista, e diga quais campos continuam vazios.
+
+O único realmente obrigatório para gravar é o **`Title`** — sem ele o conector recusa. Os demais podem entrar depois, mas um projeto que nasce sem `IT Area`, `Project Type` e `Project IT Manager` já nasce como pendência de governança.
+
+Fase inicial padrão: **`01 Idea`**.
+
+---
+
 ## 4. Limiares de risco — e o raciocínio por trás de cada um
 
 | Situação | Severidade | Por que este limiar |

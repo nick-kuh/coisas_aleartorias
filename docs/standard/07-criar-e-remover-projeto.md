@@ -95,16 +95,36 @@ FORMATS: dates as YYYY-MM-DD. Money and months as plain numbers, no symbol, no s
 NEVER call this tool before showing the user the complete draft and getting an explicit confirmation.
 ```
 
-### Descrição da tool  `303/1024`
+### Descrição da tool — é ela que faz o agente **oferecer as opções**  `1000/1024`
 
 Troque a atual (`Crie um item de trabalho com os atributos fornecidos.`) por:
 
 ```
-Creates a new IT Project work item in the CDIO Portfolio. Use ONLY when the user
-explicitly asks to create or register a new project, and ONLY after showing them
-the complete draft and receiving an explicit confirmation. NEVER use it to answer
-a question, to test, or to fix data on an existing project.
+Creates a new IT Project work item in the CDIO Portfolio. Explicit create requests only — never to answer a question or fix an existing project. Show the complete draft and get an explicit confirmation before calling.
+PRESENT these fields with their allowed values and let the user choose. Never invent a value, never accept one outside the list; say which fields are still missing.
+Project Type: Big Rock | Regular | Small Project
+IT Area: Consumer | Customer Dev | Make (Business Operation) | Focus Market (Cust Ops) | Commercial Exp | Tech Services | Tax Reform
+Business Product Domain: Consumer | Supply | Customer | Focus Market
+BG or BU Engagement: BW | PC | HC | Foods | 1UL | Cross — if Cross, Specify Cross is mandatory: ask which BUs, e.g. "BW, PC, HC"
+Business Benefit: Value Added | Compliance
+State: defaults to 01 Idea
+Portfolio Year: current year unless told
+Country Deployed: e.g. Brasil, Mexico, River Plate
+Project IT Manager: ask for the email; given a name, ask — NEVER build one.
 ```
+
+> ### 🔴 Dois valores que estavam errados
+>
+> Conferi contra o que o Power BI **devolve de verdade** nos logs de execução, e duas coisas não batem com a lista que circula:
+>
+> | Achava-se | Valor real na base |
+> |---|---|
+> | `Big Rocks` | **`Big Rock`** — singular |
+> | `Make (Business Ops)` | **`Make (Business Operation)`** |
+>
+> Isso não é preciosismo. Um filtro DAX com a string errada **devolve zero linhas em silêncio** — não dá erro, só parece que não existe projeto. É o pior tipo de bug num agente de análise, porque a resposta sai confiante e vazia.
+>
+> E a lista real de `IT Area` tem **sete** valores, não quatro: `Tech Services` e `Tax Reform` também existem. São as "áreas menores" que as instruções mandam ignorar em panorama — mas se alguém perguntar por elas, o agente precisa do nome exato.
 
 A última frase importa: sem ela, a descrição genérica de hoje deixa o orquestrador chamar a tool sem querer.
 

@@ -277,12 +277,19 @@ TOOLS_DO_AGENTE = (
 )
 MARGEM_APERTADA = 74          # avisa quando sobra menos que isto
 
-DOC_TOOLS = "docs/standard/02-correcao-das-tools.md"
+DOCS_TOOLS = (
+    "docs/standard/02-correcao-das-tools.md",
+    "docs/standard/07-criar-e-remover-projeto.md",
+)
 DOC_INSTRUCOES = "agent/instructions-standard.md"
 
-# Blocos coláveis: um marcador em negrito seguido de uma cerca ```
+# Blocos coláveis. O marcador aparece em duas formas nos docs — negrito
+# (**Descrição da entrada `x`**) e título (### Descrição da tool) — e uma
+# descrição que escapa da medição é exatamente a que vai estourar em silêncio.
 MARCADOR = re.compile(
-    r"\*\*Descrição d[ao] (?:entrada|tool)[^*]*\*\*[^\n]*\n+```\n(.*?)\n```",
+    r"(?:\*\*|#{2,4} )Descrição d[ao] (?:entrada|tool)[^\n]*\n"
+    r"(?:(?!```)[^\n]*\n){0,6}"      # prosa entre o marcador e a cerca
+    r"```\n(.*?)\n```",
     re.S,
 )
 
@@ -291,10 +298,15 @@ def checar_limites(raiz):
     """Mede os textos que o usuário cola no Copilot Studio."""
     erros = avisos = 0
 
-    doc = raiz / DOC_TOOLS
-    if doc.exists():
-        texto = doc.read_text(encoding="utf-8")
-        blocos = MARCADOR.findall(texto)
+    blocos = []
+    for nome in DOCS_TOOLS:
+        doc = raiz / nome
+        if doc.exists():
+            blocos += MARCADOR.findall(doc.read_text(encoding="utf-8"))
+        else:
+            print(f"  aviso: {nome} não encontrado")
+            avisos += 1
+    if blocos:
         print(f"\n=== limites de descrição ({len(blocos)} bloco(s) colável(is)) ===")
         for bloco in blocos:
             corpo = bloco.strip()
@@ -308,9 +320,6 @@ def checar_limites(raiz):
                 avisos += 1
             else:
                 print(f"  OK {n}/{LIMITE_DESCRICAO} (folga {LIMITE_DESCRICAO - n}) | {rotulo}")
-    else:
-        print(f"\n  aviso: {DOC_TOOLS} não encontrado — limites de descrição não medidos")
-        avisos += 1
 
     instr = raiz / DOC_INSTRUCOES
     if instr.exists():

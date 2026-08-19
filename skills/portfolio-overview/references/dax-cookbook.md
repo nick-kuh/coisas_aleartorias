@@ -14,10 +14,12 @@ Tabela: sempre `'tabela'`. Toda query começa com `EVALUATE`. Devolva só a stri
 
 | Coluna | Valores |
 |---|---|
+| `[IT Area]` | `Consumer`, `Customer Dev`, `Make (Business Operation)`, `Focus Market (Cust Ops)`, `Commercial Exp`, `Tech Services`, `Tax Reform` |
+| `[BG or BU Engagement]` | `BW`, `PC`, `HC`, `Foods`, `1UL`, `Cross` |
 | `[StatusProjeto]` | `Deployed`, `Delayed`, `In PGLS`, `Ending this Quarter`, `On Time`, `No Information` (= sem GoLive Date) |
 | `[Business Benefit]` | `Compliance`, `Value Added` |
 | `[Potencial]` | Green (alto), Yellow (médio), Red (baixo) |
-| `[Project Type]` | filtro padrão `Big Rock`, salvo pedido em contrário |
+| `[Project Type]` | `Big Rock` (singular — **não** `Big Rocks`), `Regular`, `Small Project`. Filtro padrão `Big Rock` |
 
 ---
 
@@ -42,7 +44,7 @@ CALCULATETABLE(
         'tabela'[StatusProjeto], 'tabela'[Project IT Manager], 'tabela'[FinalScore],
         'tabela'[Potencial], 'tabela'[Project Total Budget], 'tabela'[Benefit Value],
         'tabela'[GoLive Date]),
-    'tabela'[IT Area] = "Make"
+    'tabela'[IT Area] = "Make (Business Operation)"
 )
 ```
 

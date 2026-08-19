@@ -76,6 +76,24 @@ RULES: 1) Overview: SUMMARIZECOLUMNS. 2) Specific/risk: CALCULATETABLE or FILTER
 Domains: [StatusProjeto] = Deployed | Delayed | In PGLS | Ending this Quarter | On Time | No Information. [Business Benefit] = Compliance | Value Added.
 ```
 
+### Descrição da tool `Power BI Portfolio Database`  `960/1024`
+
+Hoje é genérica e não diz **quais strings** são válidas num filtro. É por isso que o agente inventa valor de IT Area e recebe zero linhas sem entender por quê.
+
+```
+Use for any portfolio question: analysis, status, Big Rocks, risks, budgets, project details. Runs DAX against the live CDIO LATAM dataset.
+Filter values must be written EXACTLY as below. A wrong string returns ZERO rows silently — it does not fail, it just looks like there is no data.
+[IT Area] = Consumer | Customer Dev | Make (Business Operation) | Focus Market (Cust Ops) | Commercial Exp | Tech Services | Tax Reform
+[Project Type] = Big Rock | Regular | Small Project
+[BG or BU Engagement] = BW | PC | HC | Foods | 1UL | Cross
+[Business Benefit] = Value Added | Compliance
+[StatusProjeto] = Deployed | Delayed | In PGLS | Ending this Quarter | On Time | No Information
+[State] = 00 Cancelled | 01 Idea | 02 Scoping | 03 Scope Approv | 04 Costing | 05 Cost Approv | 06 Plan Analyze | 07 Design Build | 08 UAT | 09 PGLS | 10 Deployed | 11 Closed | 12 On Holding
+Two traps: "Big Rock" not "Big Rocks"; "Make (Business Operation)" not "Make (Business Ops)".
+```
+
+> ⚠️ As listas vieram do que o Power BI **devolveu** em execuções reais, não de memória. Duas correções que saíram daí: é `Big Rock` (singular) e `Make (Business Operation)` — não `Big Rocks` nem `Make (Business Ops)`.
+
 📎 Receitas prontas (watermelons, big rocks, governança, filtro Cross-BU): [`skills/portfolio-overview/references/dax-cookbook.md`](../../skills/portfolio-overview/references/dax-cookbook.md)
 
 ✅ **Teste:** em conversa nova, depois do dashboard, pergunte `quais são os projetos watermelon?`. Ele tem que rodar uma query nova. Hoje ele improvisa em cima do que já está em `Global.tabela_pbi`, ou trava.
