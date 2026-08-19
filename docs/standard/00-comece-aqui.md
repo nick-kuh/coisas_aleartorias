@@ -286,23 +286,38 @@ Preserva histórico, auditoria e a série do Power BI — e não precisa de ferr
 
 ---
 
-# 🎙️ BLOCO F — transcrições da LT no SharePoint (~20 min)
+# 🎙️ BLOCO F — transcrições da LT no SharePoint (~15 min + ~40 min)
 
 Guia completo, passo a passo: [`06-fluxo-transcricoes.md`](06-fluxo-transcricoes.md)
 
-> ⚠️ **Antes de tudo: gravar não é transcrever.** São dois botões no Teams. Só "Iniciar gravação" produz `.mp4` e **nenhuma** transcrição — foi o que aconteceu no primeiro teste aqui. Confirme que a pasta `Recordings` tem o `.vtt` **ao lado** do `.mp4` antes de montar qualquer fluxo.
+> **O que confunde:** a transcrição **não vira arquivo na pasta**. Ela é anexo do vídeo dentro do Stream — por isso `Recordings` mostra só o `.mp4`, e clicar abre o player. Isso é normal, não é defeito de configuração.
+>
+> E ela **expira em 30 dias**. Copiar para o SharePoint é o que preserva o histórico das LT.
 
-**O ponto de partida:** com a transcrição ligada, o Teams **já salva** o `.vtt` sozinho — no OneDrive do organizador (`Gravações`) ou no SharePoint do canal. Existe caminho **sem depender de admin**.
+**Ordem recomendada — a A2 primeiro, porque funciona garantido:**
 
-- [ ] **Passo 0** — reunião de teste com transcrição ligada, e o `.vtt` apareceu ao lado do `.mp4`
-- [ ] Criar a biblioteca `Transcricoes LT` com as colunas `DataReuniao` e `Origem`
-- [ ] Fluxo automatizado: gatilho no OneDrive → filtrar `.vtt` → limpar → gravar como `LT-AAAA-MM-DD.txt`
-- [ ] Apontar a fonte `Transcription LT Meetings` para a biblioteca, **com a descrição colada**
+### F1 · Rota A2, manual (~15 min)
+
+- [ ] Criar a biblioteca `Transcricoes LT` com as colunas `DataReuniao` e `Origem`, e a subpasta `_entrada`
+- [ ] Fluxo: gatilho no `_entrada` → limpar → gravar como `LT-AAAA-MM-DD.txt`
+- [ ] A cada LT: no player, **Baixar ⌄ → .vtt** e soltar no `_entrada`. Dois cliques
+
+Com isso a LT da próxima semana já entra no SharePoint, sem depender de nada dar certo.
+
+### F2 · Rota A, automática (~40 min)
+
+Usa a **API de mídia do SharePoint** — não o Graph. Sem registro de aplicativo, sem consentimento de admin.
+
+- [ ] F12 → Rede → `transcripts` com o painel aberto, para pegar a **URL real do tenant**
+- [ ] Testar a chamada `.../streamContent?format=text/vtt` isolada — **é o portão**
+- [ ] Montar o fluxo: gatilho no `.mp4` → esperar → listar transcrições → baixar VTT → limpar → gravar
+
+### F3 · Ligar no agente
+
+- [ ] Fonte `Transcription LT Meetings` apontando para a biblioteca, **com a descrição colada**
 - [ ] Testar: `o que foi decidido na LT sobre <projeto>?`
 
-Se a transcrição automática não for liberada, a **Rota A2** resolve sem depender de ninguém: a pessoa baixa o arquivo do Recap da reunião e solta numa pasta `_entrada`, e o fluxo faz o resto. Dois cliques a cada 15 dias.
-
-A Rota B (Graph API) fica documentada para quando precisar varrer reuniões de vários organizadores — mas depende de três liberações de admin, e uma delas é um controle novo do Teams que muita gente não conhece.
+A Rota B (Graph) fica documentada para quando precisar varrer reuniões de vários organizadores — mas depende de três liberações de admin.
 
 ---
 
