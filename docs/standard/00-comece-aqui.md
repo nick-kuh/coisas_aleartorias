@@ -290,14 +290,19 @@ Preserva histórico, auditoria e a série do Power BI — e não precisa de ferr
 
 Guia completo, passo a passo: [`06-fluxo-transcricoes.md`](06-fluxo-transcricoes.md)
 
-**O ponto de partida que muda tudo:** o Teams **já salva** a transcrição sozinho — no OneDrive do organizador (`Gravações`) ou no SharePoint do canal. Existe caminho **sem depender de admin**.
+> ⚠️ **Antes de tudo: gravar não é transcrever.** São dois botões no Teams. Só "Iniciar gravação" produz `.mp4` e **nenhuma** transcrição — foi o que aconteceu no primeiro teste aqui. Confirme que a pasta `Recordings` tem o `.vtt` **ao lado** do `.mp4` antes de montar qualquer fluxo.
 
+**O ponto de partida:** com a transcrição ligada, o Teams **já salva** o `.vtt` sozinho — no OneDrive do organizador (`Gravações`) ou no SharePoint do canal. Existe caminho **sem depender de admin**.
+
+- [ ] **Passo 0** — reunião de teste com transcrição ligada, e o `.vtt` apareceu ao lado do `.mp4`
 - [ ] Criar a biblioteca `Transcricoes LT` com as colunas `DataReuniao` e `Origem`
 - [ ] Fluxo automatizado: gatilho no OneDrive → filtrar `.vtt` → limpar → gravar como `LT-AAAA-MM-DD.txt`
 - [ ] Apontar a fonte `Transcription LT Meetings` para a biblioteca, **com a descrição colada**
 - [ ] Testar: `o que foi decidido na LT sobre <projeto>?`
 
-A Rota B (Graph API) fica documentada para quando precisar varrer reuniões de vários organizadores — mas ela depende de três liberações de admin, e uma delas é um controle novo do Teams que muita gente não conhece.
+Se a transcrição automática não for liberada, a **Rota A2** resolve sem depender de ninguém: a pessoa baixa o arquivo do Recap da reunião e solta numa pasta `_entrada`, e o fluxo faz o resto. Dois cliques a cada 15 dias.
+
+A Rota B (Graph API) fica documentada para quando precisar varrer reuniões de vários organizadores — mas depende de três liberações de admin, e uma delas é um controle novo do Teams que muita gente não conhece.
 
 ---
 

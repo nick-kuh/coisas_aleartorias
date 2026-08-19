@@ -4,38 +4,72 @@ Objetivo: a cada reunião de LT, a transcrição chega sozinha na biblioteca do 
 
 ---
 
-## Antes de escolher o caminho: onde o Teams já guarda
+## ⚠️ Passo 0 — gravar não é transcrever
 
-O Teams **já salva a transcrição sozinho**, sem nenhum fluxo. Onde depende do tipo de reunião:
+**Comece por aqui.** Não adianta debugar Power Automate se a origem não existe.
 
-| Tipo de reunião | Onde a transcrição cai |
+No Teams são **dois botões diferentes**:
+
+| Ação | Produz | Onde cai |
+|---|---|---|
+| **Gravar** | `.mp4` — o vídeo | `Recordings` |
+| **Transcrever** | `.vtt` — o texto | `Recordings`, no mesmo lugar |
+
+Clicar só em "Iniciar gravação" gera vídeo e **nenhuma transcrição**. É o erro mais comum de quem valida esse fluxo pela primeira vez — e foi exatamente o que aconteceu no primeiro teste aqui: a pasta tinha só o `.mp4`, e a análise do arquivo confirmou vídeo puro, sem nenhuma faixa de texto embutida.
+
+### Como garantir que o `.vtt` é gerado
+
+1. Na reunião: **⋯ Mais → Gravar e transcrever → Iniciar transcrição**
+2. Melhor, para não depender de alguém lembrar: no convite da LT → **Opções de reunião → Gravar e transcrever automaticamente**
+3. Se a opção nem aparecer, é política do tenant — chamado para o admin habilitar **Transcrição** na política de reunião. É um toggle, muito menor que os três portões da Rota B
+
+### Como confirmar, antes de culpar o fluxo
+
+Abra a pasta `Recordings` no OneDrive. Precisam existir **dois** arquivos com o mesmo nome-base:
+
+```
+teste-20260819_192958UTC-Meeting_Recording.mp4     ← o vídeo
+teste-20260819_192958UTC-Meeting_Recording.vtt     ← a transcrição
+```
+
+**Só o `.mp4`** = a transcrição não foi ligada. Volte ao passo 1.
+
+---
+
+## Onde o Teams guarda
+
+Com a transcrição ligada, o Teams salva os dois arquivos sozinho:
+
+| Tipo de reunião | Onde caem |
 |---|---|
 | Reunião agendada / privada | **OneDrive do organizador** → pasta `Gravações` (`Recordings`) |
 | Reunião de canal | **SharePoint do canal** → `Documentos/Gravações` |
 
-Formato: **`.vtt`** (WebVTT — texto com marcação de tempo). Alguns tenants também geram `.docx`.
-
-Isso muda tudo, porque significa que **existe um caminho sem precisar de admin nenhum**.
+> 📌 **Isso mudou em 2024, e vale saber.** Antes, a transcrição tinha uma cópia numa pasta oculta da caixa do **Exchange Online** do organizador. A Microsoft eliminou essa cópia e unificou tudo no OneDrive/SharePoint, com a mesma retenção e as mesmas permissões do vídeo. Textos antigos na internet ainda falam do Exchange — estão desatualizados.
 
 ---
 
-## As duas rotas
+## As três rotas
 
-| | **Rota A — arquivo** | **Rota B — Graph API** |
-|---|---|---|
-| Como pega | observa a pasta onde o Teams já salvou | chama a API e baixa a transcrição |
-| Precisa de admin? | **Não** | **Sim** — consentimento + policy + config do Teams |
-| Pega ID de reunião/transcrição? | não precisa | sim |
-| Funciona se o organizador variar? | só na pasta observada | sim |
-| Tempo para montar | ~20 min | ~2h + espera do admin |
+| | **Rota A — pasta** | **Rota A2 — arrastar** | **Rota B — Graph** |
+|---|---|---|---|
+| Como pega | observa onde o Teams salvou | você solta o arquivo numa pasta | chama a API |
+| Precisa de admin? | só se **Transcrição** estiver desligada na política | **Não, nunca** | **Sim** — 3 portões |
+| Depende de alguém lembrar? | não | sim, 2 cliques por reunião | não |
+| Funciona com vários organizadores? | só na pasta observada | sim | sim |
+| Tempo para montar | ~20 min | ~15 min | ~2h + espera |
 
-> 🎯 **Recomendação: comece pela Rota A.** Ela resolve o caso da LT quinzenal, que tem organizador fixo e cadência fixa. A Rota B só ganha se você precisar varrer reuniões de várias pessoas — e ela depende de aprovações que, pelo histórico do Bloco 0, demoram.
+> 🎯 **Comece pela Rota A.** Ela resolve a LT quinzenal, que tem organizador fixo e cadência fixa.
+>
+> **Se a transcrição automática não for liberada, vá para a A2 sem culpa.** Para uma reunião a cada 15 dias, 2 cliques é menos custo acumulado do que abrir chamado e esperar aprovação — e não depende de ninguém. Ela está documentada como rota de primeira classe, não como remendo.
+>
+> A Rota B só ganha se você precisar varrer reuniões de muita gente diferente.
 
 ---
 
 # Rota A — sem admin, observando a pasta
 
-## A1. Preparar o destino no SharePoint
+## 1. Preparar o destino no SharePoint
 
 1. No site do CDIO LATAM → **Novo → Biblioteca de documentos**
 2. Nome: **`Transcricoes LT`**
@@ -46,7 +80,7 @@ Isso muda tudo, porque significa que **existe um caminho sem precisar de admin n
 | `DataReuniao` | Data | permite o agente dizer "na LT de 12/08…" |
 | `Origem` | Texto | `Teams` — distingue do que for subido à mão |
 
-## A2. Criar o fluxo
+## 2. Criar o fluxo
 
 **Power Automate → Criar → Fluxo de nuvem automatizado**
 
@@ -62,15 +96,21 @@ Isso muda tudo, porque significa que **existe um caminho sem precisar de admin n
 
 ### Passo 1 — filtrar só transcrição
 
-**Controle → Condição**
+**Controle → Condição**, em **modo avançado**:
 
 ```
-endsWith(triggerOutputs()?['body/Name'], '.vtt')
+@and(
+  not(endsWith(triggerOutputs()?['body/Name'], '.mp4')),
+  or(endsWith(triggerOutputs()?['body/Name'], '.vtt'),
+     endsWith(triggerOutputs()?['body/Name'], '.docx'))
+)
 ```
 
-é igual a `true`. Todo o resto do fluxo vai no ramo **Se sim**.
+Todo o resto do fluxo vai no ramo **Se sim**.
 
-Isso descarta o `.mp4` da gravação, que cai na mesma pasta.
+Isso descarta o `.mp4`, que cai na mesma pasta, e aceita os dois formatos de transcrição.
+
+> ⚠️ **A limpeza dos passos 3–6 só funciona com `.vtt`.** O `.docx` é XML zipado — o `Obter conteúdo` devolve binário, e filtrar por `<v ` não acha nada. Se o seu tenant estiver entregando `.docx`, o caminho é forçar `.vtt` na política de reunião, não tentar processar o Word dentro do fluxo. A condição aceita os dois só para o fluxo **falhar visivelmente** em vez de nunca disparar.
 
 ### Passo 2 — ler o conteúdo
 
@@ -170,7 +210,7 @@ Resultado: `LT-2026-08-19.txt`.
 | DataReuniao | `formatDateTime(triggerOutputs()?['body/LastModified'], 'yyyy-MM-dd')` |
 | Origem | `Teams` |
 
-## A3. Ligar no agente
+## 3. Ligar no agente
 
 Copilot Studio → **Conhecimento** → a fonte `Transcription LT Meetings` deve apontar para a biblioteca **`Transcricoes LT`**.
 
@@ -185,6 +225,58 @@ they said". Contains decisions and commitments that are NOT recorded in Azure
 DevOps or Power BI — this is where the reason lives when the system only shows
 the fact.
 ```
+
+---
+
+# Rota A2 — arrastar o arquivo, sem depender de nada
+
+Use quando a transcrição automática não estiver disponível, ou enquanto o chamado do admin não sai.
+
+**A ideia:** quem organizou a reunião baixa a transcrição e solta numa pasta. O fluxo faz todo o resto — limpar, nomear e arquivar.
+
+## Onde baixar a transcrição
+
+No **chat da reunião** (ou na aba **Recap** da reunião no calendário):
+
+1. Abra a reunião no calendário do Teams → aba **Recap**
+2. Em **Transcrição** → **⋯** → **Baixar** → **.vtt**
+
+São dois cliques. Se a transcrição estiver ali, você não precisa de mais nada.
+
+## O fluxo
+
+Idêntico à Rota A, trocando só o gatilho:
+
+### Gatilho
+
+**SharePoint → Quando um arquivo é criado (somente propriedades)**
+
+| Campo | Valor |
+|---|---|
+| Endereço do site | o site do CDIO LATAM |
+| Nome da biblioteca | `Transcricoes LT` |
+| Pasta | `/_entrada` |
+
+Crie a subpasta `_entrada` dentro da biblioteca. É a caixa de entrada — o arquivo cru cai ali, e o limpo vai para a raiz.
+
+### Passos 1 a 8
+
+**Reaproveite os passos 1 a 8 do fluxo da Rota A**, com duas trocas:
+
+- No passo 2, use **SharePoint → Obter conteúdo do arquivo** em vez do OneDrive
+- No passo 7, o nome do arquivo não pode sair da data do arquivo (que é a data em que você arrastou, não a da reunião). Use a data que está no nome do arquivo baixado, ou uma coluna que você preenche:
+
+```
+concat('LT-', formatDateTime(utcNow(), 'yyyy-MM-dd'), '.txt')
+```
+
+> 🎯 Se você baixar a transcrição no mesmo dia da reunião, `utcNow()` resolve. Se costuma atrasar, é melhor **renomear o arquivo para `LT-AAAA-MM-DD.vtt` antes de soltar** e extrair a data do próprio nome — a data no nome é o que o agente usa para dizer "na LT de 12/08".
+
+### Passo 9 — limpar a caixa de entrada
+
+**SharePoint → Excluir arquivo**, apontando para o `Identificador` do gatilho.
+
+Sem isso o `_entrada` acumula os arquivos crus, e um dia alguém vai reprocessar sem querer.
 
 ---
 
@@ -321,11 +413,14 @@ concat('LT-', formatDateTime(body('Passo_1')?['value'][0]?['start']?['dateTime']
 | `value` vazio | Passo 3 | O `JoinWebUrl` não bateu exatamente — compare caractere a caractere |
 | `404` na transcrição | Passo 5 | A reunião não teve transcrição ligada. **Ligue a transcrição automática na política de reunião** |
 | Arquivo com timestamps | Passo 7 | O Filtrar matriz não pegou — confira se está em **modo avançado** com `@contains(item(), '<v ')` |
+| **Só aparece `.mp4` na pasta** | Rota A | **A transcrição não foi ligada.** Gravar e transcrever são botões diferentes — volte ao Passo 0 |
 | Gatilho não dispara | Rota A | A pasta pode chamar `Recordings` em vez de `Gravações`, conforme o idioma da conta |
+| Transcrição sai como `.docx` | Rota A | A limpeza só funciona com `.vtt`. Force `.vtt` na política de reunião |
 | Fluxo roda 2x | Rota A | O `.vtt` e o `.docx` caem os dois. A condição do Passo 1 já resolve |
 
 ## Checklist
 
+- [ ] **Transcrição ligada** numa reunião de teste, e o `.vtt` apareceu ao lado do `.mp4`
 - [ ] Biblioteca `Transcricoes LT` criada, com as colunas `DataReuniao` e `Origem`
 - [ ] Fluxo criado e testado numa reunião de teste, com transcrição ligada
 - [ ] Arquivo chegou como `LT-AAAA-MM-DD.txt`, sem timestamps, no formato `Locutor: fala`
