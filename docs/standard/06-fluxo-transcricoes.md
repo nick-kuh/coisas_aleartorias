@@ -215,6 +215,42 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 
 É **OneDrive**, não SharePoint — a gravação de reunião agendada cai no OneDrive do organizador.
 
+> ## 🔴 Existem DOIS gatilhos com nome quase igual. Pegar o errado quebra tudo
+>
+> | Gatilho | `operationId` | O que vem no `body` |
+> |---|---|---|
+> | Quando um arquivo é criado | `OnNewFileV2` | 🔴 **o conteúdo do arquivo** (binário) |
+> | Quando um arquivo é criado **(somente propriedades)** | outro | ✅ **nome, caminho, data, id** |
+>
+> **Como o erro se apresenta:**
+>
+> ```
+> 'endsWith' expects its first parameter to be of type string.
+> The provided value is of type 'Null'.
+> ```
+>
+> Isso é `body/Name` vindo vazio — porque com o gatilho errado **o body é o vídeo**, não as propriedades.
+>
+> **E tem um efeito colateral pior que o erro:** com `OnNewFileV2` o fluxo **baixa o `.mp4` inteiro** a cada disparo. Numa gravação de uma hora são centenas de MB trafegados para serem descartados, já que o fluxo só precisa do nome e do caminho.
+>
+> **Como conferir qual você pegou:** abra o gatilho → **⋯ → Exibição de código** e olhe o `operationId`. Se for `OnNewFileV2`, é o errado.
+>
+> Não dá para trocar a operação de um gatilho existente — **apague e adicione o certo**. As expressões `triggerOutputs()?['body/…']` do resto do fluxo continuam válidas.
+
+> ## ⚠️ Antes de confiar em qualquer `body/…`: rode uma vez e olhe
+>
+> Os nomes de campo variam entre conectores, e digitar de memória é o que produz `Null`:
+>
+> | Onde | Pode ser |
+> |---|---|
+> | condição do `.mp4` | `Name` ou `DisplayName` |
+> | caminho do arquivo | `Path` — **as chaves de `{Path}` são convenção do SharePoint**, o OneDrive pode não usar |
+> | data para o nome do arquivo | `LastModified` |
+>
+> **Salve, rode uma vez, e no histórico abra a saída do gatilho.** O JSON mostra os nomes exatos. Só então escreva as expressões.
+>
+> 🎯 **Atalho que economiza uma rodada:** em vez de digitar, use o **seletor de conteúdo dinâmico**. Ele insere o nome certo seja qual for — digitar à mão é exatamente o que gera `{Path}` num conector que talvez use `Path`.
+
 > ⚠️ O gatilho roda na conta de **quem conectar o OneDrive** — precisa ser a do organizador da LT. Se o organizador mudar, o fluxo para de enxergar os arquivos. Ver a nota sobre reunião de canal no fim desta rota.
 
 ### Passo 1 — só o `.mp4`
@@ -657,6 +693,8 @@ concat('LT-', formatDateTime(body('Passo_1')?['value'][0]?['start']?['dateTime']
 | `value` vazio | Passo 3 | O `JoinWebUrl` não bateu exatamente — compare caractere a caractere |
 | `404` na transcrição | Passo 5 | A reunião não teve transcrição ligada. **Ligue a transcrição automática na política de reunião** |
 | Arquivo com timestamps | limpeza | O Filtrar matriz não pegou — confira se está em **modo avançado** com `@contains(item(), '<v ')` |
+| `endsWith … expects … string … provided value is of type 'Null'` | Condição | **Gatilho errado.** `OnNewFileV2` devolve o conteúdo do arquivo, não as propriedades — troque por "(somente propriedades)" |
+| Campo do gatilho sempre vazio | qualquer | O nome não existe nesse conector. Rode uma vez, abra a saída do gatilho e use o nome real |
 | **Só aparece `.mp4` na pasta** | Rota A | **É o comportamento normal.** A transcrição é anexo do vídeo, não arquivo solto. É dela que os passos 3 e 5 vão buscar |
 | `The template language expression ... cannot be evaluated` | qualquer passo | Uma referência `body('X')`/`outputs('X')` aponta para ação que **não existe com esse nome**. Confira os nomes das ações contra as referências |
 | O `Do until` termina em segundos | Passo 3 | **Falta o `Delay` dentro do loop.** "Tempo limite" é teto de duração, não ritmo — sem Delay, as 60 iterações queimam de uma vez |
