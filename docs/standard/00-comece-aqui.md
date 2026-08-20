@@ -297,9 +297,11 @@ Guia completo, passo a passo: [`06-fluxo-transcricoes.md`](06-fluxo-transcricoes
 >
 > E ela **expira em 30 dias**. Copiar para o SharePoint é o que preserva o histórico das LT.
 
-**Ordem recomendada — a A2 primeiro, porque funciona garantido:**
+> ✅ **A rota automática foi validada no tenant em 19/08.** A chamada da API de mídia do SharePoint existe e responde — deixou de ser aposta.
 
-### F1 · Rota A2, manual (~15 min)
+**Ordem recomendada:**
+
+### F1 · Rota A2, manual (~15 min) — rede de segurança
 
 - [ ] Criar a biblioteca `Transcricoes LT` com as colunas `DataReuniao` e `Origem`, e a subpasta `_entrada`
 - [ ] Fluxo: gatilho no `_entrada` → limpar → gravar como `LT-AAAA-MM-DD.txt`
@@ -307,12 +309,12 @@ Guia completo, passo a passo: [`06-fluxo-transcricoes.md`](06-fluxo-transcricoes
 
 Com isso a LT da próxima semana já entra no SharePoint, sem depender de nada dar certo.
 
-### F2 · Rota A, automática (~40 min)
+### F2 · Rota A, automática (~40 min) ✅ **validada**
 
 Usa a **API de mídia do SharePoint** — não o Graph. Sem registro de aplicativo, sem consentimento de admin.
 
-- [ ] F12 → Rede → `transcripts` com o painel aberto, para pegar a **URL real do tenant**
-- [ ] Testar a chamada `.../streamContent?format=text/vtt` isolada — **é o portão**
+- [ ] Capturar a chamada no DevTools (F12 → `+` → **Rede** → filtro `transcripts`) e guardar **site** e **driveId**
+- [ ] Testar as duas variantes: por caminho, e com `?format=text/vtt` — decidem a forma do fluxo
 - [ ] Montar o fluxo: gatilho no `.mp4` → esperar → listar transcrições → baixar VTT → limpar → gravar
 
 ### F3 · Ligar no agente
