@@ -72,9 +72,9 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 > ORIGEM — OneDrive do organizador
 > https://<tenant>-my.sharepoint.com/personal/<upn>/Documents/Recordings/reuniao.mp4
 >         │
->         │  passos 1–5: gatilho no .mp4 · caminho · esperar+listar · id · baixar o VTT
+>         │  passos 1–6: gatilho · caminho · esperar+listar · conferir · id · baixar o VTT
 >         ▼
->    limpeza (passos 6–10) — só texto, não toca em arquivo
+>    limpeza (passos 7–11) — só texto, não toca em arquivo
 >         │
 >         ▼
 > DESTINO — site de equipe do CDIO LATAM
@@ -118,7 +118,7 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 > | Site (`<tenant>-my.sharepoint.com/personal/<upn>`) | **Nunca** | você digita **uma vez** no "Endereço do site" |
 > | `driveId` | **Nunca** — é o mesmo OneDrive | você digita **uma vez** na URI |
 > | `itemId` **ou** o caminho do arquivo | **A cada reunião** | vem do **gatilho** |
-> | `transcriptId` | **A cada reunião** | vem do **passo 3** |
+> | `transcriptId` | **A cada reunião** | vem do **passo 3**, extraído no passo 5 |
 >
 > Duas peças fixas que você descobre uma vez, e duas que o fluxo preenche sozinho. **Reunião semanal, quinzenal ou diária: tanto faz.**
 >
@@ -134,7 +134,7 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 >
 > Exemplo: `nome.sobrenome@empresa.com` → `.../personal/nome_sobrenome_empresa_com` — os `.` e o `@` viram `_`
 >
-> Então nos passos 3 e 5, o campo **"Endereço do site"** recebe **esse endereço do OneDrive**, não o do site de equipe. Não é gambiarra — é o mesmo produto.
+> Então nos passos 3 e 6, o campo **"Endereço do site"** recebe **esse endereço do OneDrive**, não o do site de equipe. Não é gambiarra — é o mesmo produto.
 >
 > **E você não precisa acreditar em mim:** a URL que você capturar no DevTools já mostra o host certo. Se aparecer `-my.sharepoint.com`, está confirmado.
 
@@ -239,7 +239,7 @@ replace(triggerOutputs()?['body/{Path}'], '/Documents', '')
 
 O gatilho traz o caminho com `/Documents` na frente; a raiz do drive **é** o Documents, então ele sai.
 
-> ⚠️ **Deixe este passo ANTES do `Do until`, não dentro.** Ele só depende do gatilho — recalcular a cada iteração é desperdício, e referenciá-lo de fora do loop (os passos 4 e 5 fazem isso) pega o valor da última iteração, o que é frágil sem necessidade.
+> ⚠️ **Deixe este passo ANTES do `Do until`, não dentro.** Ele só depende do gatilho — recalcular a cada iteração é desperdício, e referenciá-lo de fora do loop (o passo 6 faz isso) pega o valor da última iteração, o que é frágil sem necessidade.
 
 ### Passo 3 — esperar e listar as transcrições
 
@@ -269,7 +269,20 @@ E em **⋯ → Configurar execução após**, marque também **com falha**.
 
 > Se a API devolver `404` enquanto a transcrição não existe — em vez de `200` com lista vazia — a ação falha e **o `Do until` aborta na primeira iteração**. Aceitar a falha deixa o loop continuar tentando; o `coalesce` da condição trata a ausência de corpo.
 
-### Passo 4 — extrair o id da transcrição
+### Passo 4 — conferir que a transcrição ficou pronta
+
+**Controle → Condição**, logo após o `Do until`, em modo avançado:
+
+```
+@greater(length(body('Listar_transcricoes')?['value']), 0)
+```
+
+- **Se sim** → o resto do fluxo
+- **Se não** → **Controle → Encerrar** com `Failed`, código `TranscricaoNaoFicouPronta`
+
+> ⚠️ **Por que isso é necessário:** um `Do until` que estoura o limite de tentativas termina com status **Sucesso**, não falha. Sem esta conferência, o fluxo seguiria com a lista vazia, o passo seguinte devolveria `null`, e você receberia um `404` confuso lá na frente — em vez do motivo real, que é "a transcrição nunca ficou pronta".
+
+### Passo 5 — extrair o id da transcrição
 
 **Operações de dados → Compor**, nome `TranscriptId`, **depois** do `Do until`:
 
@@ -279,9 +292,9 @@ last(body('Listar_transcricoes')?['value'])?['id']
 
 Pego a **última** de propósito: se a transcrição foi reiniciada no meio da reunião, a última é a completa.
 
-> 🔴 **Este passo é fácil de esquecer.** O passo 5 monta a URL com `@{outputs('TranscriptId')}` — se o Compose não existir com **exatamente** esse nome, o fluxo falha com referência não resolvida.
+> 🔴 **Este passo é fácil de esquecer.** O passo 6 monta a URL com `@{outputs('TranscriptId')}` — se o Compose não existir com **exatamente** esse nome, o fluxo falha com referência não resolvida.
 
-### Passo 5 — baixar o VTT
+### Passo 6 — baixar o VTT
 
 **SharePoint → Enviar uma solicitação HTTP para o SharePoint**, nomeada `Baixar transcricao`:
 
@@ -295,13 +308,26 @@ Pego a **última** de propósito: se a transcrição foi reiniciada no meio da r
 
 > 📌 A ação chama "…para o **SharePoint**", mas o endereço é o do **OneDrive**. Está certo: OneDrive é um site SharePoint.
 
-> ## ⚠️ O nome da ação **é** a referência
+> ## 🔴 A armadilha nº 1: o nome da ação **é** a referência
 >
-> No Power Automate, `body('X')` e `outputs('X')` usam o **nome da ação**, com espaços virando `_`. Se você renomear uma ação, toda referência a ela quebra — e o erro só aparece na execução.
+> No Power Automate, `body('X')` e `outputs('X')` usam o **nome da ação**, com espaços virando `_`. Se o nome não casar, o fluxo falha na execução com `The template language expression … cannot be evaluated`.
 >
-> Por isso este guia nomeia as ações explicitamente (`Caminho`, `Listar transcricoes`, `TranscriptId`, `Baixar transcricao`, `TextoLimpo`). **Use os mesmos nomes**, ou ajuste todas as referências junto.
+> **Isso já derrubou este fluxo duas vezes, por caminhos diferentes:**
+>
+> | O que aconteceu | Por quê |
+> |---|---|
+> | `TextoLimpo` chamava `body('Selecionar')` | a ação Select tinha sido nomeada `Passo_8` |
+> | `Passo_5` chamava `outputs('TranscriptId')` | o Compose foi criado com o nome padrão `Compose 3` |
+>
+> No segundo caso o conteúdo estava certo — só o **nome** não batia. É o erro mais fácil de cometer e o mais chato de achar, porque tudo *parece* montado.
+>
+> ### Como se proteger
+>
+> 1. **Renomeie toda ação assim que criar.** `Compose 3`, `Condition 1`, `Selecionar` não dizem o que fazem, e viram referência quebrada
+> 2. Use os nomes deste guia: `Caminho`, `Listar transcricoes`, `TranscriptId`, `Baixar transcricao`, `Linhas`, `Falas`, `Limpar`, `TextoLimpo`
+> 3. **Antes de rodar, faça a conferência cruzada:** para cada `body('X')` / `outputs('X')` do fluxo, existe uma ação chamada exatamente `X`? É um minuto e evita a maioria das execuções vermelhas
 
-### Passo 6 — quebrar em linhas
+### Passo 7 — quebrar em linhas
 
 **Operações de dados → Compor**, nome `Linhas`:
 
@@ -311,7 +337,7 @@ split(replace(string(body('Baixar_transcricao')), decodeUriComponent('%0D'), '')
 
 O `decodeUriComponent('%0D')` é `\r` e o `%0A` é `\n`. O Power Automate não aceita `\n` literal numa expressão — é por isso desse jeito.
 
-### Passo 7 — jogar fora tudo que não é fala
+### Passo 8 — jogar fora tudo que não é fala
 
 **Operações de dados → Filtrar matriz**, nome `Falas`
 
@@ -327,7 +353,7 @@ Condição, em **modo avançado**:
 
 **Por que só isso basta:** num `.vtt`, só as linhas de fala têm a marcação de locutor `<v Nome>`. O cabeçalho `WEBVTT`, os identificadores de bloco, os timestamps `00:00:05.123 --> 00:00:08.456` e as linhas em branco **não têm** — e caem todos de uma vez.
 
-### Passo 8 — 🔴 guarda: parar se não veio transcrição
+### Passo 9 — 🔴 guarda: parar se não veio transcrição
 
 **Controle → Condição**, em modo avançado:
 
@@ -335,14 +361,24 @@ Condição, em **modo avançado**:
 @greater(length(body('Falas')), 0)
 ```
 
-- **Se sim** → todo o resto do fluxo (passos 9 em diante)
-- **Se não** → **Controle → Encerrar**, com status `Failed` e mensagem: `Transcrição vazia — conferir o formato devolvido pelo passo 5`
+- **Se sim** → todo o resto do fluxo (passos 10 em diante)
+- **Se não** → **Controle → Encerrar**:
 
-> 🔴 **Não pule este passo.** Sem ele, se o `format=text/vtt` não devolver VTT, o filtro do passo 7 não acha nada, e o fluxo **grava um arquivo vazio no SharePoint sem dar erro**. O agente passa a ler transcrição em branco, e ninguém percebe — até alguém perguntar "o que foi decidido na LT" e receber uma resposta vazia meses depois.
+| Campo | Valor |
+|---|---|
+| Status | `Failed` |
+| Código | `TranscricaoVazia` |
+| Mensagem | `Filtro nao achou linhas com <v — conferir a saida do passo 6` |
+
+> 🔴 **Não pule este passo, e não deixe o ramo "Se não" vazio.**
 >
-> É a diferença entre um problema que você descobre hoje e um que descobre quando já estragou.
+> Sem a condição, se o `format=text/vtt` não devolver VTT o filtro não acha nada e o fluxo **grava um arquivo vazio no SharePoint sem dar erro**.
+>
+> Com a condição mas **sem o Encerrar**, o arquivo vazio deixa de ser gravado ✅ — mas o fluxo termina com status **Sucesso**, verde no histórico. Você não fica sabendo.
+>
+> **A guarda tem duas metades:** impedir o arquivo ruim, e te avisar. Ramo falso vazio entrega só a primeira.
 
-### Passo 9 — limpar a marcação
+### Passo 10 — limpar a marcação
 
 **Operações de dados → Selecionar**, nome `Limpar`
 
@@ -369,7 +405,7 @@ Nome Sobrenome: Precisamos rever o Go-Live do Horizon 2
 
 > ⚠️ **Limitação honesta:** o `replace` troca **todas** as ocorrências. Se alguém falar algo com `>` no meio, aquela linha sai torta. Na prática é raro em transcrição de voz, e o custo de tratar isso direito não compensa — mas é bom você saber que existe.
 
-### Passo 10 — juntar de volta
+### Passo 11 — juntar de volta
 
 **Operações de dados → Compor**, nome `TextoLimpo`:
 
@@ -379,7 +415,7 @@ join(body('Limpar'), decodeUriComponent('%0A'))
 
 > ⚠️ Repare que é `body('Limpar')` — **o nome da ação Selecionar**, não a palavra "Selecionar". Referência que não casa com o nome real da ação derruba o fluxo na execução.
 
-### Passo 11 — gravar no SharePoint 🎯 **aqui muda de lugar**
+### Passo 12 — gravar no SharePoint 🎯 **aqui muda de lugar**
 
 Até agora tudo aconteceu na **origem** (OneDrive). Deste passo em diante é o **destino**: o site de equipe do CDIO LATAM, que é o que o agente enxerga.
 
@@ -387,7 +423,7 @@ Até agora tudo aconteceu na **origem** (OneDrive). Deste passo em diante é o *
 
 | Campo | Valor |
 |---|---|
-| Endereço do site | 🎯 **o site do CDIO LATAM**, **não** o OneDrive dos passos 3 e 5 |
+| Endereço do site | 🎯 **o site do CDIO LATAM**, **não** o OneDrive dos passos 3 e 6 |
 | Caminho da pasta | a biblioteca de transcrições |
 | Nome do arquivo | expressão abaixo |
 | Conteúdo do arquivo | `outputs('TextoLimpo')` |
@@ -400,7 +436,7 @@ Resultado: `LT-2026-08-19-1929.txt`.
 
 > 📌 **Por que `HHmm` e não só a data:** duas gravações no mesmo dia gerariam o mesmo nome e colidiriam. A data continua legível para a busca semântica, e a hora elimina a colisão. Se as LT são sempre uma por dia, dá para usar só `yyyy-MM-dd` e aceitar o risco.
 
-### Passo 12 — preencher as colunas
+### Passo 13 — preencher as colunas
 
 **SharePoint → Atualizar propriedades do arquivo**
 
@@ -624,8 +660,11 @@ concat('LT-', formatDateTime(body('Passo_1')?['value'][0]?['start']?['dateTime']
 | **Só aparece `.mp4` na pasta** | Rota A | **É o comportamento normal.** A transcrição é anexo do vídeo, não arquivo solto. É dela que os passos 3 e 5 vão buscar |
 | `The template language expression ... cannot be evaluated` | qualquer passo | Uma referência `body('X')`/`outputs('X')` aponta para ação que **não existe com esse nome**. Confira os nomes das ações contra as referências |
 | O `Do until` termina em segundos | Passo 3 | **Falta o `Delay` dentro do loop.** "Tempo limite" é teto de duração, não ritmo — sem Delay, as 60 iterações queimam de uma vez |
-| Arquivo gravado **vazio** no SharePoint | Passo 8 | A guarda não foi criada, e o `format=text/vtt` não devolveu VTT. Abra a saída do passo 5 e veja o que realmente voltou |
+| Arquivo gravado **vazio** no SharePoint | Passo 9 | A guarda não foi criada, e o `format=text/vtt` não devolveu VTT. Abra a saída do passo 6 e veja o que realmente voltou |
 | `Do until` aborta na 1ª volta | Passo 3 | A chamada falhou (404 de "ainda não pronto") e derrubou o loop. Marque **com falha** em Configurar execução após |
+| **Fluxo verde, mas nada foi gravado** | Passo 9 | O ramo "Se não" da guarda está **vazio**. Sem o `Encerrar`, o fluxo termina em sucesso e o problema fica invisível |
+| **Fluxo verde, e a transcrição nunca chegou** | Passo 4 | Um `Do until` que estoura o limite termina em **sucesso**, não falha. Falta a condição pós-loop |
+| `404` no passo 6, com o passo 3 tendo funcionado | Passo 5 | O id da transcrição saiu vazio — quase sempre é o nome da ação não batendo com `outputs('TranscriptId')` |
 | Lista de transcrições vazia | Passo 4 | Ou a transcrição ainda está processando (aumente o atraso do passo 2), ou a reunião não teve transcrição ligada |
 | `403` ou `404` na chamada HTTP | Passos 4–5 | A URL não bate com a do seu tenant. Compare com a que você pegou no DevTools |
 | Gatilho não dispara | Rota A | A pasta pode chamar `Recordings` em vez de `Gravações`, conforme o idioma da conta |
