@@ -94,24 +94,25 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 > A URL parece um bloco único, mas tem quatro pedaços com destinos diferentes:
 >
 > ```
-> https://unilever-my.sharepoint.com/personal/nicolas_kuhnast_unilever_com
-> └─────────────────── FIXO — nunca muda ───────────────────┘
->    /_api/v2.1/drives/b!AbCdEf123.../items/01XYZ789.../media/transcripts/GhIjKl.../streamContent?format=text/vtt
->                      └─── FIXO ───┘      └── MUDA ──┘                  └── MUDA ──┘
+> https://<tenant>-my.sharepoint.com/personal/<upn>
+> └─────────────── FIXO — nunca muda ───────────────┘
+>    /_api/v2.1/drive/root:/Recordings/reuniao.mp4:/media/transcripts/GhIjKl.../streamContent?format=text/vtt
+>                          └───── MUDA ─────┘                        └── MUDA ──┘
 > ```
 >
 > | Pedaço | Muda? | De onde vem |
 > |---|---|---|
 > | Host + `/personal/<upn>` | **Nunca** | você digita **uma vez** no "Endereço do site" |
-> | `driveId` | **Nunca**, enquanto for o mesmo organizador | você digita **uma vez** na URI |
-> | `itemId` | **A cada reunião** | vem do **gatilho** — é o `.mp4` novo |
+> | `/Recordings/<arquivo>.mp4` | **A cada reunião** | vem do **gatilho** — é o arquivo novo |
 > | `transcriptId` | **A cada reunião** | vem do **passo 4** |
 >
-> O **tenant é sempre o mesmo** — é a Unilever, não muda nunca. O `driveId` também não, porque é o mesmo OneDrive. Você captura no DevTools uma vez, guarda esses dois, e deixa os outros dois saírem dinamicamente do fluxo.
+> Endereçando **por caminho** (`drive/root:/…`) em vez de por ID, some o `driveId` — e com ele some a necessidade de garimpar identificador em qualquer lugar.
+>
+> O **tenant é sempre o mesmo** e o OneDrive do organizador também. Você descobre o endereço do site **uma vez**, e o resto sai dinamicamente do fluxo a cada reunião.
 >
 > Reunião semanal, quinzenal ou diária: tanto faz. A parte fixa é a mesma sempre.
 >
-> ⚠️ **O que quebraria isso:** trocar o organizador da LT. Aí o `/personal/<upn>` e o `driveId` viram outros, porque passa a ser o OneDrive de outra pessoa. É o mesmo risco da nota sobre reunião de canal, no fim desta rota.
+> ⚠️ **O que quebraria isso:** trocar o organizador da LT. Aí o `/personal/<upn>` vira outro, porque passa a ser o OneDrive de outra pessoa. É o mesmo risco da nota sobre reunião de canal, no fim desta rota.
 
 > ### 🔑 Por que a ação "…para o SharePoint" funciona num arquivo do OneDrive
 >
@@ -141,22 +142,53 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 
 ## 2. Criar o fluxo
 
-> ### 🎯 Antes de tudo: capture a URL real — **uma vez só**
+> ## 🎯 Passo zero: teste a API na barra de endereços — 5 segundos
 >
-> Eu confirmei a **forma** do endpoint, mas não consigo testar no seu ambiente. Em vez de você depender de eu ter acertado, leia a URL do seu próprio navegador.
+> Você já está autenticado no navegador. Um `GET` é só colar e ver o JSON voltar — não precisa de DevTools nem de montar fluxo para descobrir se funciona.
 >
-> **Atenção:** a aba **Rede** normalmente **não vem aberta**. Se você vir só `Bem-vindo · Elementos · Console · Fontes`, ela está escondida atrás do botão `+`.
+> Monte as URLs assim, a partir do endereço da gravação:
 >
-> 1. Abra a gravação no Stream, com o painel **Transcrição** visível
-> 2. **F12**
-> 3. Nas abas do DevTools, clique no **`+`** → escolha **Rede**
-> 4. Na caixa **Filtro** da aba Rede, digite `transcripts`
-> 5. **Feche e reabra o painel Transcrição** no player — isso redispara a chamada, e é mais confiável que recarregar a página
-> 6. Vai aparecer uma linha. Clique nela → aba **Cabeçalhos** → copie o **URL da solicitação**
+> ```
+> <SITE>/_api/v2.1/drive/root:<CAMINHO>
+> <SITE>/_api/v2.1/drive/root:<CAMINHO>:/media/transcripts
+> ```
 >
-> Se não achar o campo: **botão direito na linha → Copiar → Copiar link do endereço.**
+> | Pedaço | Como obter |
+> |---|---|
+> | `<SITE>` | abra a gravação e copie da barra de endereços tudo até `/personal/<seu_upn>`. Ex.: `https://<tenant>-my.sharepoint.com/personal/nome_sobrenome_empresa_com` |
+> | `<CAMINHO>` | o caminho **dentro do drive**, começando em `/Recordings/…`. Espaços viram `%20` |
 >
-> Se **nenhuma linha** aparecer, é porque o painel já estava carregado antes de você abrir a aba Rede. Feche e reabra o painel de novo — o filtro só captura o que passa depois de estar ligado.
+> ⚠️ **`Documents` não entra no caminho.** Ele é a raiz do drive. Se a barra de endereços mostra `.../Documents/Recordings/arquivo.mp4`, o `<CAMINHO>` é só `/Recordings/arquivo.mp4`.
+>
+> **Exemplo montado:**
+>
+> ```
+> https://<tenant>-my.sharepoint.com/personal/<upn>/_api/v2.1/drive/root:/Recordings/teste-20260819_192958UTC-Meeting%20Recording.mp4:/media/transcripts
+> ```
+>
+> ### O que a resposta te diz
+>
+> | Voltou | Significa | Faça |
+> |---|---|---|
+> | JSON com `value` e uma lista | ✅ **a Rota A funciona no seu tenant** | siga o fluxo abaixo |
+> | `404` na primeira URL | o caminho está errado | confira que tirou o `Documents` e que os espaços viraram `%20` |
+> | `404` só na segunda | `media/transcripts` não existe nesse tenant | **pare aqui** e vá para a Rota A2 — não vale insistir |
+> | `403` | política | improvável no seu próprio OneDrive |
+> | Baixou um arquivo | normal no `streamContent` | abra o arquivo, é o VTT |
+>
+> **A segunda URL é o portão.** Se ela responder, o resto é encanamento. Se der 404, você economizou uma tarde.
+
+> ### 🔧 Plano B — DevTools, se o caminho não servir
+>
+> Só se as URLs acima falharem e você quiser ver a chamada que o player realmente faz:
+>
+> 1. Com a gravação aberta e o painel **Transcrição** visível, **F12**
+> 2. A aba **Rede** normalmente **não vem aberta** — está atrás do botão **`+`**
+> 3. Filtro: `transcripts`
+> 4. **Feche e reabra o painel Transcrição** — redispara a chamada sem recarregar a página
+> 5. Clique na linha → **Cabeçalhos** → copie o **URL da solicitação**
+>
+> ⚠️ Não confunda com a URL da **barra de endereços**: aquela contém `stream.aspx` e `referrerScenario=AddressBarCopied`, e **não é** a chamada da API.
 
 **Power Automate → Criar → Fluxo de nuvem automatizado**
 
@@ -192,41 +224,17 @@ O `.mp4` aparece na pasta **antes** de a transcrição terminar de processar. Se
 
 > Se 10 minutos não bastarem no seu caso, o certo não é aumentar o número no chute: use **Controle → Do until**, repetindo o passo 4 até `length(body('Passo_4')?['value'])` ser maior que zero, com limite de tentativas.
 
-### Passo 3 — identificar o vídeo
+### Passo 3 — montar o caminho
 
-**OneDrive for Business → Obter metadados do arquivo**
-
-| Campo | Valor |
-|---|---|
-| Arquivo | `Identificador` do gatilho |
-
-Também **OneDrive**, pela mesma razão do gatilho: é lá que o arquivo está.
-
-É daqui que saem os identificadores para montar a URL dos passos 4 e 5. Compare com a URL do DevTools — se o formato não bater, o molde do DevTools manda.
-
-### De-para: da URL capturada para os campos do fluxo
-
-Com a URL do DevTools na mão, é assim que ela se distribui:
+**Operações de dados → Compor**, nome `Caminho`:
 
 ```
-https://unilever-my.sharepoint.com/personal/nicolas_kuhnast_unilever_com/_api/v2.1/drives/b!AbC.../items/01XYZ.../media/transcripts
-└──────────────── vai no "Endereço do site" ────────────────┘└──────────── vai na "URI" ────────────┘
+replace(triggerOutputs()?['body/{Path}'], '/Documents', '')
 ```
 
-| Campo no Power Automate | O que colar |
-|---|---|
-| **Endereço do site** (passos 4 e 5) | tudo **antes** de `/_api/` |
-| **URI do passo 4** | `_api/v2.1/drives/<seu driveId>/items/@{triggerOutputs()?['body/{Identifier}']}/media/transcripts` |
-| **URI do passo 5** | a mesma, mais `/@{outputs('TranscriptId')}/streamContent?format=text/vtt` |
+Endereçando por caminho, **não é preciso descobrir nenhum ID** — nem `driveId`, nem `itemId`. O gatilho já traz o caminho do arquivo; só tiramos o `/Documents`, porque ele é a raiz do drive e não entra na URL.
 
-**Os dois únicos pedaços dinâmicos:**
-
-- `itemId` → sai do **gatilho** (o `.mp4` que acabou de chegar)
-- `transcriptId` → sai do **passo 4**
-
-O resto você digita uma vez e nunca mais toca.
-
-> ⚠️ Se o `itemId` do gatilho não bater com o formato que você viu no DevTools, o caminho é o passo 3 (**Obter metadados**) — o campo `Id` de lá é o que a API v2.1 espera. Compare os dois antes de sair mudando outra coisa.
+> Se preferir conferir antes: rode o fluxo uma vez e olhe a saída deste `Compor`. Tem que ser igual ao caminho que funcionou no teste do passo zero.
 
 ### Passo 4 — listar as transcrições do vídeo
 
@@ -236,9 +244,17 @@ O resto você digita uma vez e nunca mais toca.
 |---|---|
 | Endereço do site | 🔑 **o OneDrive**: `https://<tenant>-my.sharepoint.com/personal/<upn>` |
 | Método | `GET` |
-| URI | `_api/v2.1/drives/{driveId}/items/{itemId}/media/transcripts` |
+| URI | `_api/v2.1/drive/root:@{outputs('Caminho')}:/media/transcripts` |
 
-> 📌 Aqui está a parte que confunde: a ação chama "…para o **SharePoint**", mas o endereço é o do **OneDrive**. Está certo — OneDrive é um site SharePoint. Use o host que aparecer no DevTools.
+> 📌 A ação chama "…para o **SharePoint**", mas o endereço é o do **OneDrive**. Está certo — OneDrive é um site SharePoint.
+
+Antes dela, um **Compor** chamado `Caminho`, para tirar o `Documents` que o gatilho traz na frente:
+
+```
+replace(triggerOutputs()?['body/{Path}'], '/Documents', '')
+```
+
+> ⚠️ **Confira contra o teste do passo zero.** Se lá o caminho que funcionou foi `/Recordings/arquivo.mp4`, o `Compor` tem que produzir exatamente isso. Rode o fluxo uma vez e olhe a saída do `Compor` antes de culpar a chamada HTTP.
 
 Devolve um JSON com a lista. **Compor** `TranscriptId`:
 
@@ -256,11 +272,11 @@ Pego a **última** de propósito: se a transcrição foi reiniciada no meio da r
 |---|---|
 | Endereço do site | o mesmo do passo 4 — **o OneDrive** |
 | Método | `GET` |
-| URI | `_api/v2.1/drives/{driveId}/items/{itemId}/media/transcripts/@{outputs('TranscriptId')}/streamContent?format=text/vtt` |
+| URI | `_api/v2.1/drive/root:@{outputs('Caminho')}:/media/transcripts/@{outputs('TranscriptId')}/streamContent?format=text/vtt` |
 
 O corpo da resposta é o `.vtt` cru — o mesmo texto que você vê no painel lateral.
 
-> ✅ **Este é o passo que decide tudo.** Se ele devolver o VTT, o resto é encanamento: os passos seguintes são os mesmos de qualquer transcrição em texto. Se devolver erro, teste a URL do DevTools direto antes de mexer em qualquer outra coisa.
+> ✅ **Se o passo zero já passou, este aqui é só repetir a URL que funcionou**, trocando o arquivo fixo pelo `@{outputs('Caminho')}`.
 
 ### Passo 6 — quebrar em linhas
 
@@ -573,8 +589,8 @@ concat('LT-', formatDateTime(body('Passo_1')?['value'][0]?['start']?['dateTime']
 
 ## Checklist
 
-- [ ] URL real capturada no DevTools — **uma vez só** (F12 → `+` → Rede → filtro `transcripts`)
-- [ ] Host e `driveId` separados da URL, e guardados: são a parte que nunca muda
+- [ ] **Passo zero** — as duas URLs testadas na barra de endereços, e a de `media/transcripts` devolveu JSON
+- [ ] Endereço do site guardado: `https://<tenant>-my.sharepoint.com/personal/<upn>` — é a parte que nunca muda
 - [ ] Chamada do passo 5 devolvendo o VTT cru — **é o portão, teste isolado antes do resto**
 - [ ] Biblioteca `Transcricoes LT` criada, com as colunas `DataReuniao` e `Origem`
 - [ ] Fluxo criado e testado numa reunião de teste, com transcrição ligada
