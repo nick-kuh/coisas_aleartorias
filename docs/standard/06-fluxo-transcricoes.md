@@ -72,9 +72,9 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 > ORIGEM — OneDrive do organizador
 > https://<tenant>-my.sharepoint.com/personal/<upn>/Documents/Recordings/reuniao.mp4
 >         │
->         │  passos 1–5: gatilho no .mp4 · esperar · identificar · listar · baixar o VTT
+>         │  passos 1–5: gatilho no .mp4 · caminho · esperar+listar · id · baixar o VTT
 >         ▼
->    limpeza (passos 6–9) — só texto, não toca em arquivo
+>    limpeza (passos 6–10) — só texto, não toca em arquivo
 >         │
 >         ▼
 > DESTINO — site de equipe do CDIO LATAM
@@ -118,7 +118,7 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 > | Site (`<tenant>-my.sharepoint.com/personal/<upn>`) | **Nunca** | você digita **uma vez** no "Endereço do site" |
 > | `driveId` | **Nunca** — é o mesmo OneDrive | você digita **uma vez** na URI |
 > | `itemId` **ou** o caminho do arquivo | **A cada reunião** | vem do **gatilho** |
-> | `transcriptId` | **A cada reunião** | vem do **passo 4** |
+> | `transcriptId` | **A cada reunião** | vem do **passo 3** |
 >
 > Duas peças fixas que você descobre uma vez, e duas que o fluxo preenche sozinho. **Reunião semanal, quinzenal ou diária: tanto faz.**
 >
@@ -134,7 +134,7 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 >
 > Exemplo: `nome.sobrenome@empresa.com` → `.../personal/nome_sobrenome_empresa_com` — os `.` e o `@` viram `_`
 >
-> Então nos passos 4 e 5, o campo **"Endereço do site"** recebe **esse endereço do OneDrive**, não o do site de equipe. Não é gambiarra — é o mesmo produto.
+> Então nos passos 3 e 5, o campo **"Endereço do site"** recebe **esse endereço do OneDrive**, não o do site de equipe. Não é gambiarra — é o mesmo produto.
 >
 > **E você não precisa acreditar em mim:** a URL que você capturar no DevTools já mostra o host certo. Se aparecer `-my.sharepoint.com`, está confirmado.
 
@@ -229,23 +229,9 @@ endsWith(triggerOutputs()?['body/Name'], '.mp4')
 
 > 📌 Repare que é o **oposto** do que faria sentido à primeira vista. Não existe `.vtt` na pasta para filtrar — o `.mp4` é o item que **carrega** a transcrição, e é dele que vamos pedi-la.
 
-### Passo 2 — esperar a transcrição ficar pronta
+### Passo 2 — montar o caminho  ⚠️ **fora do loop**
 
-**Controle → Atraso** — 10 minutos.
-
-O `.mp4` aparece na pasta **antes** de a transcrição terminar de processar. Sem essa espera, o passo 4 volta lista vazia e o fluxo "funciona" sem trazer nada.
-
-> Se 10 minutos não bastarem no seu caso, o certo não é aumentar o número no chute: use **Controle → Do until**, repetindo o passo 4 até `length(body('Passo_4')?['value'])` ser maior que zero, com limite de tentativas.
-
-### Passos 3 a 5 — pedir a transcrição
-
-Duas formas. **Use a que passou no teste do passo zero.**
-
-#### Forma 1 — por caminho (se a variante A funcionou)
-
-Mais simples: não precisa descobrir `itemId`.
-
-**Passo 3** — **Operações de dados → Compor**, nome `Caminho`:
+**Operações de dados → Compor**, nome `Caminho`:
 
 ```
 replace(triggerOutputs()?['body/{Path}'], '/Documents', '')
@@ -253,7 +239,25 @@ replace(triggerOutputs()?['body/{Path}'], '/Documents', '')
 
 O gatilho traz o caminho com `/Documents` na frente; a raiz do drive **é** o Documents, então ele sai.
 
-**Passo 4** — **SharePoint → Enviar uma solicitação HTTP para o SharePoint**
+> ⚠️ **Deixe este passo ANTES do `Do until`, não dentro.** Ele só depende do gatilho — recalcular a cada iteração é desperdício, e referenciá-lo de fora do loop (os passos 4 e 5 fazem isso) pega o valor da última iteração, o que é frágil sem necessidade.
+
+### Passo 3 — esperar e listar as transcrições
+
+**Controle → Do until**
+
+| Campo | Valor |
+|---|---|
+| Condição (modo avançado) | `@greater(length(coalesce(body('Listar_transcricoes')?['value'], json('[]'))), 0)` |
+| Contagem | `60` |
+| Tempo limite | `PT1H` |
+
+**Dentro do loop, nesta ordem:**
+
+**4a. Controle → Atraso** — `30` segundos.
+
+> 🔴 **Sem este atraso, o loop de espera não espera.** O campo "Tempo limite" é o **teto** de duração, não o ritmo: sem um Delay dentro, as 60 iterações queimam em poucos segundos e o loop desiste, enquanto a transcrição leva minutos para processar. Com 30 s × 60, a espera cobre até 30 minutos reais.
+
+**4b. SharePoint → Enviar uma solicitação HTTP para o SharePoint**, nomeada `Listar transcricoes`:
 
 | Campo | Valor |
 |---|---|
@@ -261,47 +265,55 @@ O gatilho traz o caminho com `/Documents` na frente; a raiz do drive **é** o Do
 | Método | `GET` |
 | URI | `_api/v2.1/drives/<seu driveId>/root:@{outputs('Caminho')}:/media/transcripts` |
 
-**Passo 5** — mesma ação, com a URI:
+E em **⋯ → Configurar execução após**, marque também **com falha**.
+
+> Se a API devolver `404` enquanto a transcrição não existe — em vez de `200` com lista vazia — a ação falha e **o `Do until` aborta na primeira iteração**. Aceitar a falha deixa o loop continuar tentando; o `coalesce` da condição trata a ausência de corpo.
+
+### Passo 4 — extrair o id da transcrição
+
+**Operações de dados → Compor**, nome `TranscriptId`, **depois** do `Do until`:
 
 ```
-_api/v2.1/drives/<seu driveId>/root:@{outputs('Caminho')}:/media/transcripts/@{outputs('TranscriptId')}/streamContent?format=text/vtt
-```
-
-#### Forma 2 — por `itemId` (se a variante A falhou)
-
-**Passo 3** — **OneDrive for Business → Obter metadados do arquivo**, com o `Identificador` do gatilho. A saída `Id` é o `itemId`.
-
-**Passos 4 e 5** — as mesmas ações, trocando `root:@{outputs('Caminho')}:` por `items/@{outputs('Obter_metadados_do_arquivo')?['Id']}`.
-
-> ⚠️ **Confira o formato antes de brigar com a chamada.** O `itemId` capturado no DevTools tem cara de `01JZ7SIC…`. Se o que o conector devolve for diferente, é sinal de que a Forma 1 é o caminho — ou que falta um passo resolvendo caminho → id pela própria API.
-
-#### Nos dois casos, entre os passos 4 e 5
-
-**Operações de dados → Compor**, nome `TranscriptId`:
-
-```
-last(body('Passo_4')?['value'])?['id']
+last(body('Listar_transcricoes')?['value'])?['id']
 ```
 
 Pego a **última** de propósito: se a transcrição foi reiniciada no meio da reunião, a última é a completa.
 
-> ✅ **O passo 5 é o portão.** Se ele devolver o VTT, o resto é encanamento — os passos seguintes tratam texto e não dependem de mais nada da API.
->
+> 🔴 **Este passo é fácil de esquecer.** O passo 5 monta a URL com `@{outputs('TranscriptId')}` — se o Compose não existir com **exatamente** esse nome, o fluxo falha com referência não resolvida.
+
+### Passo 5 — baixar o VTT
+
+**SharePoint → Enviar uma solicitação HTTP para o SharePoint**, nomeada `Baixar transcricao`:
+
+| Campo | Valor |
+|---|---|
+| Endereço do site | o mesmo do passo 3 — **o OneDrive** |
+| Método | `GET` |
+| URI | `_api/v2.1/drives/<seu driveId>/root:@{outputs('Caminho')}:/media/transcripts/@{outputs('TranscriptId')}/streamContent?format=text/vtt` |
+
+> ✅ **Este é o portão.** Rode uma vez e **abra a saída desta ação**, não confie no verde: se começar com `WEBVTT` e tiver `<v Nome>`, a limpeza abaixo funciona como está. Se vier JSON, o `format=text/vtt` não é suportado e a limpeza precisa virar **Analisar JSON** em vez do filtro por `<v `.
+
 > 📌 A ação chama "…para o **SharePoint**", mas o endereço é o do **OneDrive**. Está certo: OneDrive é um site SharePoint.
+
+> ## ⚠️ O nome da ação **é** a referência
+>
+> No Power Automate, `body('X')` e `outputs('X')` usam o **nome da ação**, com espaços virando `_`. Se você renomear uma ação, toda referência a ela quebra — e o erro só aparece na execução.
+>
+> Por isso este guia nomeia as ações explicitamente (`Caminho`, `Listar transcricoes`, `TranscriptId`, `Baixar transcricao`, `TextoLimpo`). **Use os mesmos nomes**, ou ajuste todas as referências junto.
 
 ### Passo 6 — quebrar em linhas
 
 **Operações de dados → Compor**, nome `Linhas`:
 
 ```
-split(replace(string(body('Passo_5')), decodeUriComponent('%0D'), ''), decodeUriComponent('%0A'))
+split(replace(string(body('Baixar_transcricao')), decodeUriComponent('%0D'), ''), decodeUriComponent('%0A'))
 ```
 
 O `decodeUriComponent('%0D')` é `\r` e o `%0A` é `\n`. O Power Automate não aceita `\n` literal numa expressão — é por isso desse jeito.
 
 ### Passo 7 — jogar fora tudo que não é fala
 
-**Operações de dados → Filtrar matriz**
+**Operações de dados → Filtrar matriz**, nome `Falas`
 
 | Campo | Valor |
 |---|---|
@@ -315,13 +327,28 @@ Condição, em **modo avançado**:
 
 **Por que só isso basta:** num `.vtt`, só as linhas de fala têm a marcação de locutor `<v Nome>`. O cabeçalho `WEBVTT`, os identificadores de bloco, os timestamps `00:00:05.123 --> 00:00:08.456` e as linhas em branco **não têm** — e caem todos de uma vez.
 
-### Passo 8 — limpar a marcação
+### Passo 8 — 🔴 guarda: parar se não veio transcrição
 
-**Operações de dados → Selecionar**
+**Controle → Condição**, em modo avançado:
+
+```
+@greater(length(body('Falas')), 0)
+```
+
+- **Se sim** → todo o resto do fluxo (passos 9 em diante)
+- **Se não** → **Controle → Encerrar**, com status `Failed` e mensagem: `Transcrição vazia — conferir o formato devolvido pelo passo 5`
+
+> 🔴 **Não pule este passo.** Sem ele, se o `format=text/vtt` não devolver VTT, o filtro do passo 7 não acha nada, e o fluxo **grava um arquivo vazio no SharePoint sem dar erro**. O agente passa a ler transcrição em branco, e ninguém percebe — até alguém perguntar "o que foi decidido na LT" e receber uma resposta vazia meses depois.
+>
+> É a diferença entre um problema que você descobre hoje e um que descobre quando já estragou.
+
+### Passo 9 — limpar a marcação
+
+**Operações de dados → Selecionar**, nome `Limpar`
 
 | Campo | Valor |
 |---|---|
-| De | `body('Filtrar_matriz')` |
+| De | `body('Falas')` |
 | Mapear | modo texto (ícone à direita), com a expressão abaixo |
 
 ```
@@ -331,26 +358,28 @@ replace(replace(replace(item(), '<v ', ''), '</v>', ''), '>', ': ')
 O que acontece com uma linha:
 
 ```
-<v Nicolas Kuhnast>Precisamos rever o Go-Live do Horizon 2</v>
+<v Nome Sobrenome>Precisamos rever o Go-Live do Horizon 2</v>
    ↓  tira '<v '
-Nicolas Kuhnast>Precisamos rever o Go-Live do Horizon 2</v>
+Nome Sobrenome>Precisamos rever o Go-Live do Horizon 2</v>
    ↓  tira '</v>'
-Nicolas Kuhnast>Precisamos rever o Go-Live do Horizon 2
+Nome Sobrenome>Precisamos rever o Go-Live do Horizon 2
    ↓  troca '>' por ': '
-Nicolas Kuhnast: Precisamos rever o Go-Live do Horizon 2
+Nome Sobrenome: Precisamos rever o Go-Live do Horizon 2
 ```
 
 > ⚠️ **Limitação honesta:** o `replace` troca **todas** as ocorrências. Se alguém falar algo com `>` no meio, aquela linha sai torta. Na prática é raro em transcrição de voz, e o custo de tratar isso direito não compensa — mas é bom você saber que existe.
 
-### Passo 9 — juntar de volta
+### Passo 10 — juntar de volta
 
 **Operações de dados → Compor**, nome `TextoLimpo`:
 
 ```
-join(body('Selecionar'), decodeUriComponent('%0A'))
+join(body('Limpar'), decodeUriComponent('%0A'))
 ```
 
-### Passo 10 — gravar no SharePoint 🎯 **aqui muda de lugar**
+> ⚠️ Repare que é `body('Limpar')` — **o nome da ação Selecionar**, não a palavra "Selecionar". Referência que não casa com o nome real da ação derruba o fluxo na execução.
+
+### Passo 11 — gravar no SharePoint 🎯 **aqui muda de lugar**
 
 Até agora tudo aconteceu na **origem** (OneDrive). Deste passo em diante é o **destino**: o site de equipe do CDIO LATAM, que é o que o agente enxerga.
 
@@ -358,20 +387,20 @@ Até agora tudo aconteceu na **origem** (OneDrive). Deste passo em diante é o *
 
 | Campo | Valor |
 |---|---|
-| Endereço do site | 🎯 **o site do CDIO LATAM** — `https://<tenant>.sharepoint.com/sites/<CDIO-LATAM>`, **não** o OneDrive dos passos 4 e 5 |
-| Caminho da pasta | `/Transcricoes LT` |
+| Endereço do site | 🎯 **o site do CDIO LATAM**, **não** o OneDrive dos passos 3 e 5 |
+| Caminho da pasta | a biblioteca de transcrições |
 | Nome do arquivo | expressão abaixo |
 | Conteúdo do arquivo | `outputs('TextoLimpo')` |
 
 ```
-concat('LT-', formatDateTime(triggerOutputs()?['body/LastModified'], 'yyyy-MM-dd'), '.txt')
+concat('LT-', formatDateTime(triggerOutputs()?['body/LastModified'], 'yyyy-MM-dd-HHmm'), '.txt')
 ```
 
-Resultado: `LT-2026-08-19.txt`.
+Resultado: `LT-2026-08-19-1929.txt`.
 
-> 🎯 **A data no nome não é enfeite.** É como o agente responde "o que foi decidido na LT de agosto" — a busca semântica lê o nome do arquivo junto com o conteúdo. Nome genérico como `transcricao.txt` derruba a precisão.
+> 📌 **Por que `HHmm` e não só a data:** duas gravações no mesmo dia gerariam o mesmo nome e colidiriam. A data continua legível para a busca semântica, e a hora elimina a colisão. Se as LT são sempre uma por dia, dá para usar só `yyyy-MM-dd` e aceitar o risco.
 
-### Passo 11 — preencher as colunas
+### Passo 12 — preencher as colunas
 
 **SharePoint → Atualizar propriedades do arquivo**
 
@@ -592,7 +621,11 @@ concat('LT-', formatDateTime(body('Passo_1')?['value'][0]?['start']?['dateTime']
 | `value` vazio | Passo 3 | O `JoinWebUrl` não bateu exatamente — compare caractere a caractere |
 | `404` na transcrição | Passo 5 | A reunião não teve transcrição ligada. **Ligue a transcrição automática na política de reunião** |
 | Arquivo com timestamps | limpeza | O Filtrar matriz não pegou — confira se está em **modo avançado** com `@contains(item(), '<v ')` |
-| **Só aparece `.mp4` na pasta** | Rota A | **É o comportamento normal.** A transcrição é anexo do vídeo, não arquivo solto. É dela que os passos 4 e 5 vão buscar |
+| **Só aparece `.mp4` na pasta** | Rota A | **É o comportamento normal.** A transcrição é anexo do vídeo, não arquivo solto. É dela que os passos 3 e 5 vão buscar |
+| `The template language expression ... cannot be evaluated` | qualquer passo | Uma referência `body('X')`/`outputs('X')` aponta para ação que **não existe com esse nome**. Confira os nomes das ações contra as referências |
+| O `Do until` termina em segundos | Passo 3 | **Falta o `Delay` dentro do loop.** "Tempo limite" é teto de duração, não ritmo — sem Delay, as 60 iterações queimam de uma vez |
+| Arquivo gravado **vazio** no SharePoint | Passo 8 | A guarda não foi criada, e o `format=text/vtt` não devolveu VTT. Abra a saída do passo 5 e veja o que realmente voltou |
+| `Do until` aborta na 1ª volta | Passo 3 | A chamada falhou (404 de "ainda não pronto") e derrubou o loop. Marque **com falha** em Configurar execução após |
 | Lista de transcrições vazia | Passo 4 | Ou a transcrição ainda está processando (aumente o atraso do passo 2), ou a reunião não teve transcrição ligada |
 | `403` ou `404` na chamada HTTP | Passos 4–5 | A URL não bate com a do seu tenant. Compare com a que você pegou no DevTools |
 | Gatilho não dispara | Rota A | A pasta pode chamar `Recordings` em vez de `Gravações`, conforme o idioma da conta |
