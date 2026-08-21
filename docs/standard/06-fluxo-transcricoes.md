@@ -552,16 +552,33 @@ E só. Nenhum pedaço de URL escrito à mão — `driveId`, caminho do item, `ve
 > ### Como se proteger
 >
 > 1. **Renomeie toda ação assim que criar.** `Compose 3`, `Condition 1`, `Selecionar` não dizem o que fazem, e viram referência quebrada
-> 2. Use os nomes deste guia: `Caminho`, `Listar transcricoes`, `UrlTranscricao`, `Baixar transcricao`, `Linhas`, `Falas`, `Limpar`, `TextoLimpo`
+> 2. Use os nomes deste guia: `Caminho`, `Listar transcricoes`, `UrlTranscricao`, `Baixar transcricao`, `Linhas`, `Falas`, `TextoLimpo`
 > 3. **Antes de rodar, faça a conferência cruzada:** para cada `body('X')` / `outputs('X')` do fluxo, existe uma ação chamada exatamente `X`? É um minuto e evita a maioria das execuções vermelhas
 
-> ## 🔀 Os passos 7 a 9 dependem do formato que voltou
+> ## ✅ O formato: VTT, e **sem marcação de locutor**
 >
-> Eles estão escritos para **VTT**. O `displayName` do item de transcrição termina em `.json`, o que indica que o formato nativo é **JSON** — nesse caso o filtro por `<v ` não acha nada, e sem a guarda do passo 9 o fluxo grava um `.txt` vazio sem dar erro.
+> Confirmado em execução real, 21/08. O `streamContent` devolve **VTT**, com esta cara:
 >
-> **Antes de montar os passos abaixo, abra a saída do passo 6.** Se vier JSON, estes três passos viram `Analisar JSON` + `Selecionar` sobre os campos reais, e não o split por linha.
+> ```
+> WEBVTT
+>
+> <guid-do-bloco>/5-0                ← identificador do bloco
+> 00:00:03.380 --> 00:00:04.020      ← timestamp
+> Vou ver o que acontece,            ← a fala, sem marcação nenhuma
+> fazer o teste                      ← um bloco pode ter mais de uma linha
+> ```
+>
+> ⚠️ **O `displayName` do item termina em `.json` e isso é pista falsa.** Este guia previu JSON por causa dele e errou. A extensão no `displayName` não diz o que o `streamContent` entrega.
+>
+> ### 🔴 Não vem `<v Nome>`
+>
+> Um VTT do Teams *pode* trazer o locutor marcado como `<v Nome Sobrenome>fala</v>`. **O que vem por este endpoint não traz.** Nenhuma linha do arquivo tem essa marcação.
+>
+> Consequência direta: **perde-se quem disse o quê**, e sobra o texto corrido da reunião. Para a busca semântica do agente isso serve; para cobrar alguém pelo que disse na LT, não. Ver *Atribuição de locutor*, no fim desta rota.
+>
+> É por isso que os passos 8 a 11 abaixo **não** procuram marcação — eles descartam o que não é fala.
 
-### Passo 7 — quebrar em linhas  *(caminho VTT)*
+### Passo 7 — quebrar em linhas
 
 **Operações de dados → Compor**, nome `Linhas`:
 
@@ -582,10 +599,21 @@ O `decodeUriComponent('%0D')` é `\r` e o `%0A` é `\n`. O Power Automate não a
 Condição, em **modo avançado**:
 
 ```
-@contains(item(), '<v ')
+@and(not(empty(item())), not(equals(item(), 'WEBVTT')), not(contains(item(), '-->')), or(contains(item(), ' '), not(contains(item(), '/'))))
 ```
 
-**Por que só isso basta:** num `.vtt`, só as linhas de fala têm a marcação de locutor `<v Nome>`. O cabeçalho `WEBVTT`, os identificadores de bloco, os timestamps `00:00:05.123 --> 00:00:08.456` e as linhas em branco **não têm** — e caem todos de uma vez.
+**A lógica é invertida de propósito.** Sem marcação de locutor não há como dizer o que *é* fala — então o filtro descarta o que comprovadamente **não é**:
+
+| Regra | Descarta | Exemplo |
+|---|---|---|
+| `not(empty(…))` | as linhas em branco entre blocos | `""` |
+| `not(equals(…, 'WEBVTT'))` | o cabeçalho | `WEBVTT` |
+| `not(contains(…, '-->'))` | os timestamps | `00:00:03.380 --> 00:00:04.020` |
+| `or(contains(' '), not(contains('/')))` | os identificadores de bloco | `<guid>/5-0` |
+
+A última precisa de explicação: identificador tem `/` e **nenhum espaço**; fala quase sempre tem espaço. A regra guarda a linha se ela tem espaço **ou** se não tem `/` — o que preserva falas curtas como `Eita.`
+
+> ⚠️ **Limite conhecido:** uma linha que seja *só* uma data — `08/05` sozinha — cai fora. Uma data no meio de uma frase (`vamos rever em 08/05 o Go-Live`) fica, porque tem espaço. Raro o bastante para não valer regra mais complicada.
 
 ### Passo 9 — 🔴 guarda: parar se não veio transcrição
 
@@ -602,7 +630,7 @@ Condição, em **modo avançado**:
 |---|---|
 | Status | `Failed` |
 | Código | `TranscricaoVazia` |
-| Mensagem | `Filtro nao achou linhas com <v — conferir a saida do passo 6` |
+| Mensagem | `Filtro nao achou linhas de fala — conferir a saida do download` |
 
 > 🔴 **Não pule este passo, e não deixe o ramo "Se não" vazio.**
 >
@@ -612,42 +640,25 @@ Condição, em **modo avançado**:
 >
 > **A guarda tem duas metades:** impedir o arquivo ruim, e te avisar. Ramo falso vazio entrega só a primeira.
 
-### Passo 10 — limpar a marcação
+### Passo 10 — *(não existe mais)*
 
-**Operações de dados → Selecionar**, nome `Limpar`
-
-| Campo | Valor |
-|---|---|
-| De | `body('Falas')` |
-| Mapear | modo texto (ícone à direita), com a expressão abaixo |
-
-```
-replace(replace(replace(item(), '<v ', ''), '</v>', ''), '>', ': ')
-```
-
-O que acontece com uma linha:
-
-```
-<v Nome Sobrenome>Precisamos rever o Go-Live do Horizon 2</v>
-   ↓  tira '<v '
-Nome Sobrenome>Precisamos rever o Go-Live do Horizon 2</v>
-   ↓  tira '</v>'
-Nome Sobrenome>Precisamos rever o Go-Live do Horizon 2
-   ↓  troca '>' por ': '
-Nome Sobrenome: Precisamos rever o Go-Live do Horizon 2
-```
-
-> ⚠️ **Limitação honesta:** o `replace` troca **todas** as ocorrências. Se alguém falar algo com `>` no meio, aquela linha sai torta. Na prática é raro em transcrição de voz, e o custo de tratar isso direito não compensa — mas é bom você saber que existe.
+> 🗑️ **Aqui havia um `Selecionar` chamado `Limpar`**, que tirava `<v `, `</v>` e trocava `>` por `: ` para produzir `Nome: fala`.
+>
+> Como o VTT deste endpoint não traz marcação nenhuma, ele não tem o que limpar. **Se você já criou essa ação, apague** — e ajuste o passo 11, que a referenciava.
+>
+> Ele volta a fazer sentido no dia em que aparecer um endpoint com locutor. Ver *Atribuição de locutor*, no fim da rota.
 
 ### Passo 11 — juntar de volta
 
 **Operações de dados → Compor**, nome `TextoLimpo`:
 
 ```
-join(body('Limpar'), decodeUriComponent('%0A'))
+join(body('Falas'), decodeUriComponent('%0A'))
 ```
 
-> ⚠️ Repare que é `body('Limpar')` — **o nome da ação Selecionar**, não a palavra "Selecionar". Referência que não casa com o nome real da ação derruba o fluxo na execução.
+> ⚠️ `Falas` é **o nome da sua ação Filtrar matriz**. Se você a chamou de outra coisa, use o nome real — referência que não casa derruba o fluxo na execução.
+
+> 📌 Um bloco do VTT pode ter mais de uma linha de fala, e o `join` mantém isso quebrado. O arquivo sai com algumas frases partidas em duas linhas. Não atrapalha a busca semântica — mas é bom saber antes de estranhar.
 
 ### Passo 12 — gravar no SharePoint 🎯 **aqui muda de lugar**
 
@@ -687,6 +698,23 @@ Resultado: `LT-2026-08-19-1929.txt`.
 > E resolve um risco que a montagem atual carrega calado: hoje tudo depende do OneDrive **de uma pessoa**. Se o organizador sair da empresa ou mudar de área, o histórico das LT vai junto com a conta dele.
 >
 > Não é o que você pediu, e muda como a reunião é criada — fica registrado com o trade-off na mesa.
+
+> ## 🎙️ Atribuição de locutor — o que ficou de fora, e como buscar
+>
+> **Estado:** o arquivo gravado tem o texto da reunião, **sem identificar quem falou**. O VTT que o `streamContent` devolve não traz `<v Nome>`, e a informação não está em lugar nenhum do arquivo — não é questão de expressão, é ausência de dado.
+>
+> **O que se perde:** o agente consegue responder *"o que foi dito sobre o Horizon 2"*, mas não *"quem se comprometeu com a data"*. Para a cobrança do §7 das instruções, o segundo é o que vale.
+>
+> **Por que ainda dá para buscar:** o player do Stream **mostra os nomes** na aba de transcrição. Se ele mostra, existe um endpoint que os entrega.
+>
+> **Método** — o mesmo que resolveu o `driveId` e a URL de download, e funcionou nas duas vezes:
+>
+> 1. Abra a gravação no Stream e mostre o painel de transcrição
+> 2. **DevTools → Network**, e filtre por `transcript`
+> 3. Ache a chamada cujo corpo traz os nomes, e compare com o `streamContent` que o fluxo usa hoje — provavelmente é o mesmo endereço com outro parâmetro de formato, ou um endpoint irmão
+> 4. Se o corpo for JSON com campos de locutor, o passo 8 vira `Analisar JSON` e o passo 10 (`Limpar`) volta a existir, montando `Nome: fala`
+>
+> **Prioridade: depois do fluxo rodar.** Isto é melhoria, não bloqueio — o texto corrido já alimenta a busca semântica, e é melhor ter a LT sendo capturada toda semana do que esperar a versão perfeita.
 
 ## 3. Ligar no agente
 
@@ -929,7 +957,8 @@ Uma correção só apagou as três — e a correção certa acabou sendo **parar
 | `403 Forbidden` na listagem | Passo 4 | Application Access Policy não aplicada, ainda propagando, ou "Transcript API access" bloqueado no Teams |
 | `value` vazio | Passo 3 | O `JoinWebUrl` não bateu exatamente — compare caractere a caractere |
 | `404` na transcrição | Passo 5 | A reunião não teve transcrição ligada. **Ligue a transcrição automática na política de reunião** |
-| Arquivo com timestamps | limpeza | O Filtrar matriz não pegou — confira se está em **modo avançado** com `@contains(item(), '<v ')` |
+| `Filtrar matriz` volta **vazio** | Passo 8 | O VTT deste endpoint **não tem `<v Nome>`**. Use o filtro por exclusão do passo 8, não a busca por marcação |
+| Arquivo com timestamps | Passo 8 | O Filtrar matriz não pegou — confira se está em **modo avançado**, e se a regra do `-->` está lá |
 | `endsWith … expects … string … provided value is of type 'Null'` | Condição | **Gatilho errado.** `OnNewFileV2` devolve o conteúdo do arquivo, não as propriedades — troque por "(somente propriedades)" |
 | `'replace' expects … 'string' … type 'Null'` | Passo 2 | **O campo de caminho não existe com o nome usado.** Não tente outro nome: monte o caminho com `concat('/Recordings/', body/Name)`, ou endereço por `Id`. E confira se você não está editando o argumento errado — ver "Como ler o erro" |
 | `'length' expects … an array or a string … type 'Null'` | Passo 3 | Ou o `Caminho` saiu vazio (linha acima), ou falta o `coalesce` na condição do `Do until` |
