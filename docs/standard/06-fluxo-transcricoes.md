@@ -335,6 +335,32 @@ concat('/Recordings/', replace(triggerOutputs()?['body/Name'], ' ', '%20'))
 
 > ⚠️ **Deixe este passo ANTES do `Do until`, não dentro.** Ele só depende do gatilho — recalcular a cada iteração é desperdício, e referenciá-lo de fora do loop (o passo 6 faz isso) pega o valor da última iteração, o que é frágil sem necessidade.
 
+### Passo 2b — descobrir de qual reunião é
+
+> Pule este passo se você tem **uma** reunião só. Ele existe porque são **quatro reuniões de área**, e o arquivo precisa dizer de qual delas veio. Ver *Quatro reuniões, dois OneDrives*, no fim desta rota.
+
+**Operações de dados → Compor**, nome `Area`. No fluxo de quem organiza **CD e Consumer**:
+
+```
+if(contains(toLower(triggerOutputs()?['body/Name']), 'consumer'), 'Consumer',
+if(contains(toLower(triggerOutputs()?['body/Name']), 'customer'), 'CD', ''))
+```
+
+No fluxo da outra pessoa, os mesmos dois níveis com `'make'` → `Make` e `'focus'` → `Focus Mkt`.
+
+> 🔴 **O último argumento é `''`, e não uma área padrão.** Um `else` que devolvesse `'CD'` faria uma gravação não reconhecida ser arquivada como CD — dado errado gravado com cara de certo, que só aparece quando o agente responder alguma bobagem semanas depois. Vazio força a guarda abaixo.
+
+**Controle → Condição**, logo em seguida:
+
+```
+@not(empty(outputs('Area')))
+```
+
+- **Se sim** → todo o resto do fluxo
+- **Se não** → **Controle → Encerrar**, `Failed`, código `AreaNaoIdentificada`, mensagem citando `@{triggerOutputs()?['body/Name']}`
+
+Mesma lógica das outras guardas daqui: impedir o arquivo ruim **e** te avisar. Se alguém renomear a reunião recorrente, você descobre por um fluxo vermelho no mesmo dia.
+
 ### Passo 3 — esperar e listar as transcrições
 
 **Controle → Do until**
@@ -667,10 +693,12 @@ Até agora tudo aconteceu na **origem** (OneDrive). Deste passo em diante é o *
 Primeiro um **Operações de dados → Compor**, nome `NomeArquivo`:
 
 ```
-concat('LT-', formatDateTime(triggerOutputs()?['body/LastModified'], 'yyyy-MM-dd-HHmm'), '.txt')
+concat('LT-', outputs('Area'), '-', formatDateTime(triggerOutputs()?['body/LastModified'], 'yyyy-MM-dd-HHmm'), '.txt')
 ```
 
-Resultado: `LT-2026-08-19-1929.txt`.
+Resultado: `LT-Consumer-2026-08-19-1929.txt`. Com uma reunião só, tire o `outputs('Area')` e o hífen.
+
+> 💡 **Uma biblioteca só para as quatro áreas, sem subpasta.** A fonte de conhecimento aponta para **um** lugar; o nome do arquivo diz de qual reunião veio, e o agente filtra por ele. Subpasta por área exigiria uma fonte de conhecimento por área.
 
 > 💡 **Por que o nome fica num Compose e não direto no campo:** o passo 13, se você o usar, precisa do **mesmo** nome para reencontrar o arquivo. Escrito uma vez, não há como as duas pontas divergirem.
 
@@ -783,15 +811,17 @@ Copilot Studio → **Conhecimento** → a fonte `Transcription LT Meetings` deve
 Descrição da fonte — é ela que dispara a busca:
 
 ```
-Transcripts of the CDIO LATAM Leadership Team meetings, held every two weeks.
-Consult this source to find out WHY something happened: why a project is late,
-what leadership decided, what was promised and by when, what blocked a go-live.
-One file per meeting, named LT-YYYY-MM-DD-HHmm. Plain running text: the
-transcript carries NO speaker names, so never attribute a sentence to a person —
-write "ficou registrado que", never "o gestor disse". Search does not order by
-recency: ask for a meeting by its date. Contains decisions and commitments that
-are NOT recorded in Azure DevOps or Power BI — this is where the reason lives
-when the system only shows the fact.
+Transcripts of the CDIO LATAM Leadership Team meetings. FOUR separate recurring
+meetings, one per IT Area: CD (Customer Dev), Consumer, Focus Mkt and Make.
+One file per meeting, named LT-<Area>-YYYY-MM-DD-HHmm — the area is part of the
+file identity, so a decision taken in the Make LT is NOT a record for a Consumer
+project. Consult this source to find out WHY something happened: why a project
+is late, what leadership decided, what was promised and by when, what blocked a
+go-live. Plain running text: the transcript carries NO speaker names, so never
+attribute a sentence to a person — write "ficou registrado que", never "o gestor
+disse". Search does not order by recency: ask for a meeting by AREA and date.
+Contains decisions and commitments that are NOT in Azure DevOps or Power BI —
+this is where the reason lives when the system only shows the fact.
 ```
 
 > ## 🔴 Por que essa descrição mudou, e por que não dá para deixar a antiga
@@ -804,7 +834,60 @@ when the system only shows the fact.
 
 ---
 
-## 4. E se a reunião for de outra pessoa?
+## 4. Quatro reuniões, dois OneDrives — quantos fluxos?
+
+São quatro reuniões de área — **CD, Focus Mkt, Make e Consumer** — organizadas por **duas pessoas**. A resposta não é um fluxo por área nem um fluxo só.
+
+### A regra que decide
+
+**Um fluxo = um gatilho = uma conexão = um OneDrive.** Não existe fluxo que observe duas contas.
+
+Mas as duas reuniões de uma mesma pessoa caem na **mesma pasta `/Recordings`** dela. Logo:
+
+| Desenho | Fluxos | Veredito |
+|---|---|---|
+| Um por área | 4 | ❌ dois deles observariam a mesma pasta e processariam cada gravação **em duplicata** |
+| Um só | 1 | ❌ impossível — são dois drives |
+| **Um por pessoa** | **2** | ✅ cada um cobre as duas áreas daquela conta |
+
+E há um ganho de robustez embutido: **cada fluxo só precisa distinguir duas áreas**, não quatro.
+
+### Pré-requisito: o título da reunião tem que dizer a área
+
+O Teams batiza a gravação a partir do **título da reunião**, então é dali que o passo 2b tira a área. Isso exige uma convenção — a única mudança fora do Power Automate, e de dois minutos por reunião:
+
+| Área | Título da reunião recorrente |
+|---|---|
+| Customer Dev | `LT Customer Dev` |
+| Consumer | `LT Consumer` |
+| Focus Market | `LT Focus Market` |
+| Make | `LT Make` |
+
+Sem isso nada rio abaixo é determinístico. Com isso, o resto é uma expressão — a do passo 2b.
+
+### Montar o segundo fluxo sem refazer nada
+
+**Power Automate → o fluxo pronto → `⋯` → Salvar como.** Na cópia, três coisas mudam, mais a expressão do `Area`:
+
+| O quê | Onde | Valor |
+|---|---|---|
+| Conexão do OneDrive | gatilho | a da **outra pessoa** |
+| `dataset` | passos 3 e 6 | `https://<tenant>-my.sharepoint.com/personal/<upn-dela>` |
+| `driveId` | passo 3 | o id do drive **dela** — capturar uma vez no DevTools |
+
+> ⚠️ **Conexão não se transfere.** Para ela criar a conexão dela, precisa poder editar o fluxo: ou você **compartilha como coproprietário**, ou ela cria a cópia na conta dela. Nos dois casos passa a haver mais de uma pessoa mexendo — vale combinar quem é o dono antes.
+
+> 💡 **Um teste de cinco minutos que pouparia a captura do `driveId`:** o `dataset` já fixa o site (o OneDrive daquela pessoa), então talvez a URI aceite `_api/v2.1/drive/root:…` — no singular, "o drive padrão deste site" — dispensando o id. **Não verificado.** Se funcionar, os dois fluxos ficam idênticos exceto pela conexão e pela expressão do `Area`.
+
+### O que colapsaria os dois fluxos em um
+
+Se as quatro LT virarem **reuniões de canal de quatro canais do mesmo time**: um site, quatro pastas, **um gatilho de SharePoint e um fluxo só** — e a pasta já é a área, sem convenção de nome, sem `driveId`, sem conta pessoal de ninguém.
+
+Com uma reunião só isso era uma opção. Com quatro reuniões e duas contas, é a diferença entre manter um fluxo e manter dois, cada um com conexão, `driveId` e classificação próprios.
+
+---
+
+## 5. E se a reunião for de outra pessoa?
 
 O gatilho lê o OneDrive de **quem conectou** a conta. Se quem organiza a LT não é você, há três saídas — e a mais barata é não precisar da conta dele.
 

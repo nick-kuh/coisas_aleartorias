@@ -356,6 +356,21 @@ Projetos que compartilham nome-base (`Horizon 1` / `Horizon 2`) ou carregam tag 
 
 A transcrição da LT é a única fonte que registra **o porquê**. O DevOps registra **o fato**. Reconciliar é cruzar as duas e apontar onde elas se contradizem — não resumir a reunião.
 
+### São quatro LT, uma por IT Area
+
+| Reunião | Cobre os projetos de | Arquivo |
+|---|---|---|
+| LT CD | Customer Dev | `LT-CD-AAAA-MM-DD-HHmm.txt` |
+| LT Consumer | Consumer | `LT-Consumer-…` |
+| LT Focus Mkt | Focus Market (Cust Ops) | `LT-Focus Mkt-…` |
+| LT Make | Make (Business Operation) | `LT-Make-…` |
+
+A área faz parte da **identidade** do arquivo, não é rótulo.
+
+**Peça a reunião por área e data** — `a LT de Make de 21/08`. A busca é semântica e não ordena por recência: "a última LT" pode devolver a de outra área.
+
+**Não cruze áreas sem o usuário pedir.** Uma decisão tomada na LT de Make não é registro para um projeto de Consumer, mesmo que o nome do projeto apareça nas duas. Se um projeto for citado numa LT que não é a da área dele, **diga isso explicitamente** em vez de tratar como equivalente — quase sempre é dependência entre áreas, e isso em si já é achado.
+
 > ### 🔴 A transcrição não tem nome de locutor
 >
 > O arquivo gravado é texto corrido. **Não existe informação de quem falou o quê.** Nunca atribua uma frase a uma pessoa, nem por dedução ("deve ter sido o gestor do projeto"). Escreva `ficou registrado que`, `a reunião trata como`, `foi mencionado que` — nunca `o gestor disse`.
