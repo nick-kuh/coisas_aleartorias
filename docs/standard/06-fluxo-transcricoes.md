@@ -102,12 +102,24 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 >
 > ⚠️ **O player usa `?is=1&applymediaedits=false`, não `?format=text/vtt`.** Os dois valem teste: o VTT é bem mais fácil de limpar, porque o filtro por `<v ` resolve tudo numa condição. Se só o formato do player responder, a limpeza vira `Analisar JSON` em vez do filtro.
 
+> ## ✅ O que a execução de 21/08 provou em campo
+>
+> Segunda rodada de validação, agora com o fluxo montado e rodando de verdade:
+>
+> | Evidência na execução | O que fica confirmado |
+> |---|---|
+> | `Listar transcricoes` verde em **0,3 s** | o caminho montado a partir do `Name`, o `driveId`, o endereçamento `root:…:` e o `%20` — a API achou o arquivo |
+> | `Do until` verde em **31 s** | o `Delay` está no lugar certo e o loop espera de verdade (1 volta de 30 s) |
+> | A condição pós-loop entrou no ramo **Se sim** | `length(…['value']) > 0` — **a listagem devolveu transcrição** |
+>
+> Toda a metade "achar o arquivo e localizar a transcrição" está fechada. O que segue em aberto é só **baixar o conteúdo** (passo 6) e saber em que formato ele vem.
+
 > ## 🔁 "Preciso fazer isso toda semana?" Não — a captura é **uma vez só**
 >
 > A URL parece um bloco único, mas tem quatro pedaços com destinos diferentes:
 >
 > ```
-> https://<tenant>-my.sharepoint.com/personal/<upn>/_api/v2.1/drives/b!619Xou...
+> https://<tenant>-my.sharepoint.com/personal/<upn>/_api/v2.1/drives/b!xxxxxx...
 > └──────────────────────── FIXO — nunca muda ────────────────────────────────┘
 >    /items/01JZ7SIC.../media/transcripts/54981c02-.../streamContent
 >           └── MUDA ──┘                  └── MUDA ──┘
@@ -275,6 +287,16 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 >
 > 🎯 **E prefira o seletor de conteúdo dinâmico a digitar.** Ele insere o nome que existe, seja qual for. Digitar de memória é o que gerou as duas rodadas perdidas.
 
+> ## 🟡 Compose verde ≠ Compose com conteúdo
+>
+> Vale para **todo** Compose deste fluxo, não só o de diagnóstico, e é a armadilha que mais atrasou a montagem.
+>
+> Um **Compor** com `null` dentro fica **verde**. Ele não tem o que falhar — só guarda o que a expressão devolveu, e "nada" é um resultado válido. A cor da ação não diz nada sobre o conteúdo dela.
+>
+> O estrago aparece longe: a ação seguinte monta uma URL com um buraco no meio, ou uma expressão recebe `Null`, e você vai investigar **lá**, não aqui.
+>
+> **Regra:** ao depurar, abra a **saída** de cada Compose da cadeia, na ordem. O primeiro que estiver vazio é a causa. Já mordeu três vezes neste fluxo — duas no `Caminho` e uma no id da transcrição.
+
 > ⚠️ O gatilho roda na conta de **quem conectar o OneDrive** — precisa ser a do organizador da LT. Se o organizador mudar, o fluxo para de enxergar os arquivos. Ver a nota sobre reunião de canal no fim desta rota.
 
 ### Passo 1 — só o `.mp4`
@@ -385,6 +407,12 @@ Pego a **última** de propósito: se a transcrição foi reiniciada no meio da r
 
 > 🔴 **Este passo é fácil de esquecer.** O passo 6 monta a URL com `@{outputs('TranscriptId')}` — se o Compose não existir com **exatamente** esse nome, o fluxo falha com referência não resolvida.
 
+> ⚠️ **`?['id']` é suposição — confirme.** Que a resposta traz `value` com itens está provado (é o que faz a condição do passo 4 passar). Como se chama o campo do identificador **dentro** de cada item, não está.
+>
+> Se o nome for outro, este Compose fica **verde com `null` dentro**, e o passo 6 monta `…/media/transcripts//streamContent` — URL com um buraco no meio, que volta `400`.
+>
+> **Abra a saída do passo 3** uma vez e leia o item: ela mostra o nome do campo do id, e de quebra se já existe ali uma **URL pronta de download**. Se existir, use-a e pare de montar URL na mão — é mais robusto que qualquer coisa que a gente escreva.
+
 ### Passo 6 — baixar o VTT
 
 **SharePoint → Enviar uma solicitação HTTP para o SharePoint**, nomeada `Baixar transcricao`:
@@ -393,9 +421,22 @@ Pego a **última** de propósito: se a transcrição foi reiniciada no meio da r
 |---|---|
 | Endereço do site | o mesmo do passo 3 — **o OneDrive** |
 | Método | `GET` |
-| URI | `_api/v2.1/drives/<seu driveId>/root:@{outputs('Caminho')}:/media/transcripts/@{outputs('TranscriptId')}/streamContent?format=text/vtt` |
+| URI | `_api/v2.1/drives/<seu driveId>/root:@{outputs('Caminho')}:/media/transcripts/@{outputs('TranscriptId')}/streamContent` |
 
-> ✅ **Este é o portão.** Rode uma vez e **abra a saída desta ação**, não confie no verde: se começar com `WEBVTT` e tiver `<v Nome>`, a limpeza abaixo funciona como está. Se vier JSON, o `format=text/vtt` não é suportado e a limpeza precisa virar **Analisar JSON** em vez do filtro por `<v `.
+> 🔴 **Sem `?format=text/vtt`.** Esse parâmetro era suposição deste guia e **não estava na URL capturada no DevTools** — aquela termina em `/streamContent`, limpa. Ele derrubou o passo com `400` em 21/08. Se for testá-lo depois, codifique a barra: `?format=text%2Fvtt`. Barra crua dentro de query string é justamente o tipo de coisa que faz o conector montar a URL errada.
+
+> ✅ **Este é o portão.** Rode uma vez e **abra a saída desta ação**, não confie no verde: se começar com `WEBVTT` e tiver `<v Nome>`, a limpeza abaixo funciona como está. Se vier JSON, a limpeza precisa virar **Analisar JSON** em vez do filtro por `<v `.
+
+> ## ⚠️ Se este passo devolver `400 / Unexpected response from the service`
+>
+> Repare no `source` da mensagem: `sharepointonline-…azconn-….azurewebsites.net`. Isso é **o conector**, não o SharePoint. É a mensagem-embrulho de "chamei e não soube usar o que voltou" — não é permissão, não é autenticação.
+>
+> Duas famílias, nesta ordem de investigação:
+>
+> | Causa | Como confirmar | Conserto |
+> |---|---|---|
+> | **URL malformada** | abra a saída do `TranscriptId`: vazio? | o campo do id tem outro nome — ver passo 5 |
+> | **Resposta que o conector não digere** | o id está certo e ainda dá `400` | `streamContent` pode responder `302` para um endereço pré-autenticado, ou texto puro; o conector espera JSON. No navegador passa batido porque o browser segue o redirecionamento sozinho. A saída do passo 3 dirá se há outro endereço a chamar |
 
 > 📌 A ação chama "…para o **SharePoint**", mas o endereço é o do **OneDrive**. Está certo: OneDrive é um site SharePoint.
 
@@ -463,7 +504,7 @@ Condição, em **modo avançado**:
 
 > 🔴 **Não pule este passo, e não deixe o ramo "Se não" vazio.**
 >
-> Sem a condição, se o `format=text/vtt` não devolver VTT o filtro não acha nada e o fluxo **grava um arquivo vazio no SharePoint sem dar erro**.
+> Sem a condição, se o passo 6 não devolver VTT o filtro não acha nada e o fluxo **grava um arquivo vazio no SharePoint sem dar erro**.
 >
 > Com a condição mas **sem o Encerrar**, o arquivo vazio deixa de ser gravado ✅ — mas o fluxo termina com status **Sucesso**, verde no histórico. Você não fica sabendo.
 >
@@ -792,11 +833,13 @@ Uma correção só apagou as três — e a correção certa acabou sendo **parar
 | `'length' expects … an array or a string … type 'Null'` | Passo 3 | Ou o `Caminho` saiu vazio (linha acima), ou falta o `coalesce` na condição do `Do until` |
 | `ActionFailed. An action failed.` numa Condição | qualquer | **Não é a Condição.** É mensagem agregada — falhou uma ação dentro dela. Se fosse a expressão, seria `InvalidTemplate` |
 | `400` na chamada do passo 3 | Passo 2 | Espaço no nome do arquivo entrou cru na URI. Falta o `replace(…, ' ', '%20')` |
+| `400` + `Unexpected response from the service` | Passo 6 | `source` é o **conector**, não o SharePoint. Ou a URL saiu malformada (abra a saída do `TranscriptId` — vazio?), ou a resposta não é JSON. Comece tirando o `?format=text/vtt` |
+| `Compose` verde mas o passo seguinte quebra | qualquer | Compose com `null` fica verde. Abra a **saída** de cada Compose da cadeia; o primeiro vazio é a causa |
 | Campo do gatilho sempre vazio | qualquer | O nome não existe nesse conector. Rode uma vez, abra a saída do gatilho e use o nome real |
 | **Só aparece `.mp4` na pasta** | Rota A | **É o comportamento normal.** A transcrição é anexo do vídeo, não arquivo solto. É dela que os passos 3 e 5 vão buscar |
 | `The template language expression ... cannot be evaluated` | qualquer passo | Uma referência `body('X')`/`outputs('X')` aponta para ação que **não existe com esse nome**. Confira os nomes das ações contra as referências |
 | O `Do until` termina em segundos | Passo 3 | **Falta o `Delay` dentro do loop.** "Tempo limite" é teto de duração, não ritmo — sem Delay, as 60 iterações queimam de uma vez |
-| Arquivo gravado **vazio** no SharePoint | Passo 9 | A guarda não foi criada, e o `format=text/vtt` não devolveu VTT. Abra a saída do passo 6 e veja o que realmente voltou |
+| Arquivo gravado **vazio** no SharePoint | Passo 9 | A guarda não foi criada, e o passo 6 não devolveu VTT. Abra a saída do passo 6 e veja o que realmente voltou |
 | `Do until` aborta na 1ª volta | Passo 3 | A chamada falhou (404 de "ainda não pronto") e derrubou o loop. Marque **com falha** em Configurar execução após |
 | **Fluxo verde, mas nada foi gravado** | Passo 9 | O ramo "Se não" da guarda está **vazio**. Sem o `Encerrar`, o fluxo termina em sucesso e o problema fica invisível |
 | **Fluxo verde, e a transcrição nunca chegou** | Passo 4 | Um `Do until` que estoura o limite termina em **sucesso**, não falha. Falta a condição pós-loop |
@@ -815,6 +858,7 @@ Uma correção só apagou as três — e a correção certa acabou sendo **parar
 - [ ] Biblioteca `Transcricoes LT` criada, com as colunas `DataReuniao` e `Origem`
 - [ ] Fluxo criado e testado numa reunião de teste, com transcrição ligada
 - [ ] **Compose de diagnóstico rodado uma vez** — `triggerOutputs()` puro, para ler os nomes de campo reais em vez de adivinhar
+- [ ] **Saída de cada Compose conferida** — verde não basta; o `TranscriptId` precisa ter um id de verdade dentro
 - [ ] Arquivo chegou como `LT-AAAA-MM-DD.txt`, sem timestamps, no formato `Locutor: fala`
 - [ ] Fonte de conhecimento apontando para a biblioteca, **com a descrição colada**
 - [ ] Teste no agente: `o que foi decidido na LT sobre <projeto>?` — tem que responder da transcrição, sem rodar query
