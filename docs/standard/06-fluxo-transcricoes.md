@@ -237,19 +237,33 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 >
 > Não dá para trocar a operação de um gatilho existente — **apague e adicione o certo**. As expressões `triggerOutputs()?['body/…']` do resto do fluxo continuam válidas.
 
-> ## ⚠️ Antes de confiar em qualquer `body/…`: rode uma vez e olhe
+> ## 🔴 `{Path}` é do SharePoint. No OneDrive é `Path`, sem chaves
 >
-> Os nomes de campo variam entre conectores, e digitar de memória é o que produz `Null`:
+> Os dois conectores nomeiam os campos de formas diferentes, e é daí que veio a falha de 21/08:
 >
-> | Onde | Pode ser |
-> |---|---|
-> | condição do `.mp4` | `Name` ou `DisplayName` |
-> | caminho do arquivo | `Path` — **as chaves de `{Path}` são convenção do SharePoint**, o OneDrive pode não usar |
-> | data para o nome do arquivo | `LastModified` |
+> | Conector | Como nomeia | Campos |
+> |---|---|---|
+> | **SharePoint** (item de lista) | com chaves | `{Name}`, `{FilenameWithExtension}`, `{Path}`, `{Link}`, `{IsFolder}` |
+> | **OneDrive** (esquema `BlobMetadata`) | **sem chaves** | `Id`, `Name`, `DisplayName`, `Path`, `LastModified`, `Size`, `MediaType`, `ETag` |
 >
-> **Salve, rode uma vez, e no histórico abra a saída do gatilho.** O JSON mostra os nomes exatos. Só então escreva as expressões.
+> A **Rota A é OneDrive**. A **Rota A2 é SharePoint**. Escrever `body/{Path}` na Rota A procura um campo que não existe naquele esquema.
 >
-> 🎯 **Atalho que economiza uma rodada:** em vez de digitar, use o **seletor de conteúdo dinâmico**. Ele insere o nome certo seja qual for — digitar à mão é exatamente o que gera `{Path}` num conector que talvez use `Path`.
+> ### E aqui está a parte que engana
+>
+> **Campo inexistente no Power Automate não dá erro. Dá `Null`.**
+>
+> A ação que leu o campo fica **verde**, com nada dentro. O erro só estoura na ação seguinte, quando alguém tenta usar o valor — uma casa depois de onde está a causa, que é justamente onde você não vai olhar primeiro:
+>
+> ```
+> gatilho ──► Caminho: replace(body/{Path}, …)   ← a causa está aqui, e fica verde
+>                          │
+>                          ▼  Null
+>                    Do until: length(…)          ← o erro aparece aqui
+> ```
+>
+> **Salve, rode uma vez, e no histórico abra a saída do gatilho.** O JSON mostra os nomes exatos **e os valores reais** — resolve `Name`, `Path` e `LastModified` de uma olhada só.
+>
+> 🎯 **Atalho que economiza uma rodada:** em vez de digitar, use o **seletor de conteúdo dinâmico**. Ele insere o nome certo seja qual for — digitar de memória é exatamente o que gera `{Path}` num conector que usa `Path`.
 
 > ⚠️ O gatilho roda na conta de **quem conectar o OneDrive** — precisa ser a do organizador da LT. Se o organizador mudar, o fluxo para de enxergar os arquivos. Ver a nota sobre reunião de canal no fim desta rota.
 
@@ -270,10 +284,19 @@ endsWith(triggerOutputs()?['body/Name'], '.mp4')
 **Operações de dados → Compor**, nome `Caminho`:
 
 ```
-replace(triggerOutputs()?['body/{Path}'], '/Documents', '')
+replace(replace(triggerOutputs()?['body/Path'], '/Documents', ''), ' ', '%20')
 ```
 
-O gatilho traz o caminho com `/Documents` na frente; a raiz do drive **é** o Documents, então ele sai.
+São dois tratamentos encadeados:
+
+| Trecho | Para quê |
+|---|---|
+| `replace(…, '/Documents', '')` | se o caminho vier com `/Documents` na frente, ele sai — a raiz do drive **é** o Documents. No OneDrive costuma já vir sem, e aí este pedaço fica inofensivo |
+| `replace(…, ' ', '%20')` | 🔴 **nome de gravação sempre tem espaço** — `LT CDIO LATAM-20260819_190000-Gravação de Reunião.mp4` — e espaço na URI dá `400`. Codifica só o espaço e preserva as barras, que é o que o endereçamento `root:/caminho:` precisa |
+
+> 🔴 **É `Path`, não `{Path}`.** As chaves são convenção do conector do **SharePoint**, usado na Rota A2. Aqui o conector é o **OneDrive**, e lá o campo é `Path` puro. Escrever com chaves devolve `Null` **sem dar erro nesta ação** — ver o aviso dos esquemas, na seção do gatilho.
+
+> ⚠️ **Confira o valor, não só o nome.** O que precisa ser verdade é que ele **comece com `/`**. Se vier `Recordings/…` sem a barra, a URI do passo 3 sai como `root:Recordings/…` e você toma `400`; aí é envolver tudo num `concat('/', …)`. Uma olhada na saída do gatilho resolve as duas dúvidas de uma vez.
 
 > ⚠️ **Deixe este passo ANTES do `Do until`, não dentro.** Ele só depende do gatilho — recalcular a cada iteração é desperdício, e referenciá-lo de fora do loop (o passo 6 faz isso) pega o valor da última iteração, o que é frágil sem necessidade.
 
@@ -685,6 +708,32 @@ concat('LT-', formatDateTime(body('Passo_1')?['value'][0]?['start']?['dateTime']
 
 ---
 
+## Como ler o erro: ele quase nunca está onde aparece
+
+Numa execução vermelha o Power Automate costuma marcar **várias** ações. Isso raramente são vários problemas — normalmente é um só, com ecos. Duas regras que economizam rodadas:
+
+**1. `ActionFailed` numa Condição não é a Condição.**
+
+```
+ActionFailed. An action failed. No dependent actions succeeded.
+```
+
+É mensagem de **contêiner**: a expressão da própria Condição avaliou bem, e o que falhou foi alguma ação **dentro** dela. Se o problema fosse a expressão, a mensagem seria `InvalidTemplate`. Essa linha te manda olhar para os filhos — e, de quebra, **confirma que os campos usados na condição estão certos**.
+
+**2. `InvalidTemplate … type 'Null'` acusa quem *usou* o valor, não quem o produziu.**
+
+Quem leu o campo inexistente ficou verde, com `Null` dentro. Suba uma casa na cadeia antes de mexer em qualquer coisa.
+
+Foi assim que este fluxo apresentou três ações vermelhas de uma vez, em 21/08:
+
+| Ação | Mensagem | O que era |
+|---|---|---|
+| `Caminho` | `'replace' expects … 'string' … type 'Null'` | 🔴 **a causa** — `body/{Path}` num conector OneDrive |
+| `Do until` | `'length' expects … an array or a string … type 'Null'` | eco: sem caminho, a chamada não devolve corpo |
+| `Condition` | `ActionFailed. An action failed.` | agregado dos dois de cima |
+
+Tirar um par de chaves apagou as três.
+
 ## Erros que você provavelmente vai encontrar
 
 | Erro | Onde | O que é |
@@ -694,6 +743,10 @@ concat('LT-', formatDateTime(body('Passo_1')?['value'][0]?['start']?['dateTime']
 | `404` na transcrição | Passo 5 | A reunião não teve transcrição ligada. **Ligue a transcrição automática na política de reunião** |
 | Arquivo com timestamps | limpeza | O Filtrar matriz não pegou — confira se está em **modo avançado** com `@contains(item(), '<v ')` |
 | `endsWith … expects … string … provided value is of type 'Null'` | Condição | **Gatilho errado.** `OnNewFileV2` devolve o conteúdo do arquivo, não as propriedades — troque por "(somente propriedades)" |
+| `'replace' expects … 'string' … type 'Null'` | Passo 2 | **`{Path}` no conector errado.** No OneDrive o campo é `Path`, sem chaves — as chaves são do SharePoint |
+| `'length' expects … an array or a string … type 'Null'` | Passo 3 | Ou o `Caminho` saiu vazio (linha acima), ou falta o `coalesce` na condição do `Do until` |
+| `ActionFailed. An action failed.` numa Condição | qualquer | **Não é a Condição.** É mensagem agregada — falhou uma ação dentro dela. Se fosse a expressão, seria `InvalidTemplate` |
+| `400` na chamada do passo 3 | Passo 2 | Espaço no nome do arquivo entrou cru na URI. Falta o `replace(…, ' ', '%20')` |
 | Campo do gatilho sempre vazio | qualquer | O nome não existe nesse conector. Rode uma vez, abra a saída do gatilho e use o nome real |
 | **Só aparece `.mp4` na pasta** | Rota A | **É o comportamento normal.** A transcrição é anexo do vídeo, não arquivo solto. É dela que os passos 3 e 5 vão buscar |
 | `The template language expression ... cannot be evaluated` | qualquer passo | Uma referência `body('X')`/`outputs('X')` aponta para ação que **não existe com esse nome**. Confira os nomes das ações contra as referências |
@@ -716,6 +769,7 @@ concat('LT-', formatDateTime(body('Passo_1')?['value'][0]?['start']?['dateTime']
 - [ ] Chamada do passo 5 devolvendo o VTT cru — **é o portão, teste isolado antes do resto**
 - [ ] Biblioteca `Transcricoes LT` criada, com as colunas `DataReuniao` e `Origem`
 - [ ] Fluxo criado e testado numa reunião de teste, com transcrição ligada
+- [ ] **Saída do gatilho aberta uma vez** — `Name`, `Path` e `LastModified` conferidos no JSON real, não de memória
 - [ ] Arquivo chegou como `LT-AAAA-MM-DD.txt`, sem timestamps, no formato `Locutor: fala`
 - [ ] Fonte de conhecimento apontando para a biblioteca, **com a descrição colada**
 - [ ] Teste no agente: `o que foi decidido na LT sobre <projeto>?` — tem que responder da transcrição, sem rodar query
