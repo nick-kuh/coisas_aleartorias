@@ -121,8 +121,8 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 > ```
 > https://<tenant>-my.sharepoint.com/personal/<upn>/_api/v2.1/drives/b!xxxxxx...
 > └──────────────────────── FIXO — nunca muda ────────────────────────────────┘
->    /items/01JZ7SIC.../media/transcripts/54981c02-.../streamContent
->           └── MUDA ──┘                  └── MUDA ──┘
+>    /items/<itemId>/media/transcripts/<transcriptId>/streamContent
+>           └─ MUDA ─┘                    └───── MUDA ─────┘
 > ```
 >
 > | Pedaço | Muda? | De onde vem |
@@ -395,25 +395,59 @@ E em **⋯ → Configurar execução após**, marque também **com falha**.
 
 > ⚠️ **Por que isso é necessário:** um `Do until` que estoura o limite de tentativas termina com status **Sucesso**, não falha. Sem esta conferência, o fluxo seguiria com a lista vazia, o passo seguinte devolveria `null`, e você receberia um `404` confuso lá na frente — em vez do motivo real, que é "a transcrição nunca ficou pronta".
 
-### Passo 5 — extrair o id da transcrição
+> 💡 **Dá para endurecer de graça.** O item traz um campo `size`, então a condição pode exigir conteúdo de verdade em vez de só presença:
+>
+> ```
+> @greater(coalesce(last(body('Listar_transcricoes')?['value'])?['size'], 0), 0)
+> ```
+>
+> Barra transcrição vazia **antes** de baixar, em vez de descobrir depois que a limpeza não achou nada. A guarda do passo 9 continua valendo — mas para outra coisa: o formato não bater.
 
-**Operações de dados → Compor**, nome `TranscriptId`, **depois** do `Do until`:
+### Passo 5 — pegar a URL de download que a API já devolveu
+
+**Operações de dados → Compor**, nome `UrlTranscricao`, **depois** do `Do until`:
 
 ```
-last(body('Listar_transcricoes')?['value'])?['id']
+concat('_api/', last(split(last(body('Listar_transcricoes')?['value'])?['temporaryDownloadUrl'], '/_api/')))
 ```
 
-Pego a **última** de propósito: se a transcrição foi reiniciada no meio da reunião, a última é a completa.
+Pego a **última** transcrição de propósito: se ela foi reiniciada no meio da reunião, a última é a completa.
 
-> 🔴 **Este passo é fácil de esquecer.** O passo 6 monta a URL com `@{outputs('TranscriptId')}` — se o Compose não existir com **exatamente** esse nome, o fluxo falha com referência não resolvida.
-
-> ⚠️ **`?['id']` é suposição — confirme.** Que a resposta traz `value` com itens está provado (é o que faz a condição do passo 4 passar). Como se chama o campo do identificador **dentro** de cada item, não está.
+> ## 🎯 O item de transcrição traz o endereço pronto
 >
-> Se o nome for outro, este Compose fica **verde com `null` dentro**, e o passo 6 monta `…/media/transcripts//streamContent` — URL com um buraco no meio, que volta `400`.
+> Capturado em execução real, 21/08. Um item de `value` tem esta cara:
 >
-> **Abra a saída do passo 3** uma vez e leia o item: ela mostra o nome do campo do id, e de quebra se já existe ali uma **URL pronta de download**. Se existir, use-a e pare de montar URL na mão — é mais robusto que qualquer coisa que a gente escreva.
+> | Campo | Exemplo | Para que serve |
+> |---|---|---|
+> | `id` | GUID | o identificador da transcrição |
+> | `displayName` | `<nome>.json` | 🔴 **revela o formato nativo pela extensão** |
+> | `size` | `8101` | guarda de transcrição vazia, **antes** de baixar |
+> | `languageTag` | `pt-BR` | escolher a faixa certa se houver mais de um idioma |
+> | `transcriptType` | `subtitle` | |
+> | `isDefault` | `true` | qual usar quando há várias |
+> | `temporaryDownloadUrl` | URL absoluta com `?tempauth=…` | 🎯 **a URL de download, já autenticada** |
+>
+> ### Por que usar essa URL em vez de montar a sua
+>
+> Compare o que a API devolve com o que dava vontade de escrever à mão:
+>
+> | | URL da API | URL montada à mão |
+> |---|---|---|
+> | item | `items/<itemId>` | `root:<caminho>:` |
+> | **versão** | **`/versions/current`** | 🔴 **ausente** — a listagem dispensa esse segmento, o download **não** |
+> | query | `?tempauth=<token>` | nada, ou um `format` inventado |
+>
+> Foi essa diferença que produziu o `400` de 21/08. E o consertar-diferença-por-diferença é o caminho errado: **quando a resposta traz um endereço, use o endereço.** Montar URL à mão é assumir a manutenção de um contrato que não é seu — a cada mudança da API, você descobre pelo erro.
 
-### Passo 6 — baixar o VTT
+**O que o `concat` faz:** a `temporaryDownloadUrl` é absoluta (`https://…/personal/<upn>/_api/v2.1/…`), e o campo URI do conector quer o caminho **relativo ao site**, porque o "Endereço do site" já cobre a primeira metade. O `split` corta no `/_api/`, o `last` fica com a metade da direita, e o `concat` devolve o prefixo.
+
+> 💡 **Por que cortar no `/_api/` e não recortar por texto fixo:** assim a expressão não repete o tenant nem o UPN. Se a conta que conecta o OneDrive mudar, isto continua funcionando sem edição.
+
+> 🔒 **O `tempauth` é credencial de verdade**, com escopos amplos e validade de algumas horas. Ele vai aparecer na URI dentro do histórico de execução — **não compartilhe print dessa tela**, e nunca cole essa URL num lugar público.
+
+> 🔴 **Este passo é fácil de esquecer.** O passo 6 usa `@{outputs('UrlTranscricao')}` — se o Compose não existir com **exatamente** esse nome, o fluxo falha com referência não resolvida.
+
+### Passo 6 — baixar a transcrição
 
 **SharePoint → Enviar uma solicitação HTTP para o SharePoint**, nomeada `Baixar transcricao`:
 
@@ -421,22 +455,28 @@ Pego a **última** de propósito: se a transcrição foi reiniciada no meio da r
 |---|---|
 | Endereço do site | o mesmo do passo 3 — **o OneDrive** |
 | Método | `GET` |
-| URI | `_api/v2.1/drives/<seu driveId>/root:@{outputs('Caminho')}:/media/transcripts/@{outputs('TranscriptId')}/streamContent` |
+| URI | `@{outputs('UrlTranscricao')}` |
 
-> 🔴 **Sem `?format=text/vtt`.** Esse parâmetro era suposição deste guia e **não estava na URL capturada no DevTools** — aquela termina em `/streamContent`, limpa. Ele derrubou o passo com `400` em 21/08. Se for testá-lo depois, codifique a barra: `?format=text%2Fvtt`. Barra crua dentro de query string é justamente o tipo de coisa que faz o conector montar a URL errada.
+E só. Nenhum pedaço de URL escrito à mão — `driveId`, caminho do item, `versions/current` e autenticação vêm todos prontos do passo 5.
 
-> ✅ **Este é o portão.** Rode uma vez e **abra a saída desta ação**, não confie no verde: se começar com `WEBVTT` e tiver `<v Nome>`, a limpeza abaixo funciona como está. Se vier JSON, a limpeza precisa virar **Analisar JSON** em vez do filtro por `<v `.
+> ✅ **Este é o portão.** Rode uma vez e **abra a saída desta ação**, não confie no verde. O `displayName` do item diz qual formato esperar:
+>
+> | O que voltar | O que fazer |
+> |---|---|
+> | **JSON** (é o que o `displayName` `.json` indica) | os passos 7–9 mudam: `Analisar JSON` no lugar do split por linha |
+> | `WEBVTT` com `<v Nome>` | os passos 7–9 servem como estão |
+>
+> 💡 Vale um teste barato: acrescentar **`&format=text%2Fvtt`** no fim da URI — com `&`, porque o `tempauth` já ocupou o `?`, e com a barra codificada como `%2F`, porque barra crua em query string faz o conector montar a URL errada. Se a API souber converter, você ganha o VTT e a limpeza que já está pronta. Se ignorar, não custou nada.
 
 > ## ⚠️ Se este passo devolver `400 / Unexpected response from the service`
 >
 > Repare no `source` da mensagem: `sharepointonline-…azconn-….azurewebsites.net`. Isso é **o conector**, não o SharePoint. É a mensagem-embrulho de "chamei e não soube usar o que voltou" — não é permissão, não é autenticação.
 >
-> Duas famílias, nesta ordem de investigação:
->
 > | Causa | Como confirmar | Conserto |
 > |---|---|---|
-> | **URL malformada** | abra a saída do `TranscriptId`: vazio? | o campo do id tem outro nome — ver passo 5 |
-> | **Resposta que o conector não digere** | o id está certo e ainda dá `400` | `streamContent` pode responder `302` para um endereço pré-autenticado, ou texto puro; o conector espera JSON. No navegador passa batido porque o browser segue o redirecionamento sozinho. A saída do passo 3 dirá se há outro endereço a chamar |
+> | **URL montada à mão** | a URI tem `root:…:` ou não tem `/versions/current` | use a `temporaryDownloadUrl` — é a causa comprovada em 21/08 |
+> | `Compose` vazio | abra a **saída** do `UrlTranscricao` | o campo mudou de nome; releia o item no passo 3 |
+> | Query mal formada | há uma `/` crua no valor de um parâmetro | codifique: `%2F` |
 
 > 📌 A ação chama "…para o **SharePoint**", mas o endereço é o do **OneDrive**. Está certo: OneDrive é um site SharePoint.
 
@@ -456,10 +496,16 @@ Pego a **última** de propósito: se a transcrição foi reiniciada no meio da r
 > ### Como se proteger
 >
 > 1. **Renomeie toda ação assim que criar.** `Compose 3`, `Condition 1`, `Selecionar` não dizem o que fazem, e viram referência quebrada
-> 2. Use os nomes deste guia: `Caminho`, `Listar transcricoes`, `TranscriptId`, `Baixar transcricao`, `Linhas`, `Falas`, `Limpar`, `TextoLimpo`
+> 2. Use os nomes deste guia: `Caminho`, `Listar transcricoes`, `UrlTranscricao`, `Baixar transcricao`, `Linhas`, `Falas`, `Limpar`, `TextoLimpo`
 > 3. **Antes de rodar, faça a conferência cruzada:** para cada `body('X')` / `outputs('X')` do fluxo, existe uma ação chamada exatamente `X`? É um minuto e evita a maioria das execuções vermelhas
 
-### Passo 7 — quebrar em linhas
+> ## 🔀 Os passos 7 a 9 dependem do formato que voltou
+>
+> Eles estão escritos para **VTT**. O `displayName` do item de transcrição termina em `.json`, o que indica que o formato nativo é **JSON** — nesse caso o filtro por `<v ` não acha nada, e sem a guarda do passo 9 o fluxo grava um `.txt` vazio sem dar erro.
+>
+> **Antes de montar os passos abaixo, abra a saída do passo 6.** Se vier JSON, estes três passos viram `Analisar JSON` + `Selecionar` sobre os campos reais, e não o split por linha.
+
+### Passo 7 — quebrar em linhas  *(caminho VTT)*
 
 **Operações de dados → Compor**, nome `Linhas`:
 
@@ -833,7 +879,7 @@ Uma correção só apagou as três — e a correção certa acabou sendo **parar
 | `'length' expects … an array or a string … type 'Null'` | Passo 3 | Ou o `Caminho` saiu vazio (linha acima), ou falta o `coalesce` na condição do `Do until` |
 | `ActionFailed. An action failed.` numa Condição | qualquer | **Não é a Condição.** É mensagem agregada — falhou uma ação dentro dela. Se fosse a expressão, seria `InvalidTemplate` |
 | `400` na chamada do passo 3 | Passo 2 | Espaço no nome do arquivo entrou cru na URI. Falta o `replace(…, ' ', '%20')` |
-| `400` + `Unexpected response from the service` | Passo 6 | `source` é o **conector**, não o SharePoint. Ou a URL saiu malformada (abra a saída do `TranscriptId` — vazio?), ou a resposta não é JSON. Comece tirando o `?format=text/vtt` |
+| `400` + `Unexpected response from the service` | Passo 6 | `source` é o **conector**, não o SharePoint. **Causa comprovada em 21/08: URL montada à mão**, sem o segmento `/versions/current` que o download exige. Conserto: usar a `temporaryDownloadUrl` que o passo 3 devolve |
 | `Compose` verde mas o passo seguinte quebra | qualquer | Compose com `null` fica verde. Abra a **saída** de cada Compose da cadeia; o primeiro vazio é a causa |
 | Campo do gatilho sempre vazio | qualquer | O nome não existe nesse conector. Rode uma vez, abra a saída do gatilho e use o nome real |
 | **Só aparece `.mp4` na pasta** | Rota A | **É o comportamento normal.** A transcrição é anexo do vídeo, não arquivo solto. É dela que os passos 3 e 5 vão buscar |
@@ -843,7 +889,7 @@ Uma correção só apagou as três — e a correção certa acabou sendo **parar
 | `Do until` aborta na 1ª volta | Passo 3 | A chamada falhou (404 de "ainda não pronto") e derrubou o loop. Marque **com falha** em Configurar execução após |
 | **Fluxo verde, mas nada foi gravado** | Passo 9 | O ramo "Se não" da guarda está **vazio**. Sem o `Encerrar`, o fluxo termina em sucesso e o problema fica invisível |
 | **Fluxo verde, e a transcrição nunca chegou** | Passo 4 | Um `Do until` que estoura o limite termina em **sucesso**, não falha. Falta a condição pós-loop |
-| `404` no passo 6, com o passo 3 tendo funcionado | Passo 5 | O id da transcrição saiu vazio — quase sempre é o nome da ação não batendo com `outputs('TranscriptId')` |
+| `404` no passo 6, com o passo 3 tendo funcionado | Passo 5 | A URL saiu vazia — quase sempre é o nome da ação não batendo com `outputs('UrlTranscricao')` |
 | Lista de transcrições vazia | Passo 4 | Ou a transcrição ainda está processando (aumente o atraso do passo 2), ou a reunião não teve transcrição ligada |
 | `403` ou `404` na chamada HTTP | Passos 4–5 | A URL não bate com a do seu tenant. Compare com a que você pegou no DevTools |
 | Gatilho não dispara | Rota A | A pasta pode chamar `Recordings` em vez de `Gravações`, conforme o idioma da conta |
@@ -858,7 +904,7 @@ Uma correção só apagou as três — e a correção certa acabou sendo **parar
 - [ ] Biblioteca `Transcricoes LT` criada, com as colunas `DataReuniao` e `Origem`
 - [ ] Fluxo criado e testado numa reunião de teste, com transcrição ligada
 - [ ] **Compose de diagnóstico rodado uma vez** — `triggerOutputs()` puro, para ler os nomes de campo reais em vez de adivinhar
-- [ ] **Saída de cada Compose conferida** — verde não basta; o `TranscriptId` precisa ter um id de verdade dentro
+- [ ] **Saída de cada Compose conferida** — verde não basta; o `UrlTranscricao` precisa ter uma URL de verdade dentro
 - [ ] Arquivo chegou como `LT-AAAA-MM-DD.txt`, sem timestamps, no formato `Locutor: fala`
 - [ ] Fonte de conhecimento apontando para a biblioteca, **com a descrição colada**
 - [ ] Teste no agente: `o que foi decidido na LT sobre <projeto>?` — tem que responder da transcrição, sem rodar query
