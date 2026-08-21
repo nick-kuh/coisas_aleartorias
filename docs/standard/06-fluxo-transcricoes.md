@@ -552,7 +552,7 @@ E só. Nenhum pedaço de URL escrito à mão — `driveId`, caminho do item, `ve
 > ### Como se proteger
 >
 > 1. **Renomeie toda ação assim que criar.** `Compose 3`, `Condition 1`, `Selecionar` não dizem o que fazem, e viram referência quebrada
-> 2. Use os nomes deste guia: `Caminho`, `Listar transcricoes`, `UrlTranscricao`, `Baixar transcricao`, `Linhas`, `Falas`, `TextoLimpo`
+> 2. Use os nomes deste guia: `Caminho`, `Listar transcricoes`, `UrlTranscricao`, `Baixar transcricao`, `Linhas`, `Falas`, `TextoLimpo`, `NomeArquivo`
 > 3. **Antes de rodar, faça a conferência cruzada:** para cada `body('X')` / `outputs('X')` do fluxo, existe uma ação chamada exatamente `X`? É um minuto e evita a maioria das execuções vermelhas
 
 > ## ✅ O formato: VTT, e **sem marcação de locutor**
@@ -664,14 +664,7 @@ join(body('Falas'), decodeUriComponent('%0A'))
 
 Até agora tudo aconteceu na **origem** (OneDrive). Deste passo em diante é o **destino**: o site de equipe do CDIO LATAM, que é o que o agente enxerga.
 
-**SharePoint → Criar arquivo**
-
-| Campo | Valor |
-|---|---|
-| Endereço do site | 🎯 **o site do CDIO LATAM**, **não** o OneDrive dos passos 3 e 6 |
-| Caminho da pasta | a biblioteca de transcrições |
-| Nome do arquivo | expressão abaixo |
-| Conteúdo do arquivo | `outputs('TextoLimpo')` |
+Primeiro um **Operações de dados → Compor**, nome `NomeArquivo`:
 
 ```
 concat('LT-', formatDateTime(triggerOutputs()?['body/LastModified'], 'yyyy-MM-dd-HHmm'), '.txt')
@@ -679,17 +672,84 @@ concat('LT-', formatDateTime(triggerOutputs()?['body/LastModified'], 'yyyy-MM-dd
 
 Resultado: `LT-2026-08-19-1929.txt`.
 
+> 💡 **Por que o nome fica num Compose e não direto no campo:** o passo 13, se você o usar, precisa do **mesmo** nome para reencontrar o arquivo. Escrito uma vez, não há como as duas pontas divergirem.
+
+Depois, **SharePoint → Criar arquivo**:
+
+| Campo | Valor |
+|---|---|
+| Endereço do site | 🎯 **o site do CDIO LATAM**, **não** o OneDrive dos passos 3 e 6 |
+| Caminho da pasta | a biblioteca de transcrições |
+| Nome do arquivo | `@{outputs('NomeArquivo')}` |
+| Conteúdo do arquivo | `outputs('TextoLimpo')` |
+
 > 📌 **Por que `HHmm` e não só a data:** duas gravações no mesmo dia gerariam o mesmo nome e colidiriam. A data continua legível para a busca semântica, e a hora elimina a colisão. Se as LT são sempre uma por dia, dá para usar só `yyyy-MM-dd` e aceitar o risco.
 
-### Passo 13 — preencher as colunas
+### Passo 13 — preencher as colunas  ⚪ **opcional**
+
+> ## ⚪ Este passo é dispensável — decida antes de gastar tempo nele
+>
+> Ele preenche `DataReuniao` e `Origem`, que são **conveniência para quem navega a biblioteca**. O agente lê o **conteúdo** do arquivo, e a data já está no nome (`LT-2026-08-21-1803.txt`).
+>
+> **Apagar esta ação entrega o fluxo funcionando, sem perda funcional.** Se a prioridade é ter a próxima LT capturada, apague e vá ligar o agente — as colunas dá para acrescentar depois. Isso é escopo, não gambiarra.
 
 **SharePoint → Atualizar propriedades do arquivo**
 
 | Campo | Valor |
 |---|---|
-| Id | `ItemId` do passo anterior |
+| Endereço do site | o mesmo do passo 12 |
+| Nome da biblioteca | 🔴 **a mesma** do passo 12 — ver abaixo |
+| Id | o identificador do **item de lista** — ver abaixo |
 | DataReuniao | `formatDateTime(triggerOutputs()?['body/LastModified'], 'yyyy-MM-dd')` |
 | Origem | `Teams` |
+
+> ## 🔴 `404 Could not find list item` — as duas causas, na ordem de checagem
+>
+> Essa mensagem é específica: a ação **achou a biblioteca** e **não achou o item** dentro dela.
+>
+> ### 1º — as duas ações apontam para a mesma biblioteca?
+>
+> Elas escolhem o destino de formas diferentes, e é fácil divergir sem perceber:
+>
+> | Ação | Campo | Como se preenche |
+> |---|---|---|
+> | `Criar arquivo` | **Caminho da pasta** | você digita ou navega |
+> | `Atualizar propriedades` | **Nome da biblioteca** | lista suspensa |
+>
+> Se a lista suspensa ficou em `Documentos` e o arquivo foi para `Transcricoes LT`, o item não existe ali mesmo — mesma mensagem, causa completamente diferente. Dez segundos de conferência descartam isso.
+>
+> ### 2º — o `Id` é o identificador certo, e não está vazio?
+>
+> São **duas coisas diferentes com nome parecido**:
+>
+> | | O que é | Cara |
+> |---|---|---|
+> | `Id` que o `Criar arquivo` devolve | identificador do **arquivo** no drive | string longa codificada |
+> | `Id` que o `Atualizar propriedades` pede | identificador do **item de lista** | número inteiro, tipo `7` |
+>
+> ⚠️ **Não presuma que existe um campo `ItemId` na saída do `Criar arquivo`** — versões anteriores deste guia diziam isso como se fosse fato, e não estava verificado. Se o campo não existir, a expressão vira `null`, o `Id` vai vazio, e o SharePoint responde exatamente `Could not find list item`. É o mesmo padrão de sempre: **campo inexistente não dá erro, dá `null`**.
+>
+> **Abra a saída do `Criar arquivo`** e procure. Se houver um `ItemId` numérico, use-o e acabou.
+>
+> ### Se não houver `ItemId`: procurar o item pelo nome
+>
+> Entre os passos 12 e 13, um **SharePoint → Obter itens**:
+>
+> | Campo | Valor |
+> |---|---|
+> | Endereço do site | o site do CDIO LATAM |
+> | Nome da lista | a biblioteca de transcrições |
+> | Consulta de filtro | `FileLeafRef eq '@{outputs('NomeArquivo')}'` |
+>
+> E o `Id` do passo 13 vira:
+>
+> ```
+> first(body('Obter_itens')?['value'])?['ID']
+> ```
+>
+> É aqui que o Compose `NomeArquivo` do passo 12 se paga: o filtro usa exatamente o mesmo nome que foi gravado.
+>
+> ⚠️ `ID` em maiúsculas é o nome interno da coluna no SharePoint, diferente do `Id` do conector. **Confira na saída do `Obter itens`** antes de confiar — é literalmente o erro que este bloco inteiro existe para evitar.
 
 > ## 💡 Uma alternativa que simplifica, se você topar mudar como a LT é convocada
 >
@@ -978,6 +1038,7 @@ Uma correção só apagou as três — e a correção certa acabou sendo **parar
 | `404` no passo 6, com o passo 3 tendo funcionado | Passo 5 | A URL saiu vazia — quase sempre é o nome da ação não batendo com `outputs('UrlTranscricao')` |
 | Lista de transcrições vazia | Passo 4 | Ou a transcrição ainda está processando (aumente o atraso do passo 2), ou a reunião não teve transcrição ligada |
 | `403` ou `404` na chamada HTTP | Passos 4–5 | A URL não bate com a do seu tenant. Compare com a que você pegou no DevTools |
+| `404 Could not find list item` | Passo 13 | Achou a biblioteca, não achou o item. **1º** confira se o passo 12 e o 13 apontam para a mesma biblioteca. **2º** o `Id` — ele quer o identificador do **item de lista** (número), não o do arquivo, e não pode estar vazio |
 | Gatilho não dispara | Rota A | A pasta pode chamar `Recordings` em vez de `Gravações`, conforme o idioma da conta |
 | Fluxo roda 2x | Rota A | O `.vtt` e o `.docx` caem os dois. A condição do Passo 1 já resolve |
 
@@ -991,6 +1052,7 @@ Uma correção só apagou as três — e a correção certa acabou sendo **parar
 - [ ] Fluxo criado e testado numa reunião de teste, com transcrição ligada
 - [ ] **Compose de diagnóstico rodado uma vez** — `triggerOutputs()` puro, para ler os nomes de campo reais em vez de adivinhar
 - [ ] **Saída de cada Compose conferida** — verde não basta; o `UrlTranscricao` precisa ter uma URL de verdade dentro
+- [ ] **Passo 13 decidido** — ou funcionando, ou apagado de propósito. Ele é opcional, e fluxo travado nele é fluxo não entregue
 - [ ] **Status da `temporaryDownloadUrl` verificado no DevTools** — 302 ou 200? decide entre cabeçalho `Accept` e a ação `HTTP`
 - [ ] Arquivo chegou como `LT-AAAA-MM-DD.txt`, sem timestamps, no formato `Locutor: fala`
 - [ ] Fonte de conhecimento apontando para a biblioteca, **com a descrição colada**
