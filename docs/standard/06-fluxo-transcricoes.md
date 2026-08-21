@@ -237,16 +237,16 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 >
 > Não dá para trocar a operação de um gatilho existente — **apague e adicione o certo**. As expressões `triggerOutputs()?['body/…']` do resto do fluxo continuam válidas.
 
-> ## 🔴 `{Path}` é do SharePoint. No OneDrive é `Path`, sem chaves
+> ## 🔴 Não adivinhe nome de campo. Nem eu acertei.
 >
-> Os dois conectores nomeiam os campos de formas diferentes, e é daí que veio a falha de 21/08:
+> Os conectores nomeiam os campos de formas diferentes — o do **SharePoint** usa chaves (`{Name}`, `{Path}`, `{Link}`), o do **OneDrive** não. Fora isso, **este guia não afirma quais campos o gatilho do OneDrive entrega**: duas tentativas de fixar o nome do campo de caminho (`{Path}` e depois `Path`) falharam em campo, em 21/08.
 >
-> | Conector | Como nomeia | Campos |
-> |---|---|---|
-> | **SharePoint** (item de lista) | com chaves | `{Name}`, `{FilenameWithExtension}`, `{Path}`, `{Link}`, `{IsFolder}` |
-> | **OneDrive** (esquema `BlobMetadata`) | **sem chaves** | `Id`, `Name`, `DisplayName`, `Path`, `LastModified`, `Size`, `MediaType`, `ETag` |
+> O que está confirmado por execução real:
 >
-> A **Rota A é OneDrive**. A **Rota A2 é SharePoint**. Escrever `body/{Path}` na Rota A procura um campo que não existe naquele esquema.
+> | Campo | Status |
+> |---|---|
+> | `body/Name` | 🟢 **existe e vem populado** — provado pela Condição do passo 1 ter avaliado `true` |
+> | campo de caminho | 🔴 não confirmado com nenhum nome testado |
 >
 > ### E aqui está a parte que engana
 >
@@ -261,9 +261,19 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 >                    Do until: length(…)          ← o erro aparece aqui
 > ```
 >
-> **Salve, rode uma vez, e no histórico abra a saída do gatilho.** O JSON mostra os nomes exatos **e os valores reais** — resolve `Name`, `Path` e `LastModified` de uma olhada só.
+> ### O Compose de diagnóstico
 >
-> 🎯 **Atalho que economiza uma rodada:** em vez de digitar, use o **seletor de conteúdo dinâmico**. Ele insere o nome certo seja qual for — digitar de memória é exatamente o que gera `{Path}` num conector que usa `Path`.
+> Em vez de tentar nomes, gaste uma execução e leia o que o gatilho entrega. Adicione um **Compor** logo no começo, nome `Diagnostico`, com a entrada:
+>
+> ```
+> triggerOutputs()
+> ```
+>
+> Sem função nenhuma em volta — **não tem como falhar**, porque não há o que avaliar. Ele fica verde, e a *saída* dele traz o JSON inteiro do gatilho: todos os nomes de campo e todos os valores, copiáveis. Leia, ajuste as expressões, apague o `Diagnostico`.
+>
+> É melhor que abrir o painel do gatilho no histórico porque fica exatamente onde você já está olhando quando o fluxo falha.
+>
+> 🎯 **E prefira o seletor de conteúdo dinâmico a digitar.** Ele insere o nome que existe, seja qual for. Digitar de memória é o que gerou as duas rodadas perdidas.
 
 > ⚠️ O gatilho roda na conta de **quem conectar o OneDrive** — precisa ser a do organizador da LT. Se o organizador mudar, o fluxo para de enxergar os arquivos. Ver a nota sobre reunião de canal no fim desta rota.
 
@@ -284,19 +294,22 @@ endsWith(triggerOutputs()?['body/Name'], '.mp4')
 **Operações de dados → Compor**, nome `Caminho`:
 
 ```
-replace(replace(triggerOutputs()?['body/Path'], '/Documents', ''), ' ', '%20')
+concat('/Recordings/', replace(triggerOutputs()?['body/Name'], ' ', '%20'))
 ```
 
-São dois tratamentos encadeados:
+> 🟢 **Repare no que este passo NÃO faz: ler o campo de caminho do gatilho.** Ele não precisa. O gatilho monitora uma pasta fixa — a mesma que você configurou — então o caminho é sempre `/Recordings/` + o nome do arquivo. E o nome é o campo comprovadamente populado.
+>
+> Isso troca um campo incerto por dois fatos que você controla. Foi a lição de duas rodadas perdidas tentando adivinhar o nome do campo de caminho.
 
-| Trecho | Para quê |
+| Trecho | Papel |
 |---|---|
-| `replace(…, '/Documents', '')` | se o caminho vier com `/Documents` na frente, ele sai — a raiz do drive **é** o Documents. No OneDrive costuma já vir sem, e aí este pedaço fica inofensivo |
-| `replace(…, ' ', '%20')` | 🔴 **nome de gravação sempre tem espaço** — `LT CDIO LATAM-20260819_190000-Gravação de Reunião.mp4` — e espaço na URI dá `400`. Codifica só o espaço e preserva as barras, que é o que o endereçamento `root:/caminho:` precisa |
+| `'/Recordings/'` | a pasta do gatilho, fixa. Nada a descobrir |
+| `body/Name` | 🟢 o campo confirmado em execução real |
+| `replace(…, ' ', '%20')` | 🔴 **nome de gravação sempre tem espaço** — `LT CDIO LATAM-20260819_190000-Gravação de Reunião.mp4` — e espaço cru na URI dá `400` no passo 3. Codifica só o espaço e preserva as barras, que é o que o endereçamento `root:/caminho:` precisa |
 
-> 🔴 **É `Path`, não `{Path}`.** As chaves são convenção do conector do **SharePoint**, usado na Rota A2. Aqui o conector é o **OneDrive**, e lá o campo é `Path` puro. Escrever com chaves devolve `Null` **sem dar erro nesta ação** — ver o aviso dos esquemas, na seção do gatilho.
+> ⚠️ **O limite desta solução:** se a LT virar reunião de canal, ou as gravações passarem a cair em subpastas, o `/Recordings/` fixo deixa de valer — aí o campo de caminho volta a ser necessário, e o Compose de diagnóstico (seção do gatilho) diz qual é o nome dele.
 
-> ⚠️ **Confira o valor, não só o nome.** O que precisa ser verdade é que ele **comece com `/`**. Se vier `Recordings/…` sem a barra, a URI do passo 3 sai como `root:Recordings/…` e você toma `400`; aí é envolver tudo num `concat('/', …)`. Uma olhada na saída do gatilho resolve as duas dúvidas de uma vez.
+> 💡 **Este passo pode deixar de existir.** Veja a nota sobre endereçamento por `Id` no passo 3 — se o gatilho entregar o identificador do arquivo, some o Compose e somem junto espaço, acento, prefixo e pasta fixa.
 
 > ⚠️ **Deixe este passo ANTES do `Do until`, não dentro.** Ele só depende do gatilho — recalcular a cada iteração é desperdício, e referenciá-lo de fora do loop (o passo 6 faz isso) pega o valor da última iteração, o que é frágil sem necessidade.
 
@@ -327,6 +340,25 @@ São dois tratamentos encadeados:
 E em **⋯ → Configurar execução após**, marque também **com falha**.
 
 > Se a API devolver `404` enquanto a transcrição não existe — em vez de `200` com lista vazia — a ação falha e **o `Do until` aborta na primeira iteração**. Aceitar a falha deixa o loop continuar tentando; o `coalesce` da condição trata a ausência de corpo.
+
+> ## 💡 Endereçar por `Id` em vez de por caminho
+>
+> A URL capturada no F12 não usava caminho nenhum:
+>
+> ```
+> _api/v2.1/drives/<driveId>/items/<itemId>/media/transcripts/<id>/streamContent
+>                             └─ items/, não root:/caminho:/
+> ```
+>
+> Se o `Diagnostico` mostrar um campo de identificador no gatilho, a URI vira
+>
+> ```
+> _api/v2.1/drives/<driveId>/items/@{triggerOutputs()?['body/Id']}/media/transcripts
+> ```
+>
+> e **o passo 2 deixa de existir**. Somem com ele: espaço no nome, acento no nome, prefixo `/Documents`, pasta fixa, subpasta. Toda essa família de problema é do endereçamento por caminho.
+>
+> ⚠️ Confirme antes de adotar: o identificador do conector precisa estar no mesmo formato que a API `_api/v2.1/drives/…/items/` espera. Rode uma vez com o `Id` e veja se responde `200`.
 
 ### Passo 4 — conferir que a transcrição ficou pronta
 
@@ -724,15 +756,28 @@ ActionFailed. An action failed. No dependent actions succeeded.
 
 Quem leu o campo inexistente ficou verde, com `Null` dentro. Suba uma casa na cadeia antes de mexer em qualquer coisa.
 
+**3. `first parameter` quer dizer o primeiro argumento — conte-os.**
+
+A mensagem nomeia **qual** argumento está errado, e é fácil corrigir o argumento vizinho sem perceber:
+
+```
+replace(  A ,  B ,  C  )
+          │    │    └─ pelo quê trocar
+          │    └────── o que procurar
+          └─────────── onde procurar     ← 'first parameter'
+```
+
+Se o erro diz `'replace' expects its first parameter 'string' to be a string`, o problema é **`A`**. Mexer em `B` — trocar `/Documents` por `/Recordings`, por `/` — devolve exatamente o mesmo erro, quantas vezes você tentar, porque `A` continua nulo. Vale para qualquer função: leia qual parâmetro a mensagem cita antes de editar.
+
 Foi assim que este fluxo apresentou três ações vermelhas de uma vez, em 21/08:
 
 | Ação | Mensagem | O que era |
 |---|---|---|
-| `Caminho` | `'replace' expects … 'string' … type 'Null'` | 🔴 **a causa** — `body/{Path}` num conector OneDrive |
+| `Caminho` | `'replace' expects … 'string' … type 'Null'` | 🔴 **a causa** — leitura de um campo de caminho que não existe no gatilho |
 | `Do until` | `'length' expects … an array or a string … type 'Null'` | eco: sem caminho, a chamada não devolve corpo |
 | `Condition` | `ActionFailed. An action failed.` | agregado dos dois de cima |
 
-Tirar um par de chaves apagou as três.
+Uma correção só apagou as três — e a correção certa acabou sendo **parar de ler aquele campo**, montando o caminho a partir do `Name` (passo 2).
 
 ## Erros que você provavelmente vai encontrar
 
@@ -743,7 +788,7 @@ Tirar um par de chaves apagou as três.
 | `404` na transcrição | Passo 5 | A reunião não teve transcrição ligada. **Ligue a transcrição automática na política de reunião** |
 | Arquivo com timestamps | limpeza | O Filtrar matriz não pegou — confira se está em **modo avançado** com `@contains(item(), '<v ')` |
 | `endsWith … expects … string … provided value is of type 'Null'` | Condição | **Gatilho errado.** `OnNewFileV2` devolve o conteúdo do arquivo, não as propriedades — troque por "(somente propriedades)" |
-| `'replace' expects … 'string' … type 'Null'` | Passo 2 | **`{Path}` no conector errado.** No OneDrive o campo é `Path`, sem chaves — as chaves são do SharePoint |
+| `'replace' expects … 'string' … type 'Null'` | Passo 2 | **O campo de caminho não existe com o nome usado.** Não tente outro nome: monte o caminho com `concat('/Recordings/', body/Name)`, ou endereço por `Id`. E confira se você não está editando o argumento errado — ver "Como ler o erro" |
 | `'length' expects … an array or a string … type 'Null'` | Passo 3 | Ou o `Caminho` saiu vazio (linha acima), ou falta o `coalesce` na condição do `Do until` |
 | `ActionFailed. An action failed.` numa Condição | qualquer | **Não é a Condição.** É mensagem agregada — falhou uma ação dentro dela. Se fosse a expressão, seria `InvalidTemplate` |
 | `400` na chamada do passo 3 | Passo 2 | Espaço no nome do arquivo entrou cru na URI. Falta o `replace(…, ' ', '%20')` |
@@ -769,7 +814,7 @@ Tirar um par de chaves apagou as três.
 - [ ] Chamada do passo 5 devolvendo o VTT cru — **é o portão, teste isolado antes do resto**
 - [ ] Biblioteca `Transcricoes LT` criada, com as colunas `DataReuniao` e `Origem`
 - [ ] Fluxo criado e testado numa reunião de teste, com transcrição ligada
-- [ ] **Saída do gatilho aberta uma vez** — `Name`, `Path` e `LastModified` conferidos no JSON real, não de memória
+- [ ] **Compose de diagnóstico rodado uma vez** — `triggerOutputs()` puro, para ler os nomes de campo reais em vez de adivinhar
 - [ ] Arquivo chegou como `LT-AAAA-MM-DD.txt`, sem timestamps, no formato `Locutor: fala`
 - [ ] Fonte de conhecimento apontando para a biblioteca, **com a descrição colada**
 - [ ] Teste no agente: `o que foi decidido na LT sobre <projeto>?` — tem que responder da transcrição, sem rodar query
