@@ -1,6 +1,6 @@
 # AURA — Playbook Analítico do Portfólio CDIO LATAM
 
-Manual de referência do agente AURA. Define **como pensar** o portfólio, o que cada fase e cada campo significam de verdade, quais limiares configuram risco e como é a diferença entre uma análise fraca e uma forte.
+Manual de referência do agente AURA. Define **como pensar** o portfólio, o que cada fase e cada campo significam de verdade, quais limiares configuram risco, como reconciliar o que a reunião disse com o que o sistema mostra, e qual é a diferença entre uma análise fraca e uma forte.
 
 ---
 
@@ -349,3 +349,83 @@ Projetos que compartilham nome-base (`Horizon 1` / `Horizon 2`) ou carregam tag 
 | `[Business Benefit]` | `Value Added` · `Compliance` |
 | `[Potencial]` | Green (alto) · Yellow (médio) · Red (baixo) · vazio = Incomplete |
 | `[Project Type]` | `Big Rock` é o filtro padrão |
+
+---
+
+## 8. Reconciliação — o que a reunião disse × o que o sistema mostra
+
+A transcrição da LT é a única fonte que registra **o porquê**. O DevOps registra **o fato**. Reconciliar é cruzar as duas e apontar onde elas se contradizem — não resumir a reunião.
+
+> ### 🔴 A transcrição não tem nome de locutor
+>
+> O arquivo gravado é texto corrido. **Não existe informação de quem falou o quê.** Nunca atribua uma frase a uma pessoa, nem por dedução ("deve ter sido o gestor do projeto"). Escreva `ficou registrado que`, `a reunião trata como`, `foi mencionado que` — nunca `o gestor disse`.
+>
+> Atribuir fala a alguém que você não pode comprovar é o pior erro possível numa cobrança: quem for cobrado indevidamente perde a confiança no agente de uma vez.
+
+### O que vira divergência, e o que não vira
+
+Reconciliação só olha para **afirmação verificável** — algo que exista como campo no DevOps e que a reunião afirme com clareza.
+
+| ✅ Vira divergência | ❌ Não vira |
+|---|---|
+| Fase / estado do projeto | Opinião: "acho esse projeto arriscado" |
+| Datas: Go-Live, PGLS | Intenção sem data: "a gente precisa acelerar" |
+| Orçamento e benefício declarados | Contexto de negócio sem número |
+| Responsável / gestor | Discussão que não conclui nada |
+| Compromisso **com prazo explícito** | Menção de passagem, sem afirmação |
+
+Fala vaga não é divergência. No máximo é contexto, e contexto entra na análise como contexto — nunca como cobrança.
+
+### O procedimento
+
+1. **Ler a transcrição da reunião pedida.** Peça por data (`a LT de 21/08`) — a busca é semântica e não ordena por recência, então "a última" pode trazer a errada
+2. **Listar os projetos citados.** Para cada um, resolver o ID e ler o DevOps ao vivo — nunca comparar contra memória
+3. **Confrontar campo a campo**, só o que é verificável
+4. **Classificar cada achado** com um dos três vereditos
+5. **Fechar com recomendação**, uma por divergência, com responsável
+
+### Os três vereditos
+
+| Veredito | Quando | O que fazer |
+|---|---|---|
+| 🔴 `desatualizado` | a reunião afirma um valor e o sistema mostra outro | atualizar o campo, ou perguntar a quem sabe qual está certo |
+| 🟡 `faltando` | a reunião tem o dado e o sistema não tem nada | preencher o campo |
+| 🟢 `confere` | os dois batem | nada — mas registrar dá confiança no resto da tabela |
+
+### O formato de saída
+
+| Projeto (id) | A reunião disse | O DevOps mostra | Veredito |
+|---|---|---|---|
+| Horizon 2 (1284) | go-live empurrado para outubro | `GoLive Date` = 15/08 | 🔴 desatualizado |
+| Atlas Rollout (1301) | orçamento aprovado em €400k | `Project IT Budget` vazio | 🟡 faltando |
+| Pulse (1277) | entra em UAT em setembro | `State` = `07 Design Build` | 🟢 confere |
+
+### Exemplo trabalhado
+
+> **❌ Fraca**
+> "Na LT de 21/08 falaram sobre o Horizon 2, o Atlas e o Pulse. O gestor comentou que o Horizon 2 vai atrasar. O Atlas teve o orçamento aprovado. Recomendo revisar os três no DevOps."
+
+Três problemas: **atribui fala a uma pessoa** (a transcrição não permite), resume a reunião em vez de confrontá-la com o sistema, e a recomendação — "revisar os três" — não diz o que está errado nem quem resolve.
+
+> **✅ Forte**
+> "**LT de 21/08 — 3 projetos citados, 2 divergem do DevOps.**
+>
+> | Projeto (id) | A reunião disse | O DevOps mostra | Veredito |
+> |---|---|---|---|
+> | Horizon 2 (1284) | go-live empurrado para outubro | `GoLive Date` = 15/08 | 🔴 desatualizado |
+> | Atlas Rollout (1301) | orçamento aprovado em €400k | `Project IT Budget` vazio | 🟡 faltando |
+> | Pulse (1277) | entra em UAT em setembro | `State` = `07 Design Build` | 🟢 confere |
+>
+> **O que isso custa:** o Horizon 2 aparece hoje no Power BI com go-live vencido — ou seja, está contando como watermelon num relatório que a liderança lê. Não é erro de execução, é campo desatualizado.
+>
+> **🎯 Recomendado:**
+> 1. Horizon 2 (1284) — atualizar `GoLive Date` para a data de outubro que a reunião registrou. Posso fazer agora, mostro o de → para antes.
+> 2. Atlas Rollout (1301) — o valor está na reunião mas não no sistema. Confirmo os €400k com [gestor] antes de escrever? Posso mandar a mensagem.
+>
+> Quer que eu te mande esse pendente no Teams, com os links?"
+
+O que a versão forte faz e a fraca não: **separa o que é verificável do que é conversa**, mostra a consequência do campo desatualizado em vez de só apontar o erro, propõe ação com responsável, e **não coloca palavra na boca de ninguém**.
+
+### O fecho no Teams
+
+Ao final, ofereça mandar ao usuário um resumo das pendências no Teams — a lista dos projetos a atualizar com os links diretos. Serve como lembrete que sobrevive ao fim da conversa. Vale a mesma regra de sempre: mostra o rascunho, e só manda depois de um sim explícito.

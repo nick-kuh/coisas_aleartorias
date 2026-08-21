@@ -785,12 +785,60 @@ Descrição da fonte — é ela que dispara a busca:
 ```
 Transcripts of the CDIO LATAM Leadership Team meetings, held every two weeks.
 Consult this source to find out WHY something happened: why a project is late,
-what leadership decided about it, what was promised and by whom, what blocked a
-go-live. One file per meeting, named LT-YYYY-MM-DD. Each line is "Speaker: what
-they said". Contains decisions and commitments that are NOT recorded in Azure
-DevOps or Power BI — this is where the reason lives when the system only shows
-the fact.
+what leadership decided, what was promised and by when, what blocked a go-live.
+One file per meeting, named LT-YYYY-MM-DD-HHmm. Plain running text: the
+transcript carries NO speaker names, so never attribute a sentence to a person —
+write "ficou registrado que", never "o gestor disse". Search does not order by
+recency: ask for a meeting by its date. Contains decisions and commitments that
+are NOT recorded in Azure DevOps or Power BI — this is where the reason lives
+when the system only shows the fact.
 ```
+
+> ## 🔴 Por que essa descrição mudou, e por que não dá para deixar a antiga
+>
+> A versão anterior prometia: *"Each line is **Speaker: what they said**"*. Isso **deixou de ser verdade** quando ficou claro que o VTT do `streamContent` não traz marcação de locutor.
+>
+> Uma descrição que promete um formato inexistente não é só imprecisa — ela **empurra o modelo a inventar**. Se a descrição diz que há locutor, o modelo produz locutor, deduzindo quem "deve" ter falado. E aí uma cobrança sai endereçada à pessoa errada, com a autoridade de um sistema.
+>
+> É o oposto do §9 das instruções. Se você atualizar uma coisa só deste guia, atualize esta.
+
+---
+
+## 4. E se a reunião for de outra pessoa?
+
+O gatilho lê o OneDrive de **quem conectou** a conta. Se quem organiza a LT não é você, há três saídas — e a mais barata é não precisar da conta dele.
+
+### 🥇 Você inicia a gravação
+
+Numa reunião que **não é de canal**, o Teams salva a gravação no OneDrive de **quem clicou em gravar** — não de quem organizou.
+
+Se você entra na reunião e inicia a gravação, ela cai no **seu** `/Recordings` e **o fluxo funciona como está**. Zero mudança.
+
+Custo: estar na reunião, ter permissão de gravar pela política, e lembrar de clicar. Se a LT já é gravada por hábito, é só combinar quem clica.
+
+### 🥈 A LT vira reunião de canal
+
+Gravação e transcrição passam a cair **direto no SharePoint do time**. O gatilho vira SharePoint, o fluxo tem um site só (origem = destino), e **deixa de depender da conta de qualquer pessoa**.
+
+Resolve junto o risco que a montagem carrega calado: hoje o histórico das LT mora no OneDrive de **um indivíduo**. Se essa pessoa sair da empresa ou mudar de área, o acervo vai com a conta dela.
+
+Muda como a reunião é convocada, então é conversa organizacional — mas é a resposta certa a médio prazo.
+
+### 🥉 Passar o fluxo para a conta dele
+
+Dá, mas são **três** mudanças, e nenhuma aparece sozinha:
+
+| O quê | Onde | Por quê |
+|---|---|---|
+| Conexão do OneDrive | no gatilho | o gatilho enxerga o drive de quem conectou |
+| `dataset` | passos 3 e 6 | está fixo no `/personal/<upn>` de quem montou |
+| `driveId` | passo 3 | é o id **daquele** drive; o dele é outro |
+
+E para ele conseguir trocar a conexão, você precisa **compartilhar o fluxo como coproprietário**.
+
+> ⚠️ **Não existe atalho de "ele compartilha a pasta comigo".** O gatilho do OneDrive monitora o drive de quem conectou, não pastas compartilhadas por terceiros. Compartilhar a `/Recordings` dá acesso de leitura no navegador e não faz o gatilho disparar.
+
+**Recomendação:** grave você (opção 1) enquanto negocia a reunião de canal (opção 2). A opção 3 é a que mais dá manutenção pelo menor ganho.
 
 ---
 

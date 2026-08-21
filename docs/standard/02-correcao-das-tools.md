@@ -6,6 +6,19 @@
 
 Cinco tools a corrigir, em ordem de impacto. Cada uma tem o texto pronto para colar e o teste de aceite.
 
+> ## 📋 O que ainda não está no agente — medido no `botContent_78`, 21/08
+>
+> Exportei o agente e comparei com o que está escrito neste repositório. Quatro coisas seguem por aplicar, em ordem de impacto no comportamento:
+>
+> | # | O quê | Como está no agente hoje | O que acontece por causa disso |
+> |---|---|---|---|
+> | 1 | 🔴 Descrição da fonte `Transcription LT Meetings` | promete `Each line is "Speaker: what they said"` | **o modelo inventa locutor** para caber na promessa — texto novo em [`06`](06-fluxo-transcricoes.md#3-ligar-no-agente) |
+> | 2 | 🔴 Descrição de `Power BI Portfolio Database` | a genérica do conector, sem os valores válidos | ele inventa `Big Rocks` e `Make (Business Ops)`, que não existem — texto na Correção 2 |
+> | 3 | 🟠 Instruções do agente | versão anterior, sem o §8 de criar/cancelar e sem o §10 | pode alegar que apagou um work item; não sabe reconciliar reunião × DevOps |
+> | 4 | 🟡 `modelDisplayName` / `modelDescription` da tool do Teams | os padrão do conector | o modelo tem menos sinal de quando usar e o que mandar |
+>
+> ✅ Já aplicados e confirmados: as descrições de `Update Project`, `Create Project`, `Devops Query`, `Query Devops IT Area/BU`, `DevOps Work Item Details`, e a configuração `Flow bot` + `Chat with Flow bot` do Teams. A tool `Remove Project` foi removida, como combinado.
+
 **Onde:** Copilot Studio → AURA Agent → **Ferramentas** → clique na tool → **Entradas**.
 
 Para cada entrada há a coluna **"Preencher usando"**:
