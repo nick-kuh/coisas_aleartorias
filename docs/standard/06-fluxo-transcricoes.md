@@ -958,6 +958,7 @@ Uma correção só apagou as três — e a correção certa acabou sendo **parar
 | `value` vazio | Passo 3 | O `JoinWebUrl` não bateu exatamente — compare caractere a caractere |
 | `404` na transcrição | Passo 5 | A reunião não teve transcrição ligada. **Ligue a transcrição automática na política de reunião** |
 | `Filtrar matriz` volta **vazio** | Passo 8 | O VTT deste endpoint **não tem `<v Nome>`**. Use o filtro por exclusão do passo 8, não a busca por marcação |
+| `Filtrar matriz` **continua vazio** depois de trocar a expressão | Passo 8 | A expressão nova ficou **aninhada dentro da antiga** — sobrou um `contains(` na frente e um `,'<v')` no fim. Apague a caixa inteira antes de colar; ela tem que começar no `@` e terminar no último parêntese da sua expressão |
 | Arquivo com timestamps | Passo 8 | O Filtrar matriz não pegou — confira se está em **modo avançado**, e se a regra do `-->` está lá |
 | `endsWith … expects … string … provided value is of type 'Null'` | Condição | **Gatilho errado.** `OnNewFileV2` devolve o conteúdo do arquivo, não as propriedades — troque por "(somente propriedades)" |
 | `'replace' expects … 'string' … type 'Null'` | Passo 2 | **O campo de caminho não existe com o nome usado.** Não tente outro nome: monte o caminho com `concat('/Recordings/', body/Name)`, ou endereço por `Id`. E confira se você não está editando o argumento errado — ver "Como ler o erro" |
