@@ -468,15 +468,71 @@ E só. Nenhum pedaço de URL escrito à mão — `driveId`, caminho do item, `ve
 >
 > 💡 Vale um teste barato: acrescentar **`&format=text%2Fvtt`** no fim da URI — com `&`, porque o `tempauth` já ocupou o `?`, e com a barra codificada como `%2F`, porque barra crua em query string faz o conector montar a URL errada. Se a API souber converter, você ganha o VTT e a limpeza que já está pronta. Se ignorar, não custou nada.
 
-> ## ⚠️ Se este passo devolver `400 / Unexpected response from the service`
+> ## 🔴 O ponto onde o desenho trava: o conector não consegue baixar o stream
 >
-> Repare no `source` da mensagem: `sharepointonline-…azconn-….azurewebsites.net`. Isso é **o conector**, não o SharePoint. É a mensagem-embrulho de "chamei e não soube usar o que voltou" — não é permissão, não é autenticação.
+> **Estado em 21/08: este passo ainda devolve `400 / Unexpected response from the service`, mesmo com a URL correta.**
 >
-> | Causa | Como confirmar | Conserto |
+> Não é mais suspeita de endereço. O `UrlTranscricao` foi conferido e é **byte a byte** o caminho relativo da `temporaryDownloadUrl` que a própria API emitiu — `items/<itemId>`, `/versions/current`, `tempauth` e tudo. A URL está certa.
+>
+> ### A comparação que fecha o diagnóstico
+>
+> | | Passo 3 (listar) | Passo 6 (baixar) |
 > |---|---|---|
-> | **URL montada à mão** | a URI tem `root:…:` ou não tem `/versions/current` | use a `temporaryDownloadUrl` — é a causa comprovada em 21/08 |
-> | `Compose` vazio | abra a **saída** do `UrlTranscricao` | o campo mudou de nome; releia o item no passo 3 |
-> | Query mal formada | há uma `/` crua no valor de um parâmetro | codifique: `%2F` |
+> | Conector | o mesmo | o mesmo |
+> | Host, site, autenticação | os mesmos | os mesmos |
+> | Forma da URL | `_api/v2.1/drives/…` | `_api/v2.1/drives/…` |
+> | **O que o endpoint devolve** | **JSON** | **um stream de mídia** |
+> | Resultado | ✅ 200 | 🔴 400 |
+>
+> Só uma variável difere, e é a resposta. `Send an HTTP request to SharePoint` lida bem com JSON; com o que o `streamContent` devolve — provavelmente um **302** para um endereço pré-autenticado, que o conector não segue — ele não lida.
+>
+> Por isso mexer na query (`tempauth`, `format`, `is=1`) não muda nada: nenhuma dessas alterações muda o **tipo** da resposta.
+>
+> ### ⚖️ O bloqueio é o cliente HTTP, não a API
+>
+> Vale registrar porque desfaz uma confusão fácil: **isto não é um limite da rota SharePoint, e trocar para o Graph não resolveria.** O endpoint equivalente no Graph devolve o mesmo tipo de resposta, e o conector teria o mesmo problema. A pergunta certa não é "qual API chamar", é **"qual ação sabe seguir um redirecionamento"**.
+>
+> ### Teste decisivo, 30 segundos, no navegador
+>
+> Antes de mudar qualquer coisa no fluxo: abra o **DevTools → Network**, cole a `temporaryDownloadUrl` numa aba nova e olhe a **primeira** linha da lista.
+>
+> | O que aparecer | O que significa | Para onde ir |
+> |---|---|---|
+> | **302 / 307** | o conector não segue redirecionamento | ação **HTTP** (abaixo) |
+> | **200** com `Content-Type` não-JSON | é negociação de conteúdo | tente o cabeçalho `Accept` (abaixo) |
+> | **200** com `application/json` | a resposta é digerível e o problema é outro | reabra a URI do passo 6 caractere a caractere |
+>
+> É a mesma disciplina que resolveu as rodadas anteriores: ler o que o produto devolve em vez de tentar variações às cegas.
+>
+> ### Conserto A — cabeçalho `Accept` (grátis, 2 minutos)
+>
+> A ação tem um campo **Cabeçalhos** opcional. Acrescente:
+>
+> | Chave | Valor |
+> |---|---|
+> | `Accept` | `application/octet-stream` |
+>
+> Só resolve se o problema for negociação de conteúdo. Se for redirecionamento, não muda nada — mas custa dois minutos e descarta uma hipótese.
+>
+> ### Conserto B — a ação **HTTP** (é premium)
+>
+> **Adicionar ação → HTTP → HTTP**, e:
+>
+> | Campo | Valor |
+> |---|---|
+> | Método | `GET` |
+> | URI | `@{last(body('Listar_transcricoes')?['value'])?['temporaryDownloadUrl']}` — a URL **absoluta**, sem cortar |
+> | Autenticação | **nenhuma** |
+>
+> 🎯 **Repare que não precisa de credencial.** A `temporaryDownloadUrl` carrega o próprio `tempauth`, então a ação não precisa de conexão, de conta de serviço, nem de consentimento de administrador. É o motivo de esta ser a saída mais limpa, se a licença permitir.
+>
+> Se a ação HTTP também não seguir o redirecionamento, o `302` aparece na **saída** dela com o cabeçalho `Location` — e aí basta um segundo `HTTP` GET nesse endereço.
+>
+> ⚠️ **`HTTP` é conector premium.** Para saber se você tem: procure "HTTP" em Adicionar ação; se aparecer com a etiqueta *Premium* e deixar adicionar, teste. Se a execução falhar por licença, a mensagem diz isso explicitamente.
+>
+> ### Se não houver premium
+>
+> A Rota A2 deste guia (arrastar a transcrição manualmente para a pasta do SharePoint) continua valendo como plano de contenção — a automação para no download, não antes. Todo o resto do fluxo, do gatilho até a listagem, já está montado e funcionando.
 
 > 📌 A ação chama "…para o **SharePoint**", mas o endereço é o do **OneDrive**. Está certo: OneDrive é um site SharePoint.
 
@@ -879,7 +935,7 @@ Uma correção só apagou as três — e a correção certa acabou sendo **parar
 | `'length' expects … an array or a string … type 'Null'` | Passo 3 | Ou o `Caminho` saiu vazio (linha acima), ou falta o `coalesce` na condição do `Do until` |
 | `ActionFailed. An action failed.` numa Condição | qualquer | **Não é a Condição.** É mensagem agregada — falhou uma ação dentro dela. Se fosse a expressão, seria `InvalidTemplate` |
 | `400` na chamada do passo 3 | Passo 2 | Espaço no nome do arquivo entrou cru na URI. Falta o `replace(…, ' ', '%20')` |
-| `400` + `Unexpected response from the service` | Passo 6 | `source` é o **conector**, não o SharePoint. **Causa comprovada em 21/08: URL montada à mão**, sem o segmento `/versions/current` que o download exige. Conserto: usar a `temporaryDownloadUrl` que o passo 3 devolve |
+| `400` + `Unexpected response from the service` | Passo 6 | `source` é o **conector**, não o SharePoint. Com a URL já correta, a causa é **o tipo da resposta**: o conector do SharePoint não segue o redirecionamento do `streamContent`. Ver o bloco do passo 6 — teste no DevTools, cabeçalho `Accept`, ou a ação `HTTP` |
 | `Compose` verde mas o passo seguinte quebra | qualquer | Compose com `null` fica verde. Abra a **saída** de cada Compose da cadeia; o primeiro vazio é a causa |
 | Campo do gatilho sempre vazio | qualquer | O nome não existe nesse conector. Rode uma vez, abra a saída do gatilho e use o nome real |
 | **Só aparece `.mp4` na pasta** | Rota A | **É o comportamento normal.** A transcrição é anexo do vídeo, não arquivo solto. É dela que os passos 3 e 5 vão buscar |
@@ -905,6 +961,7 @@ Uma correção só apagou as três — e a correção certa acabou sendo **parar
 - [ ] Fluxo criado e testado numa reunião de teste, com transcrição ligada
 - [ ] **Compose de diagnóstico rodado uma vez** — `triggerOutputs()` puro, para ler os nomes de campo reais em vez de adivinhar
 - [ ] **Saída de cada Compose conferida** — verde não basta; o `UrlTranscricao` precisa ter uma URL de verdade dentro
+- [ ] **Status da `temporaryDownloadUrl` verificado no DevTools** — 302 ou 200? decide entre cabeçalho `Accept` e a ação `HTTP`
 - [ ] Arquivo chegou como `LT-AAAA-MM-DD.txt`, sem timestamps, no formato `Locutor: fala`
 - [ ] Fonte de conhecimento apontando para a biblioteca, **com a descrição colada**
 - [ ] Teste no agente: `o que foi decidido na LT sobre <projeto>?` — tem que responder da transcrição, sem rodar query
