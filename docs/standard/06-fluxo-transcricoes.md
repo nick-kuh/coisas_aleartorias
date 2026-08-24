@@ -301,15 +301,31 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 
 ### Passo 1 — só o `.mp4`
 
-**Controle → Condição**:
+**Controle → Condição**, em **modo avançado**, `é igual a` `true`. Todo o resto vai no ramo **Se sim**.
+
+Com **uma** reunião só:
 
 ```
-endsWith(triggerOutputs()?['body/Name'], '.mp4')
+@endsWith(toLower(triggerOutputs()?['body/Name']), '.mp4')
 ```
 
-é igual a `true`. Todo o resto vai no ramo **Se sim**.
+Com **várias reuniões na mesma pasta** — que é o caso real (ver seção 4) — a condição também filtra a área. Exemplo do fluxo que cobre Make e Focus Mkt:
 
-> 📌 Repare que é o **oposto** do que faria sentido à primeira vista. Não existe `.vtt` na pasta para filtrar — o `.mp4` é o item que **carrega** a transcrição, e é dele que vamos pedi-la.
+```
+@and(endsWith(toLower(triggerOutputs()?['body/Name']), '.mp4'), or(contains(toLower(triggerOutputs()?['body/Name']), 'make'), contains(toLower(triggerOutputs()?['body/Name']), 'focus')))
+```
+
+> 📌 Repare que o `.mp4` é o **oposto** do que faria sentido à primeira vista. Não existe `.vtt` na pasta para filtrar — o `.mp4` é o item que **carrega** a transcrição, e é dele que vamos pedi-la.
+
+> ## 🔴 Por que a área entra aqui, e não só no passo 2b
+>
+> A pasta observada é a de gravações **pessoal** do organizador. Cai ali **toda** reunião que essa pessoa gravar, não só as LT.
+>
+> Se o filtro fosse só `.mp4`, cada reunião solta dela dispararia o fluxo, chegaria no `Area`, não bateria com nada e terminaria **vermelha** com `AreaNaoIdentificada`. O histórico viraria uma parede de execuções vermelhas normais — e aí vermelho deixa de significar "algo quebrou". A guarda que existe para te avisar vira ruído que você aprende a ignorar.
+>
+> Com a área no filtro: reunião não-LT **não entra**, o fluxo termina **verde sem fazer nada** — que é o comportamento correto. O `Area` e a guarda do passo 2b continuam como **segunda rede**, para o caso de o filtro externo deixar passar algo ambíguo.
+>
+> `toLower` está aí para o filtro não depender de `.MP4` versus `.mp4`, nem de `Make` versus `MAKE`.
 
 ### Passo 2 — montar o caminho  ⚠️ **fora do loop**
 
@@ -329,7 +345,21 @@ concat('/Recordings/', replace(triggerOutputs()?['body/Name'], ' ', '%20'))
 | `body/Name` | 🟢 o campo confirmado em execução real |
 | `replace(…, ' ', '%20')` | 🔴 **nome de gravação sempre tem espaço** — `LT CDIO LATAM-20260819_190000-Gravação de Reunião.mp4` — e espaço cru na URI dá `400` no passo 3. Codifica só o espaço e preserva as barras, que é o que o endereçamento `root:/caminho:` precisa |
 
-> ⚠️ **O limite desta solução:** se a LT virar reunião de canal, ou as gravações passarem a cair em subpastas, o `/Recordings/` fixo deixa de valer — aí o campo de caminho volta a ser necessário, e o Compose de diagnóstico (seção do gatilho) diz qual é o nome dele.
+> ## 🔴 O nome da pasta muda com o idioma da conta — e este passo é **por fluxo**
+>
+> `/Recordings/` está **fixo no texto** da expressão. E o nome dessa pasta segue o idioma do OneDrive de quem organiza:
+>
+> | Idioma da conta | Pasta |
+> |---|---|
+> | Inglês | `Recordings` |
+> | Português | `Gravações` |
+> | Espanhol | `Grabaciones` |
+>
+> Se o fluxo aponta para o OneDrive de outra pessoa — e nas quatro LT ele aponta (seção 4) — **o idioma da conta dela é que manda**. Um `Caminho` com `/Recordings/` num drive em espanhol monta um caminho que não existe, e o passo 3 volta `400` com cara de erro de URL.
+>
+> **Olhe o nome que o seletor de pasta do gatilho mostra, em cada drive, e use exatamente aquele.** Dez segundos de conferência, e o `Caminho` de cada fluxo pode ficar diferente do outro — está certo assim.
+
+> ⚠️ **O outro limite:** se a LT virar reunião de canal, ou as gravações passarem a cair em subpastas, a pasta fixa deixa de valer — aí o campo de caminho volta a ser necessário, e o Compose de diagnóstico (seção do gatilho) diz qual é o nome dele.
 
 > 💡 **Este passo pode deixar de existir.** Veja a nota sobre endereçamento por `Id` no passo 3 — se o gatilho entregar o identificador do arquivo, some o Compose e somem junto espaço, acento, prefixo e pasta fixa.
 
@@ -852,6 +882,41 @@ Mas as duas reuniões de uma mesma pessoa caem na **mesma pasta `/Recordings`** 
 
 E há um ganho de robustez embutido: **cada fluxo só precisa distinguir duas áreas**, não quatro.
 
+### A matriz — preencha com os valores do seu tenant
+
+> 🔒 Os `driveId` e os UPN reais **não entram neste repositório**. Anote-os no seu material interno; aqui ficam os marcadores.
+
+| Área | Conta que organiza | `dataset` (passos 3 e 6) | `driveId` (passo 3) |
+|---|---|---|---|
+| **Make** | pessoa A | `https://<tenant>-my.sharepoint.com/personal/<upn-A>` | `<driveId-A>` |
+| **Focus Mkt** | pessoa A | *(o mesmo)* | *(o mesmo)* |
+| **Consumer** | pessoa B | `https://<tenant>-my.sharepoint.com/personal/<upn-B>` | `<driveId-B>` |
+| **CD** | pessoa B | *(o mesmo)* | *(o mesmo)* |
+
+**Como capturar `<upn>` e `<driveId>` de cada pessoa:** uma vez só, pelo DevTools, do jeito descrito no começo desta rota. Os dois são **fixos por pessoa**.
+
+> ⚠️ **O que NÃO se reaproveita da URL capturada:** o `itemId` e o `transcriptId` mudam a **cada gravação** — eles identificam uma ocorrência específica, não a reunião recorrente. No fluxo eles vêm do gatilho e do passo 3, dinamicamente. Colar um `itemId` fixo em qualquer campo é erro garantido.
+
+### 🔴 Se as reuniões não são suas, o fluxo não é só seu
+
+Cada fluxo lê o OneDrive de **quem organiza aquelas duas reuniões**. Se essa pessoa não é você, três consequências práticas:
+
+1. **Conexão do Power Automate não se transfere.** Quem cria a conexão do OneDrive é o dono do drive — você não consegue fazer por ele. Ou você compartilha o fluxo como **coproprietário** e ele entra para criar a conexão, ou o fluxo nasce na conta dele
+2. **Montar os dois fluxos vira tarefa de três pessoas**, não sua. Planeje o tempo com isso em mente
+3. **A pasta de gravações dele recebe todas as reuniões dele**, não só as LT — por isso o filtro de área no passo 1, e por isso vale ele saber que existe uma automação observando aquela pasta. Combine antes; é mais fácil que explicar depois
+
+### Qual conexão em cada ação
+
+O conector do SharePoint aparece em três lugares do fluxo, e eles alcançam coisas diferentes:
+
+| Ação | Precisa alcançar | Conexão a usar |
+|---|---|---|
+| Passo 3 — listar transcrições | o OneDrive **do organizador** | a **dele** |
+| Passo 6 — baixar | o OneDrive **do organizador** | a **dele** |
+| Passo 12 — `Criar arquivo` | o site do CDIO LATAM | a **dele**, se tiver escrita na biblioteca; senão, a **sua** |
+
+**Confira se o organizador consegue escrever na biblioteca de transcrições.** Se sim, uma conexão só por fluxo resolve tudo e fica mais simples de manter.
+
 ### Pré-requisito: o título da reunião tem que dizer a área
 
 O Teams batiza a gravação a partir do **título da reunião**, então é dali que o passo 2b tira a área. Isso exige uma convenção — a única mudança fora do Power Automate, e de dois minutos por reunião:
@@ -867,15 +932,17 @@ Sem isso nada rio abaixo é determinístico. Com isso, o resto é uma expressão
 
 ### Montar o segundo fluxo sem refazer nada
 
-**Power Automate → o fluxo pronto → `⋯` → Salvar como.** Na cópia, três coisas mudam, mais a expressão do `Area`:
+**Power Automate → o fluxo pronto → `⋯` → Salvar como.** Na cópia, cinco coisas mudam:
 
-| O quê | Onde | Valor |
+| # | O quê | Onde |
 |---|---|---|
-| Conexão do OneDrive | gatilho | a da **outra pessoa** |
-| `dataset` | passos 3 e 6 | `https://<tenant>-my.sharepoint.com/personal/<upn-dela>` |
-| `driveId` | passo 3 | o id do drive **dela** — capturar uma vez no DevTools |
+| 1 | Conexão do OneDrive | gatilho — **criada pela outra pessoa** |
+| 2 | Pasta do gatilho | a pasta de gravações **no drive dela** — anote o nome exato |
+| 3 | `Caminho` | o nome de pasta do item 2, que pode diferir do outro fluxo (idioma) |
+| 4 | `dataset` e `driveId` | passos 3 e 6, e passo 3 — valores dela |
+| 5 | Condição do passo 1 e `Area` | as **duas áreas dela** |
 
-> ⚠️ **Conexão não se transfere.** Para ela criar a conexão dela, precisa poder editar o fluxo: ou você **compartilha como coproprietário**, ou ela cria a cópia na conta dela. Nos dois casos passa a haver mais de uma pessoa mexendo — vale combinar quem é o dono antes.
+> ⚠️ **Se o fluxo atual aponta para o SEU OneDrive e nenhuma das quatro reuniões cai lá**, ele não é um dos dois fluxos finais — ele precisa ser **repontado** para uma das contas, não só duplicado. E aí a sua conta sai do desenho: se você gravar uma dessas reuniões, ela cai no seu drive e **nenhum dos dois fluxos enxerga**. Combine que só o organizador grava.
 
 > 💡 **Um teste de cinco minutos que pouparia a captura do `driveId`:** o `dataset` já fixa o site (o OneDrive daquela pessoa), então talvez a URI aceite `_api/v2.1/drive/root:…` — no singular, "o drive padrão deste site" — dispensando o id. **Não verificado.** Se funcionar, os dois fluxos ficam idênticos exceto pela conexão e pela expressão do `Area`.
 
@@ -1170,7 +1237,9 @@ Uma correção só apagou as três — e a correção certa acabou sendo **parar
 | Lista de transcrições vazia | Passo 4 | Ou a transcrição ainda está processando (aumente o atraso do passo 2), ou a reunião não teve transcrição ligada |
 | `403` ou `404` na chamada HTTP | Passos 4–5 | A URL não bate com a do seu tenant. Compare com a que você pegou no DevTools |
 | `404 Could not find list item` | Passo 13 | Achou a biblioteca, não achou o item. **1º** confira se o passo 12 e o 13 apontam para a mesma biblioteca. **2º** o `Id` — ele quer o identificador do **item de lista** (número), não o do arquivo, e não pode estar vazio |
-| Gatilho não dispara | Rota A | A pasta pode chamar `Recordings` em vez de `Gravações`, conforme o idioma da conta |
+| Gatilho não dispara | Rota A | A pasta pode chamar `Recordings`, `Gravações` ou `Grabaciones`, conforme o idioma da conta |
+| `400` no passo 3, com o `Caminho` preenchido | Passo 2 | O `/Recordings/` fixo não bate com o nome da pasta **naquele** drive. Veja o nome no seletor do gatilho — o `Caminho` é por fluxo |
+| Execuções vermelhas com `AreaNaoIdentificada` toda semana | Passo 1 | A condição filtra só `.mp4`. Numa pasta pessoal cai toda reunião daquela pessoa — acrescente a área ao filtro do passo 1 |
 | Fluxo roda 2x | Rota A | O `.vtt` e o `.docx` caem os dois. A condição do Passo 1 já resolve |
 
 ## Checklist
