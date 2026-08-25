@@ -142,11 +142,29 @@
             ]
           }
         },
+        "CONFIG_SiteUrl": {
+          "type": "Compose",
+          "runAfter": {
+            "Init_FullHtml": [
+              "Succeeded"
+            ]
+          },
+          "inputs": "https://SEU_TENANT.sharepoint.com/sites/SEU_SITE"
+        },
+        "CONFIG_Pasta": {
+          "type": "Compose",
+          "runAfter": {
+            "CONFIG_SiteUrl": [
+              "Succeeded"
+            ]
+          },
+          "inputs": "/Documentos Compartilhados/Relatorios CDIO"
+        },
         "Init_Now": {
           "type": "Compose",
           "inputs": "@{utcNow()}",
           "runAfter": {
-            "Init_FullHtml": [
+            "CONFIG_Pasta": [
               "Succeeded"
             ]
           }
@@ -955,8 +973,8 @@
                   },
                   "inputs": {
                     "parameters": {
-                      "dataset": "https://SEU_TENANT.sharepoint.com/sites/SEU_SITE",
-                      "folderPath": "/Documentos Compartilhados/Relatorios CDIO",
+                      "dataset": "@{outputs('CONFIG_SiteUrl')}",
+                      "folderPath": "@{outputs('CONFIG_Pasta')}",
                       "name": "@{concat(formatDateTime(outputs('Init_Now'),'yyyyMMdd_HHmm'), '_Relatorio_LATAM_', replace(outputs('Init_Area'), ' ', '_'), '.html')}",
                       "body": "@base64ToBinary(base64(if(empty(trim(outputs('Init_FullHtml'))), outputs('Html_Final'), trim(outputs('Init_FullHtml')))))"
                     },
@@ -967,34 +985,12 @@
                     }
                   }
                 },
-                "Propriedades_do_arquivo": {
-                  "type": "OpenApiConnection",
-                  "runAfter": {
-                    "Criar_arquivo_SharePoint": [
-                      "Succeeded"
-                    ]
-                  },
-                  "inputs": {
-                    "parameters": {
-                      "dataset": "https://SEU_TENANT.sharepoint.com/sites/SEU_SITE",
-                      "table": "SUBSTITUA_PELO_GUID_DA_BIBLIOTECA",
-                      "id": "@outputs('Criar_arquivo_SharePoint')?['body/ItemId']"
-                    },
-                    "host": {
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
-                      "operationId": "GetFileItem",
-                      "connectionName": "shared_sharepointonline"
-                    }
-                  }
-                },
                 "Responder_ao_agente": {
                   "type": "Response",
                   "kind": "Skills",
                   "runAfter": {
-                    "Propriedades_do_arquivo": [
-                      "Succeeded",
-                      "Failed",
-                      "Skipped"
+                    "Criar_arquivo_SharePoint": [
+                      "Succeeded"
                     ]
                   },
                   "inputs": {
@@ -1029,7 +1025,7 @@
                       }
                     },
                     "body": {
-                      "report_url": "@{coalesce(outputs('Propriedades_do_arquivo')?['body/{Link}'], outputs('Criar_arquivo_SharePoint')?['body/{Link}'], outputs('Criar_arquivo_SharePoint')?['body/Path'], outputs('Criar_arquivo_SharePoint')?['body/Name'])}",
+                      "report_url": "@{concat(outputs('CONFIG_SiteUrl'), replace(coalesce(outputs('Criar_arquivo_SharePoint')?['body/Path'], ''), ' ', '%20'))}",
                       "area": "@{outputs('Init_Area')}",
                       "data": "",
                       "summary": "@{concat('Total: ', string(length(body('Items'))), ' | Big Rock: ', string(length(body('F_BigRock'))), ' | On Schedule: ', if(equals(length(body('F_InProgress_Dated')), 0), 'N/A', concat(string(round(div(mul(float(length(body('F_OnSchedule'))), 100), float(length(body('F_InProgress_Dated')))))), '%')), ' | High Potential: ', if(equals(length(body('F_HP_Eligible')), 0), 'N/A', concat(string(round(div(mul(float(length(body('F_HighPotential'))), 100), float(length(body('F_HP_Eligible')))))), '%')), ' | Delayed: ', string(length(body('F_Delayed'))))}"

@@ -21,7 +21,7 @@ O fluxo está **bem desenhado e mal blindado**: a lógica de negócio está cert
 | # | Onde | O quê | Gravidade |
 |---|---|---|---|
 | 1 | `F_QPrio`, `F_DeployedQ`, `F_TL_Big/Reg/Sml` | `formatDateTime('')` numa iniciativa sem Go-Live **e** sem PGLS → a ação falha | 🔴 quebra o fluxo |
-| 2 | `Criar_arquivo_SharePoint` | `https://SEU_TENANT.sharepoint.com/sites/SEU_SITE` — placeholder literal | 🔴 quebra o fluxo |
+| 2 | `Criar_arquivo_SharePoint` | `https://SEU_TENANT.sharepoint.com/sites/SEU_SITE` — placeholder literal, e enterrado dentro da ação | 🔴 quebra o fluxo |
 | 3 | WIQL | `[System.State] <> 'Closed'` — o valor real é `11 Closed`, então **nada é excluído** | 🟠 números errados |
 | 4 | `Items` / `bu` | BU adivinhada por substring do título, ignorando `BG or BU Engagement` e `Specify Cross` | 🟠 números errados |
 | 5 | `Details_ByBudget/ByDate` | `workitems?ids=` aceita **200 ids**; sem corte e sem guarda para lista vazia | 🟠 quebra em área grande |
@@ -146,7 +146,8 @@ Repare que `projects` **não** carrega o campo `flag` — ele é um `<img src="d
 | Coluna ROI | `€ (benefício−budget)/budget` | `2,10x`, vermelho abaixo de `1,00x`, `n/d` sem budget |
 | `Html_4_Analise` | — | injeta `exec_summary` e `analysis_html` |
 | `Criar_arquivo_SharePoint` | sempre `Html_Final` | `full_html` sobrepõe quando vier |
-| `Propriedades_do_arquivo` | — | busca o `{Link}` de verdade (ver §5) |
+| `CONFIG_SiteUrl`, `CONFIG_Pasta` | endereço fixo dentro da ação do SharePoint | duas caixas no topo do fluxo — os únicos dois campos que você edita |
+| `report_url` | `body/{Link}`, que a ação **Criar arquivo** não devolve | `CONFIG_SiteUrl` + `body/Path`, com espaços em `%20` |
 | `Scope_Principal` + `Responder_Erro` | erro só no SharePoint | qualquer falha do fluxo vira resposta ao agente |
 | `Responder_Dados` | — | o ramo `mode=data` |
 
@@ -154,19 +155,69 @@ O `Template` também mudou em dois pontos: o cartão **% On Schedule** ganhou a 
 
 ---
 
-## 4. Instalar
+## 4. Importar — passo a passo
 
-1. `flows/build.sh` → gera `dist/CDIORelatorioArea_1_1_0_0.zip`.
-2. Power Automate → **Soluções → Importar solução** → escolha o zip → mapeie as duas referências de conexão (`CDIO Relatorio - Azure DevOps`, `CDIO Relatorio - SharePoint`).
-3. Abra o fluxo e **substitua os três placeholders** (o fluxo falha sem isso):
+### Passo 1 · Pegar o zip
 
-| Ação | Campo | Trocar por |
+Três caminhos; escolha um.
+
+- **Baixar do GitHub** (mais direto se você não usa git na máquina): abra [`dist/CDIORelatorioArea_1_1_0_0.zip`](https://github.com/nick-kuh/coisas_aleartorias/blob/claude/automated-html-report-section-rbmt60/dist/CDIORelatorioArea_1_1_0_0.zip) na branch `claude/automated-html-report-section-rbmt60` e clique em **Download raw file** (o ícone ⤓ à direita). Não use "Save as" na página do GitHub — isso salva HTML, não o zip.
+- **Se você já tem o repositório:** `git pull` e o arquivo está em `dist/`.
+- **Regerar do JSON:** `flows/build.sh`. É o que você faz depois de qualquer edição no JSON.
+
+> ⚠️ **Não abra e re-zipe o arquivo pelo Explorador do Windows.** O Power Automate exige `[Content_Types].xml`, `solution.xml` e `customizations.xml` **na raiz** do zip; zipar a pasta cria um nível a mais e a importação falha com "arquivo de solução inválido". Se precisar re-empacotar, use `flows/build.sh`.
+
+### Passo 2 · Importar no Power Automate
+
+1. [make.powerautomate.com](https://make.powerautomate.com) → confira no canto superior direito que você está no **ambiente certo** (o mesmo onde o agente vive). Este é o erro que mais custa tempo.
+2. Menu esquerdo → **Soluções**.
+3. Botão **Importar solução** → **Procurar** → escolha o zip → **Avançar**.
+4. A tela mostra `CDIORelatorioArea`, versão `1.1.0.0`, publicador `UnileverCoPilotStudioPOC`. Como você já importou a `1.0.0.6`, ele vai dizer **"Atualizar"** — é o que você quer: mantém o mesmo fluxo, mesmo ID, e as tools que já apontam para ele continuam apontando.
+5. **Conexões**: vão aparecer as duas referências — `CDIO Relatorio - Azure DevOps` e `CDIO Relatorio - SharePoint`. Escolha a conexão existente em cada dropdown. Se alguma estiver vazia, clique em **+ Nova conexão**, autentique, volte e selecione (a lista não atualiza sozinha — recarregue o dropdown).
+6. **Importar**. Leva de 1 a 3 minutos.
+
+> Se aparecer **"Uma solução gerenciada não pode ser sobrescrita"**, a `1.0.0.6` entrou como gerenciada. Aí desinstale-a primeiro (**Soluções → ... → Excluir**) e importe de novo — você perde o fluxo antigo, que é justamente o que queremos substituir.
+
+### Passo 3 · Preencher os dois campos de configuração
+
+O fluxo importado **não funciona ainda**: o endereço do SharePoint é placeholder. Abra a solução → clique no fluxo `CDIO - Gerar Relatorio por Area` → **Editar**.
+
+As duas primeiras ações depois de `Init_FullHtml` são caixas de texto simples. Só isso:
+
+| Ação | Valor atual | Trocar por |
 |---|---|---|
-| `Criar_arquivo_SharePoint` | `dataset` | a URL real do site |
-| `Criar_arquivo_SharePoint` | `folderPath` | a pasta real — em site em inglês é `/Shared Documents/...`, não `/Documentos Compartilhados/...` |
-| `Propriedades_do_arquivo` | `table` | o GUID da biblioteca (escolha pelo dropdown, não digite) |
+| **`CONFIG_SiteUrl`** | `https://SEU_TENANT.sharepoint.com/sites/SEU_SITE` | a URL do site, **sem barra no final** — ex.: `https://unilever.sharepoint.com/sites/ITBWLatam` |
+| **`CONFIG_Pasta`** | `/Documentos Compartilhados/Relatorios CDIO` | o caminho real da pasta, **começando com barra** |
 
-4. Ligue o fluxo e rode uma vez pelo **Testar → Manualmente**, com `area = Consumer` e `mode = data`. Antes de plugar no agente.
+Sobre a pasta: o nome depende do idioma do site. Em site em inglês é `/Shared Documents/...`; em português, `/Documentos Compartilhados/...`. Para não chutar — abra a biblioteca no navegador e olhe a URL: o trecho entre o nome do site e o resto é o que vai aqui. **A pasta precisa existir**; o fluxo não a cria.
+
+Salve. Nenhum outro campo precisa ser tocado.
+
+### Passo 4 · Ligar e testar sozinho, antes do agente
+
+Ainda no fluxo: **Testar → Manualmente → Testar**, e preencha só duas coisas:
+
+```
+area = Consumer
+mode = data
+```
+
+O que provar:
+
+- terminou **verde**, sem ação vermelha no histórico;
+- a saída da ação `Responder_Dados` tem `data` preenchido, com `kpis.total` batendo com o que o Power BI mostra para Consumer;
+- se falhou, o histórico mostra **qual** ação e com que erro — é para isso que existe o `Scope_Principal`.
+
+Depois repita com `mode = report`. Agora tem que aparecer um `.html` na pasta do SharePoint, e o `report_url` da resposta tem que abrir esse arquivo.
+
+### Passo 5 · Plugar no agente
+
+Copilot Studio → seu agente → **Ferramentas → Adicionar uma ferramenta → Fluxo** → escolha `CDIO - Gerar Relatorio por Area`.
+
+1. Renomeie para **`Relatório da Área`** — é o nome que §11 das instruções usa.
+2. Cole a descrição da tool (§6 abaixo).
+3. Confira que **todas as 6 entradas** estão em **"Dinamicamente com IA"**. Entrada que não está declarada assim é entrada que o modelo não enxerga — é o defeito repetido em [`02-correcao-das-tools.md`](02-correcao-das-tools.md), e ele reaparece toda vez que uma tool é adicionada.
+4. As descrições das entradas já vêm prontas do gatilho do fluxo. **Não redigite.**
 
 ---
 
@@ -179,6 +230,8 @@ Boa parte dos tenants roda a biblioteca em **Browser File Handling: Strict**, e 
 3. **Mandar o HTML por e-mail/Teams** em vez de link. Funciona, mas perde a página como artefato durável — e o Outlook ignora metade do CSS.
 
 Enquanto isso não estiver decidido, o `report_url` é um link de download. Vale o agente avisar.
+
+> 📎 O `report_url` é montado como `CONFIG_SiteUrl` + o `Path` que o SharePoint devolve, com espaços em `%20`. A ação **Criar arquivo** **não** devolve `{Link}` — quem devolve é **Obter propriedades do arquivo**, que exige o GUID da biblioteca e o `ItemId`. Montar a URL custa uma expressão e não custa nem uma ação nem um placeholder a mais.
 
 ---
 

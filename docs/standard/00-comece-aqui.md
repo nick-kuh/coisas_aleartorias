@@ -333,8 +333,8 @@ O fluxo `GerarRelatorioArea` que você montou está **bem desenhado e mal blinda
 
 A mudança que interessa não é a correção — é a **costura**. O fluxo passa a rodar duas vezes: `mode=data` devolve o portfólio da área em JSON para o agente analisar, `mode=report` publica a página com o resumo e a análise que **o agente escreveu**. O template continua dono do cromo (KPI, timeline, tabela de BU); o agente vira dono do que o relatório diz.
 
-- [ ] `flows/build.sh` → importar `dist/CDIORelatorioArea_1_1_0_0.zip` como solução
-- [ ] Substituir os **três placeholders** do SharePoint (`dataset`, `folderPath`, `table`) — sem isso o fluxo falha
+- [ ] Baixar `dist/CDIORelatorioArea_1_1_0_0.zip` (ou gerar com `flows/build.sh`) e importar em **Soluções → Importar solução**, mapeando as duas conexões
+- [ ] Preencher as duas caixas de configuração no topo do fluxo: `CONFIG_SiteUrl` e `CONFIG_Pasta` — sem isso o fluxo falha
 - [ ] Testar manualmente com `area = Consumer`, `mode = data`, antes de plugar no agente
 - [ ] Adicionar como tool no agente e renomear para **`Relatório da Área`**
 - [ ] Conferir que as 6 entradas estão em **"Dinamicamente com IA"**
