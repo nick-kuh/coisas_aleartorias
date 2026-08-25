@@ -163,7 +163,16 @@ O `PortfolioDataArea` não toca no SharePoint: nada para configurar nele.
 
 ### Passo 4 · Ligar os dois
 
-Na lista da solução, confira o status dos dois fluxos. Solução importada costuma trazer fluxo **desativado** — e aí o agente chama e não acontece nada. **Ativar** nos dois.
+> 🔴 **Solução importada chega com os fluxos DESLIGADOS.** É o passo que mais se pula, e o sintoma não parece com a causa: na lista, o ícone do fluxo ganha um pequeno **⃠** no canto — parece um fluxo "oculto" ou sem permissão, e é só desativado. O agente, ao chamar, devolve:
+>
+> ```
+> Mensagem de Erro: O fluxo com a ID c8f5d2e1-... está desabilitado.
+> Código do Erro: FlowDisabled
+> ```
+
+Na lista da solução, em cada um dos dois: **⋮ → Ativar**. O ⃠ some do ícone.
+
+O 💎 ao lado do nome é outra coisa e é esperado: marca fluxo que vive dentro de uma solução.
 
 ### Passo 5 · Testar cada um sozinho
 
@@ -199,7 +208,11 @@ Returns the full portfolio of one CDIO LATAM IT Area as JSON - every active init
 Publishes the CDIO IT Portfolio LATAM executive report for one IT Area to SharePoint and returns the link. Call it only after Read Area Portfolio, passing the executive summary and the analysis YOU wrote in English. Never ask the user to write them.
 ```
 
-Os nomes importam: são os que o `§11` das instruções usa.
+> ⚠️ **Duas armadilhas neste passo.**
+>
+> **Renomeie mesmo.** O fluxo se chama `CDIO - Portfolio Data by Area`, a tool tem que se chamar `Read Area Portfolio` — é esse nome que o `§11` usa. Sem renomear, a instrução aponta para um nome que não existe.
+>
+> **As duas descrições são diferentes.** Copiar a mesma nas duas é fácil e quebra o roteamento: a de baixo diz *"Call this FIRST"* e *"It creates no file"* — numa tool que publica arquivo e é chamada por último, isso manda o modelo para o lado errado.
 
 Confira que **todas as entradas** estão em **"Dinamicamente com IA"**. Entrada não declarada assim é entrada que o modelo não enxerga — o defeito repetido em [`02-correcao-das-tools.md`](02-correcao-das-tools.md), que reaparece a cada tool nova.
 
@@ -269,11 +282,12 @@ Boa parte dos tenants roda a biblioteca em **Browser File Handling: Strict**, e 
 | 1 | `PortfolioDataArea` manual, `area = Customer Dev` | JSON de volta; `kpis.total` bate com o Power BI; `noGoLiveDate > 0` numa área com projetos em `01 Idea` |
 | 2 | Idem com uma área inexistente | resposta "No active initiative found", sem erro vermelho no histórico |
 | 3 | `PublishAreaReport` manual com textos de teste | `.html` na pasta, quadro roxo "AURA — Analysis & Decisions" antes da tabela de BU |
-| 4 | No agente: *"faz o relatório de Customer Dev"* | ele chama `Read Area Portfolio`, **depois** `Publish Area Report`, e devolve o link — **sem pedir nada a você** |
-| 5 | Ler a página | resumo e análise **em inglês**, cada projeto como `Nome (1234)` com link |
-| 6 | Comparar os números do texto com o JSON do passo 1 | nenhum número inventado |
-| 7 | Coluna ROI da tabela de BU | `2.10x`, não `€ 2,10`; vermelho abaixo de `1.00x`; `n/a` sem budget |
-| 8 | Botão AURA no topo do relatório | abre o agente, não a home do Copilot Studio |
-| 9 | Abrir o `report_url` num navegador anônimo | ou abre, ou baixa — e aí você sabe qual saída da §8 vai precisar |
+| 4 | Abrir cada tool e reler a descrição | a de `Publish Area Report` fala em publicar, **não** em "Call this FIRST" nem "creates no file" |
+| 5 | No agente: *"faz o relatório de Customer Dev"* | ele chama `Read Area Portfolio`, **depois** `Publish Area Report`, e devolve o link — **sem pedir nada a você** |
+| 6 | Ler a página | resumo e análise **em inglês**, cada projeto como `Nome (1234)` com link |
+| 7 | Comparar os números do texto com o JSON do passo 1 | nenhum número inventado |
+| 8 | Coluna ROI da tabela de BU | `2.10x`, não `€ 2,10`; vermelho abaixo de `1.00x`; `n/a` sem budget |
+| 9 | Botão AURA no topo do relatório | abre o agente, não a home do Copilot Studio |
+| 10 | Abrir o `report_url` num navegador anônimo | ou abre, ou baixa — e aí você sabe qual saída da §8 vai precisar |
 
-O teste 4 é o que separa esta versão da anterior. Se ele parar e pedir o resumo, a correção não pegou: volte à caixa de aviso da §1.
+O teste 5 é o que separa esta versão da anterior. Se ele parar e pedir o resumo, a correção não pegou: volte à caixa de aviso da §1.

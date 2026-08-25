@@ -335,9 +335,10 @@ Dois fluxos e duas tools. O primeiro devolve o portfólio da IT Area em JSON, o 
 
 - [ ] Baixar `dist/CDIORelatorioArea_1_2_0_0.zip` (ou gerar com `flows/build.sh`) e importar em **Soluções → Importar solução**, mapeando as duas conexões
 - [ ] No `CDIO - Publish Area Report`: conferir `CONFIG SiteUrl` e `CONFIG Folder` e salvar
-- [ ] **Ativar os dois fluxos** — solução importada costuma trazê-los desativados
+- [ ] **Ativar os dois fluxos** — chegam desligados; o ⃠ no ícone é isso, e o agente responde `FlowDisabled`
 - [ ] Testar cada fluxo manualmente antes de encostar no agente
 - [ ] Adicionar as duas tools e renomear para **`Read Area Portfolio`** e **`Publish Area Report`**
+- [ ] Colar a descrição **certa** em cada uma — são diferentes, e trocá-las inverte o roteamento
 - [ ] Conferir que todas as entradas estão em **"Dinamicamente com IA"**
 - [ ] Colar `agent/instructions-standard.md` **inteiro**, substituindo tudo
 
