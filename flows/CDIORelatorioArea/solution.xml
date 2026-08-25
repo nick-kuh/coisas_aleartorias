@@ -6,9 +6,9 @@
       <LocalizedName description="CDIO - Relatorio por IT Area" languagecode="1033" />
     </LocalizedNames>
     <Descriptions>
-      <Description description="Fluxo que gera o Relatorio Executivo CDIO IT Portfolio LATAM por IT Area e publica no SharePoint." languagecode="1033" />
+      <Description description="Dois fluxos: Portfolio Data by Area devolve o portfolio em JSON para o agente analisar; Publish Area Report renderiza o relatorio executivo em HTML e publica no SharePoint." languagecode="1033" />
     </Descriptions>
-    <Version>1.1.0.1</Version>
+    <Version>1.2.0.0</Version>
     <Managed>0</Managed>
     <Publisher>
       <UniqueName>UnileverCoPilotStudioPOC</UniqueName>
@@ -81,6 +81,7 @@
     </Publisher>
     <RootComponents>
       <RootComponent type="29" id="{b7e3a1c4-5d92-4f08-9a61-3c8de40f27b5}" behavior="0" />
+      <RootComponent type="29" id="{c8f5d2e1-7a34-4b96-8d05-1e9f3c6a24b7}" behavior="0" />
       <RootComponent type="10037" schemaName="unilever_adocdioreport" behavior="0" />
       <RootComponent type="10037" schemaName="unilever_spocdioreport" behavior="0" />
     </RootComponents>

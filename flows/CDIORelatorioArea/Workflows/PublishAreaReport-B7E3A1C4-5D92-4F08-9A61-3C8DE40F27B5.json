@@ -1,0 +1,980 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_visualstudioteamservices": {
+        "api": {
+          "name": "shared_visualstudioteamservices"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "unilever_adocdioreport"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_sharepointonline": {
+        "api": {
+          "name": "shared_sharepointonline"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "unilever_spocdioreport"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Skills",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "area",
+                "exec_summary",
+                "analysis_html"
+              ],
+              "properties": {
+                "area": {
+                  "title": "IT Area",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true,
+                  "description": "IT Area, spelled EXACTLY as in DevOps: Consumer | Customer Dev | Make (Business Operation) | Focus Market (Cust Ops) | Commercial Exp | Tech Services | Tax Reform. Never abbreviate, never translate."
+                },
+                "year": {
+                  "title": "Year",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true,
+                  "description": "Portfolio Year, 4 digits. Leave empty to use the current year."
+                },
+                "exec_summary": {
+                  "title": "Executive Summary",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true,
+                  "description": "YOU write this - never ask the user for it. The executive summary that opens the report, in ENGLISH, 3 to 5 sentences: money at stake, where risk concentrates, the decision you are asking leadership to make - in that order. Plain prose; only <strong> and <em> are allowed. Name every project as Name (1234). Every figure must come from the Portfolio Data call you just made. If you have not made that call yet, make it first."
+                },
+                "analysis_html": {
+                  "title": "Analysis HTML",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true,
+                  "description": "YOU write this - never ask the user for it. Your analysis, in ENGLISH, as an HTML fragment placed in its own section of the report. YOU choose the sub-sections: nothing is mandatory, nothing is forbidden.\nFRAGMENT only: no <html>, <head>, <body>, <style>, <script>, class= or id=. Use <p>, <div>, <table>, <tr>, <td>, <ul>, <li>, <strong>, <em>, <a>, each carrying an inline style=.\nSTYLE: font-family:'Segoe UI',sans-serif. Text #1e293b, muted #64748b, border #e2e8f0, soft background #f8fafc. Accents: #a855f7 decision, #06b6d4 section, #ef4444 risk, #10b981 win, #f59e0b watch. Block title 14px/800, body 12px/1.5, note 10px. Tables with border-collapse:collapse and padding:6px 10px.\nPROJECTS: always Name (1234), linked to https://dev.azure.com/CDIO-IT-LATAM/CDIO%20Portfolio/_workitems/edit/1234. Money as EUR 1.4M.\nFORBIDDEN: <img>, base64, any external URL, and any number that did not come from the Portfolio Data call."
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": {
+        "Init_Area": {
+          "type": "Compose",
+          "inputs": "@{trim(coalesce(triggerBody()?['area'], ''))}",
+          "runAfter": {}
+        },
+        "Init_Year": {
+          "type": "Compose",
+          "runAfter": {
+            "Init_Area": [
+              "Succeeded"
+            ]
+          },
+          "inputs": "@{if(empty(coalesce(triggerBody()?['year'], '')), formatDateTime(utcNow(),'yyyy'), trim(string(triggerBody()?['year'])))}"
+        },
+        "Init_ExecSummary": {
+          "type": "Compose",
+          "inputs": "@{coalesce(triggerBody()?['exec_summary'], '')}",
+          "runAfter": {
+            "Init_Year": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Init_Analysis": {
+          "type": "Compose",
+          "inputs": "@{coalesce(triggerBody()?['analysis_html'], '')}",
+          "runAfter": {
+            "Init_ExecSummary": [
+              "Succeeded"
+            ]
+          }
+        },
+        "CONFIG_SiteUrl": {
+          "type": "Compose",
+          "inputs": "https://SEU_TENANT.sharepoint.com/sites/SEU_SITE",
+          "runAfter": {
+            "Init_Analysis": [
+              "Succeeded"
+            ]
+          }
+        },
+        "CONFIG_Folder": {
+          "type": "Compose",
+          "inputs": "/Shared Documents/CDIO LATAM/Agent Report",
+          "runAfter": {
+            "CONFIG_SiteUrl": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Init_Now": {
+          "type": "Compose",
+          "inputs": "@{utcNow()}",
+          "runAfter": {
+            "CONFIG_Folder": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Template": {
+          "type": "Compose",
+          "inputs": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n</head>\n<body style=\"margin: 0; padding: 20px; background-color: #f1f5f9;\">\n<!-- HTML OTIMIZADO PARA PDF E POWER AUTOMATE -->\n<div style=\"font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; width: 950px; margin: 0 auto; color: #1e293b; background-color: #ffffff; padding: 40px; border: 4px solid #a855f7; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05);\">\n  \n  <!-- ======================== PÁGINA 1: DASHBOARD POWER BI & TIMELINE ======================== -->\n  <div style=\"margin-bottom: 40px;\">\n\n    <!-- Cabeçalho e Resumo Executivo -->\n    <div style=\"margin-bottom: 30px;\">\n      \n      <!-- Cabeçalho Azul com Gradiente -->\n      <div style=\"background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%); border-radius: 12px; padding: 24px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;\">\n          <div>\n              <p style=\"color: #e0f2fe; margin: 0 0 4px 0; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;\">Monthly Automation Report</p>\n              <h1 style=\"color: #ffffff; margin: 0; font-size: 32px; font-weight: 900; letter-spacing: -0.025em;\">CDIO – IT Portfolio LATAM<br><span style=\"font-size:16px;font-weight:600;opacity:0.85;\">{{AREA}}</span></h1>\n          </div>\n          <div>\n              <!-- Ícone abstrato de nós (SVG embutido) -->\n              <svg width=\"48\" height=\"48\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.2)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n                  <rect x=\"8\" y=\"3\" width=\"8\" height=\"6\" rx=\"2\"></rect>\n                  <path d=\"M12 9v4\"></path>\n                  <path d=\"M6 13h12\"></path>\n                  <path d=\"M6 13v3\"></path>\n                  <path d=\"M18 13v3\"></path>\n                  <rect x=\"3\" y=\"16\" width=\"6\" height=\"5\" rx=\"1\"></rect>\n                  <rect x=\"15\" y=\"16\" width=\"6\" height=\"5\" rx=\"1\"></rect>\n              </svg>\n          </div>\n      </div>\n\n      <div style=\"background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 24px;\">\n        <div style=\"display: inline-block; background-color: #3b82f6; color: white; font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 4px; margin-bottom: 8px; text-transform: uppercase;\">Executive Summary</div>\n        <p style=\"color: #475569; font-size: 13px; line-height: 1.6; margin: 0;\">{{EXEC_SUMMARY}}</p>\n      </div>\n\n      <div style=\"margin-bottom: 24px; vertical-align: middle;\">\n        <a href=\"https://app.powerbi.com/links/ZoZIYBL2f0?ctid=f66fae02-5d36-495b-bfe0-78a6ff9f8e6e&pbi_source=linkShare\" target=\"_blank\" style=\"display: inline-block; border: 1.5px solid #bfdbfe; color: #2563eb; background-color: #ffffff; font-family: 'Segoe UI', sans-serif; font-size: 12.5px; font-weight: 700; text-decoration: none; padding: 8px 18px; border-radius: 20px; margin-right: 10px; vertical-align: middle; box-shadow: 0 1px 2px rgba(0,0,0,0.05);\">\n          📊 Power BI Dashboard\n        </a>\n        {{AURA_BUTTON}}\n        <a href=\"https://app.powerbi.com/groups/4bd9bd39-a51b-4439-9248-805fd40a94a2/reports/8164dd41-ed2c-4542-86a2-a40aa7eeaf63/52ec180fc06619f18d76?language=pt-BR&experience=power-bi\" target=\"_blank\" style=\"display: inline-block; border: 1.5px solid #a5f3fc; color: #0891b2; background-color: #ffffff; font-family: 'Segoe UI', sans-serif; font-size: 12.5px; font-weight: 700; text-decoration: none; padding: 8px 18px; border-radius: 20px; vertical-align: middle; box-shadow: 0 1px 2px rgba(0,0,0,0.05);\">\n          🗺️ Road Map Projects\n        </a>\n      </div>\n      \n      <div style=\"border-bottom: 1px solid #e2e8f0; width: 100%;\"></div>\n    </div>\n\n    <!-- CARDS DE KPI -->\n    <div style=\"margin-bottom: 40px; margin-top: 24px; border: 1px solid #06b6d4; border-radius: 12px; padding: 30px 24px 24px 24px; position: relative;\">\n        <div style=\"position: absolute; top: -14px; left: 24px; background-color: #06b6d4; color: white; padding: 6px 20px; border-radius: 20px; font-size: 14px; font-weight: 800;\">KPI Snapshot</div>\n        \n        <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"table-layout: fixed;\">\n          <tr>\n            <!-- CARD 1: Projects -->\n            <td valign=\"top\" width=\"24%\">\n              <div style=\"background-color: #0f766e; text-align: center; padding: 18px 4px; height: 160px; box-sizing: border-box; border-radius: 12px;\">\n                  <p style=\"color: #ffffff; font-size: 42px; font-weight: 800; margin: 0 0 6px 0; line-height: 1;\">{{KPI_TOTAL}}</p>\n                  <p style=\"color: #f0fdf4; font-size: 11px; font-weight: 700; margin: 0; text-transform: uppercase;\">Projects</p>\n                  \n                  <div style=\"border-bottom: 1px solid rgba(255,255,255,0.2); margin: 12px;\"></div>\n                  \n                  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\">\n                    <tr>\n                        <td align=\"center\" style=\"color: #f0fdf4;\">\n                            <span style=\"font-size: 9px; font-weight: 700; display: block; margin-bottom: 2px;\">Big Rock</span>\n                            <span style=\"font-size: 13px; font-weight: 800; color: #ffffff;\">{{KPI_BIGROCK}}</span>\n                        </td>\n                        <td align=\"center\" style=\"color: #f0fdf4;\">\n                            <span style=\"font-size: 9px; font-weight: 700; display: block; margin-bottom: 2px;\">Regular</span>\n                            <span style=\"font-size: 13px; font-weight: 800; color: #ffffff;\">{{KPI_REGULAR}}</span>\n                        </td>\n                        <td align=\"center\" style=\"color: #f0fdf4;\">\n                            <span style=\"font-size: 9px; font-weight: 700; display: block; margin-bottom: 2px;\">Small</span>\n                            <span style=\"font-size: 13px; font-weight: 800; color: #ffffff;\">{{KPI_SMALL}}</span>\n                        </td>\n                    </tr>\n                  </table>\n              </div>\n            </td>\n            \n            <td width=\"1.3%\"></td> <!-- Gap -->\n\n            <!-- CARD 2: % On Schedule -->\n            <td valign=\"top\" width=\"24%\">\n              <div style=\"background-color: #9333ea; text-align: center; padding: 18px 4px; height: 160px; box-sizing: border-box; border-radius: 12px;\">\n                  <p style=\"color: #ffffff; font-size: 42px; font-weight: 800; margin: 0 0 6px 0; line-height: 1;\">{{KPI_ONSCHED}}</p>\n                  <p style=\"color: #faf5ff; font-size: 11px; font-weight: 700; margin: 0; text-transform: uppercase;\">% On Schedule</p>\n                  <div style=\"border-bottom: 1px solid rgba(255,255,255,0.2); margin: 10px 12px;\"></div>\n                  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin-top: 4px;\">\n                    <tr>\n                      <td align=\"center\" style=\"width: 32%;\">\n                        <p style=\"color: #faf5ff; font-size: 9px; font-weight: 600; margin: 0 0 2px 0;\">IN PROGRESS</p>\n                        <p style=\"color: #ffffff; font-size: 13px; font-weight: 800; margin: 0;\">{{KPI_INPROGRESS}}</p>\n                      </td>\n                      <td style=\"border-left: 1px solid rgba(255,255,255,0.2); height: 20px;\"></td>\n                      <td align=\"center\" style=\"width: 32%;\">\n                        <p style=\"color: #faf5ff; font-size: 9px; font-weight: 600; margin: 0 0 2px 0;\">DELAYED</p>\n                        <p style=\"color: #ffffff; font-weight: 800; font-size: 13px; margin: 0;\">{{KPI_DELAYED}}</p>\n                      </td>\n                      <td style=\"border-left: 1px solid rgba(255,255,255,0.2); height: 20px;\"></td>\n                      <td align=\"center\" style=\"width: 32%;\">\n                        <p style=\"color: #faf5ff; font-size: 9px; font-weight: 600; margin: 0 0 2px 0;\">NO DATE</p>\n                        <p style=\"color: #ffffff; font-weight: 800; font-size: 13px; margin: 0;\">{{KPI_NODATE}}</p>\n                      </td>\n                    </tr>\n                  </table>\n              </div>\n            </td>\n\n            <td width=\"1.3%\"></td> <!-- Gap -->\n\n            <!-- CARD 3: % High Potential -->\n            <td valign=\"top\" width=\"24%\">\n              <div style=\"background-color: #3b82f6; text-align: center; padding: 18px 4px; height: 160px; box-sizing: border-box; border-radius: 12px;\">\n                  <p style=\"color: #ffffff; font-size: 42px; font-weight: 800; margin: 0 0 6px 0; line-height: 1;\">{{KPI_HIGHPOT}}</p>\n                  <p style=\"color: #eff6ff; font-size: 11px; font-weight: 700; margin: 0; text-transform: uppercase;\">% High Potential</p>\n                  <div style=\"border-bottom: 1px solid rgba(255,255,255,0.2); margin: 12px 20px;\"></div>\n                  <div style=\"padding-top: 2px;\">\n                      <p style=\"color: #eff6ff; font-size: 10px; font-weight: 600; margin: 0 0 2px 0;\">High Pot.</p>\n                      <p style=\"color: #ffffff; font-size: 14px; font-weight: 800; margin: 0;\">{{KPI_HIGHPOT_N}}</p>\n                  </div>\n              </div>\n            </td>\n\n            <td width=\"1.3%\"></td> <!-- Gap -->\n\n            <!-- CARD 4: % Profit On Return -->\n            <td valign=\"top\" width=\"24%\">\n              <div style=\"background-color: #0ea5e9; text-align: center; padding: 48px 4px; height: 160px; box-sizing: border-box; border-radius: 12px;\">\n                  <p style=\"color: #ffffff; font-size: 42px; font-weight: 800; margin: 0 0 10px 0; line-height: 1;\">{{KPI_PROFIT}}</p>\n                  <p style=\"color: #e0f2fe; font-size: 11px; font-weight: 700; margin: 0; text-transform: uppercase;\">% Profit On Return</p>\n              </div>\n            </td>\n          </tr>\n        </table>\n    </div>\n\n        <!-- TIMELINE -->\n    <div style=\"margin-bottom: 40px; margin-top: 24px; border: 1px solid #06b6d4; border-radius: 12px; padding: 30px 8px 24px 8px; position: relative;\">\n        <div style=\"position: absolute; top: -14px; left: 24px; background-color: #06b6d4; color: white; padding: 6px 20px; border-radius: 20px; font-size: 14px; font-weight: 800;\">Upcoming Milestones<span title=\"Projects whose Go-Live or PGLS date falls inside {{YEAR}}\" style=\"background-color: rgba(255,255,255,0.25); border-radius: 50%; width: 16px; height: 16px; display: inline-block; text-align: center; line-height: 16px; font-size: 11px; margin-left: 6px; cursor: help; vertical-align: text-top; font-style: italic;\">i</span></div>\n        <div style=\"margin-bottom: 16px; font-size: 10px; color: #64748b; font-style: italic; padding: 0 8px;\">\n            * Tracking projects in <strong>{{AREA}}</strong> finishing within {{YEAR}}, grouped by project size.\n        </div>\n        <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"table-layout:fixed; border-collapse:collapse;\">\n          <tr valign=\"top\">\n            <td valign=\"top\" width=\"32%\" style=\"padding: 0 10px;\">\n              <div style=\"background-color:#fef2f2; border:1.5px solid #ef4444; border-radius:10px; padding:8px 14px; margin-bottom:14px;\">\n                <div style=\"display:flex; align-items:center; gap:8px;\"><span style=\"font-size:18px; line-height:1;\">🪨</span><div><div style=\"font-size:11px; font-weight:800; color:#ef4444; text-transform:uppercase; letter-spacing:0.6px;\">Big Rock</div><div style=\"font-size:10px; color:#64748b; font-weight:600;\">{{TL_BIG_N}} projects upcoming <span style=\"color:#ef4444; font-weight:800; margin-left:4px;\">({{TL_BIG_PCT}}%)</span></div></div></div>\n              </div>\n              <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border-collapse:collapse;\">{{TL_BIG_ROWS}}</table>\n            </td>\n            <td width=\"1%\" style=\"padding:0 4px;\"><div style=\"border-left:1px dashed #e2e8f0; min-height:300px;\"></div></td>\n            <td valign=\"top\" width=\"32%\" style=\"padding: 0 10px;\">\n              <div style=\"background-color:#fffbeb; border:1.5px solid #f59e0b; border-radius:10px; padding:8px 14px; margin-bottom:14px;\">\n                <div style=\"display:flex; align-items:center; gap:8px;\"><span style=\"font-size:18px; line-height:1;\">⚙️</span><div><div style=\"font-size:11px; font-weight:800; color:#f59e0b; text-transform:uppercase; letter-spacing:0.6px;\">Regular</div><div style=\"font-size:10px; color:#64748b; font-weight:600;\">{{TL_REG_N}} projects upcoming <span style=\"color:#f59e0b; font-weight:800; margin-left:4px;\">({{TL_REG_PCT}}%)</span></div></div></div>\n              </div>\n              <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border-collapse:collapse;\">{{TL_REG_ROWS}}</table>\n            </td>\n            <td width=\"1%\" style=\"padding:0 4px;\"><div style=\"border-left:1px dashed #e2e8f0; min-height:300px;\"></div></td>\n            <td valign=\"top\" width=\"32%\" style=\"padding: 0 10px;\">\n              <div style=\"background-color:#f0fdf4; border:1.5px solid #22c55e; border-radius:10px; padding:8px 14px; margin-bottom:14px;\">\n                <div style=\"display:flex; align-items:center; gap:8px;\"><span style=\"font-size:18px; line-height:1;\">🔹</span><div><div style=\"font-size:11px; font-weight:800; color:#22c55e; text-transform:uppercase; letter-spacing:0.6px;\">Small</div><div style=\"font-size:10px; color:#64748b; font-weight:600;\">{{TL_SML_N}} projects upcoming <span style=\"color:#22c55e; font-weight:800; margin-left:4px;\">({{TL_SML_PCT}}%)</span></div></div></div>\n              </div>\n              <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border-collapse:collapse;\">{{TL_SML_ROWS}}</table>\n            </td>\n          </tr>\n        </table>\n    </div>\n  </div> <!-- Fim parte 1 -->\n\n  <!-- ======================== QUEBRA FÍSICA PDF ======================== -->\n  <div style=\"page-break-after: always; break-after: page;\"></div>\n\n  <!-- ======================== PÁGINA 2 E EM DIANTE: PRIORITIES ======================== -->\n  <div>\n    <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"table-layout: fixed;\">\n        <tr>\n            <td valign=\"top\" width=\"48%\">\n                <div style=\"margin-top: 24px; border: 1px solid #a855f7; border-radius: 12px; padding: 30px 24px 24px 24px; position: relative;\">\n                    <div style=\"position: absolute; top: -14px; left: 24px; background-color: #a855f7; color: white; padding: 6px 20px; border-radius: 20px; font-size: 14px; font-weight: 800;\">Main Priorities</div>\n                    {{CARDS_MAIN}}\n                    \n                    <!-- Placeholder para espaço em branco -->\n                    <div style=\"border: 1px dashed #cbd5e1; background-color: #f8fafc; padding: 16px; text-align: center; margin-top: 12px;\">\n                        <p style=\"color: #94a3b8; font-size: 12px; margin: 0;\">All other priorities tracked in DevOps.</p>\n                    </div>\n                </div>\n            </td>\n            \n            <td width=\"4%\"></td> <!-- Espaço entre colunas -->\n            \n            <td valign=\"top\" width=\"48%\">\n                <div style=\"margin-top: 24px; border: 1px solid #3b82f6; border-radius: 12px; padding: 30px 24px 24px 24px; position: relative;\">\n                    <div style=\"position: absolute; top: -14px; left: 24px; background-color: #3b82f6; color: white; padding: 6px 20px; border-radius: 20px; font-size: 14px; font-weight: 800;\">Priorities for {{QUARTER_NEXT}}</div>\n                    {{CARDS_QPRIO}}\n                    \n                    <!-- Placeholder para espaço em branco -->\n                    <div style=\"border: 1px dashed #cbd5e1; background-color: #f8fafc; padding: 16px; text-align: center; margin-top: 12px;\">\n                        <p style=\"color: #94a3b8; font-size: 12px; margin: 0;\">All other priorities tracked in DevOps.</p>\n                    </div>\n                </div>\n            </td>\n        </tr>\n    </table>\n\n    <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"table-layout: fixed; margin-top: 32px;\">\n        <tr>\n            <td valign=\"top\" width=\"48%\">\n                <div style=\"margin-top: 24px; border: 1px solid #10b981; border-radius: 12px; padding: 30px 24px 24px 24px; position: relative;\">\n                    <div style=\"position: absolute; top: -14px; left: 24px; background-color: #10b981; color: white; padding: 6px 20px; border-radius: 20px; font-size: 14px; font-weight: 800;\">Projects Deployed in {{QUARTER_CURR}}</div>\n                    {{CARDS_DEPLOYED}}\n                </div>\n            </td>\n            <td width=\"4%\"></td>\n            <td valign=\"top\" width=\"48%\">\n                <div style=\"margin-top: 24px; border: 1px solid #ef4444; border-radius: 12px; padding: 30px 24px 24px 24px; position: relative;\">\n                    <div style=\"position: absolute; top: -14px; left: 24px; background-color: #ef4444; color: white; padding: 6px 20px; border-radius: 20px; font-size: 14px; font-weight: 800;\">Delayed Projects</div>\n                    {{CARDS_DELAYED}}\n                </div>\n            </td>\n        </tr>\n    </table>\n\n{{ANALYSIS_BLOCK}}\n{{BU_TABLE}}\n  </div> <!-- Fim parte 2 -->\n</div>\n</body>\n</html>\n",
+          "runAfter": {
+            "Init_Now": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Flags": {
+          "type": "Compose",
+          "inputs": {
+            "br": "iVBORw0KGgoAAAANSUhEUgAAABgAAAASCAMAAAB2Mu6sAAABGlBMVEVHcEwAdjQBfTwCikoBjE0AXyQAXCICi0sAdjQAdjQCi0oAdzMFdjQEdToBby8AXyMCdTkNdToAXiQBgT8DhEUAbS4AaiwAZicAn08AlkIBkz4AgDH/zgAAhTUCkTwyJ4I2LIQAoVMAgzMAmEgAizotJHoAjjsAfS8AdC3/xAD9xwQAeTIAaCkAbysAmk8Ag0EAiD8cokPwwQgAi0oAYiXouA0RijB7YVIApFaQuB8AlEb0zQIAkE4AWiA6my2EpxkAfDryvQc7MYTWvwkAjz/yxAWKmrLmvQSpshNxsytYniNQqzFwWlYjkS+LsRzYqhfJxBBjZ5hIRI/uywRzfqZtnx0cnT1FNm/RoxmJemVlcJpygaNWWJZRQW3J1ORKAAAAGHRSTlMAyrLVvtW+c8Hkn2YbIK9zLwuf6FW36FX39NMSAAABVElEQVQY0zWR13LCMBAARe81DZBAxja4gzEY03vvLT35/9/IGcg+7t6M7kYIRXxBt8vlcgd9j/EEuhEOOZC70ykBXKtT1cvlB4fT6fQHFEVEnXyj0cjnU0AlxbUmvK7r/KQoomr+XzfbhwrHpdPpTCbHa6iaunrQhimf1zd/D+CX56nFMCPL2Nm+WMxCKMH4gZDPE8NQ+jsc98DzWRXppdS6TYhxucxmP5RuZHmX43lWReXSkgB7ShnmODsVhrJs9LcYAgfvEmKOoFD6/fUhS5L0imsQOO6tSciGAQr0CH7eYwUILXv13th8LwAjS5IWddYOg9Z19czCtCBYw/kqy7JYgZC5nVRcTYd70+jDOIux0kWD3O0knt+OQdvjGAtiFymTnM5iQcA4W7c1eEEQNAiKGPBHo0+OZ1VVNU0ENLXW9SJHKHz/nUT8JZb0ejwebzIWQX95l0GOUQyU9gAAAABJRU5ErkJggg==",
+            "mx": "iVBORw0KGgoAAAANSUhEUgAAABgAAAASCAMAAAB2Mu6sAAABAlBMVEVHcEybCxiRCBOrEiUHUDgCalGbCxkFZEuUChvNzc0AUTfNzc27u7upECABbVIUcVrV1dUCcFYDcVkDbVS9trjV1dXAwMAAUzrT09PU1NTQyssATzeNCBHBwcHGxsa+vr7////CCxvFDR7LDyPIDSAAb1AAclIAdVUAeFgAaUnOECYAZUYAbEz89PW9ChoAe1z79/bu6+iYCRWhCxkAWT6PBxIAYES/ECWzCRfe29oVgGIUdFYUel79/PsAVDnGxsKqDBuvh1rb18HU1NSJraTOzbSrsJ3j4cvCzsgUb1HVxKfr5dO7u5tzmomTd2KCZ0mJWjV7UDNrQiagkIN/XkUSYkjxAgtGAAAAIHRSTlMAwtWysthoHR3oxVUL5MPPumu7obqdnWZ7L8rkoXvKLz2DQSIAAAD3SURBVBgZBcGxbhNBFADA2fU6Zy53JnYkChAlFWWklHw+FT+QggIhkAArtnRJYOPsPmaSYcznv8a0Xi3b5QHY9HPaX6dEvHm0Mfq8+0Wfbizpw4hq/xOuWrmAQ+wKVICTuQLyUFURAKAiN1UIuNoBFYpIIWQ+Pr3efqMi9Si5CYL3L/K+nyoSMiFiYL2S2wtS0mf5MoRB8Lw+rycp0ZEJg8ax9H5o0CEbDBqOsakX9+iEVelt0GTczWU6zZ2AQpPZ/mBxhMDYsiwDQARmCvmyM+3E/B0wI33i6/GZt39uvTo/CTZLrL6kcT5VYLo+7Gu/J979zv/+A843bpx9MgL6AAAAAElFTkSuQmCC",
+            "ar": "iVBORw0KGgoAAAANSUhEUgAAABgAAAASCAMAAAB2Mu6sAAAA5FBMVEVHcExVgqxFcZ50ncFjjbZZhrBIc59hjbZdibJwmr9zncB0ncFynMBegKNIdKBZia9KdZ5ok7pMd6JtmL5OeKWAn8dEb51mtt////9noNmEtuN0rN93ruBrpdyBtOJemdWIueR6sOFxqt5vqNx9suJjndf19veXwedgjbZ1qNhahq9EcJ+qzeuRvOXfvZP6+vrU1NR+rdVzncNtn81il8jVkhl4o8duo9RUhrqjyOrS3ebi6e+81OzH3PBtlblQfq1Vi8NYkcz27uXr18DbtYKFpcFXjcTCwsLUqG/GxsbExMTFxcW1G5eWAAAAF3RSTlMAwb6fYObVyK+62MlzC3IbJ+idL1UgoYXv8wQAAAEFSURBVBgZBcFBetJAGADQN+mfpEpCWwvyudRDuPD+J9BF99aFFVQoliaTwPjelXV1flvXTZTF5S4ycHOu481HEwz9rPPtVBXl8kGVPv+syASNoV/OiN3qGPPcyIIG9TBMFC0hZKHBmYmilb7fBbl/d9T/GZMJRStlq7hfPB0O7Nh0pdpPze9L38VlEdvyDFgllx2GYWt5G14Bm21rBFAqAADAuQLwtBrv1wCE9ebv1Bz7XOfu+QWwfP8Y6x9HRfuS5tdMRJ8db051isekaCUZs/PYWZwQFG2SMaNDhpCvbxM4/KND5lMR6urr3BrFF0bXjTy0vzyk9rw4AP1V5NgH82qo9v8BlwJwhq/jLCUAAAAASUVORK5CYII=",
+            "co": "iVBORw0KGgoAAAANSUhEUgAAABgAAAASCAMAAAB2Mu6sAAAA21BMVEVHcEzQqQGOChqZCyDVsQLTrwHSrgeOBxqLBxnYtgHXtAKZCyHQqQGZCyGLBxicCyGLBxnWswLVsQPSrQHRohfPqAGLABf/zwD/1QDFDiz/yQABMYj/0AAALIO6CiEAJ3v/0wAANoy/DCWnCiDywgH/0QABI3P/zgAALHv4zgCyDCX/zADYtgTmvQD/ywCbCR10d0VJH1/UsADwyACKBhb/xgA3H11fHFTPqQ3LoQAdQXReaFHGmwAAG1lJUk2bijGEhUOjmDIuKHCYFT6LgTkSKXl9FkQ5EjuEEDcwfcCHAAAAF3RSTlMAuSOypG8jvtW+2F3K5nLKn89V6AvkC8hz7Q4AAAD2SURBVBjTZdHZVoMwFIXhwwydHYuAoCXQQkEGmQTtqNX3fyJJCF12+V9+++QqAKLAK4PBlcIL1+ItdInCCJQgRK9tKAyDNL0ZMTzD3FXVGwSeqqpPbY7jGB7ewxBpqBuoO4ZhzOfL5Xr9QoYL7lzrh4vz1jX0Dqn3n+nQOeaz52QI9ru4iXf7CvWc59UG4vqZpOv6Y71p4s/tNm5q9wNWVFsnrSzLcl06/GHsdND1Q1KWSXL4oozd/Ybi+NDnH09lUhRFUv7YGdg9L2gmzieD6ZPMM5smfmFHY4njuOk4arNJUZZJMB2y9Hfu2eFkJsmyLM0mLPwCBes449/sL34AAAAASUVORK5CYII=",
+            "cl": "iVBORw0KGgoAAAANSUhEUgAAABgAAAASCAMAAAB2Mu6sAAABL1BMVEVHcEyeGA+oHROnHRObFQ4CQ5idFg6aFA0CPpSaFQ6oHBOtIBXR0dHT09PQ0NDKysrQ0NCcFQ3V1dUVSZidGxDT09PU1NSLFxfS0tIISJcDQZYCQ5nPz8/Pz8/Pz8/////UIRbWIxfZJhraKRvTHxXXJRnPHBLRHhTcLiDbKx0AP6i7GhACSK0APKb29vbHGxGqGRABQ6oAQqTCIRWZEwzdMyUUTa2gFg7UKRzLIBWyIxfs7OzLy8u2KhwAOZDGxsYAPpUTULLo6OgAQpnT09PtnJYVSq3qj4mGMlRlM17WLyHkc2z38PDy9Pd1mdKvIBX5+fngVkzvqqXytbH20M2AOV/up6LANDJTOHYjPJPZQznv1tWxZmGCoNSXsdzg4ODd5fNSgMfZ2dk6bb4bW7eYMJj5AAAAH3RSTlMAyrJd2L9zu9if5sVdua8Syh2dzy97LwvoIKFrweT+V2pGfwAAAP9JREFUGBkFwT1PU2EYANDz9n1ua2n6ZayERBeHTjo4mDC5+LP9CRAd6ggdXAgSkaYayuXePp5TnA3yrpq0TX08edoB8z5K89kfRDN6W3/6ceiLWSnrQ/ly6/z6wWILH/v7EU5iO4ueX9N334DvAHMDPuXLzdM/AICB5mLZPwMAqHEsLtW6uAUAhAMVAAChvs9dmq5n5bAB8KHE5OzKnqKVr9+03XEau5hvj/G32Cta0u8HHSlMXgR7RSupOqRQCZSWpHZIQk199PellVQdiagSQStVHZJQJQSr0sLQjVBJdE2s7lZfyyM5Xi94Bs2o35jUJeD0VR2ORyWijIdL/DFDH1yZPYAc0QAAAABJRU5ErkJggg=="
+          },
+          "runAfter": {
+            "Template": [
+              "Succeeded"
+            ]
+          }
+        },
+        "AURA_Button": {
+          "type": "Compose",
+          "inputs": "<a href=\"https://copilotstudio.microsoft.com/environments/9e8adee3-057b-ec6f-bfd5-a3dfdf404c4f/bots/dec9721d-16fd-f011-8406-000d3a467d39/overview\" target=\"_blank\" style=\"display: inline-block; border: 1.5px solid #d8b4fe; color: #9333ea; background-color: #ffffff; font-family: 'Segoe UI', sans-serif; font-size: 12.5px; font-weight: 700; text-decoration: none; padding: 8px 18px; border-radius: 20px; margin-right: 10px; vertical-align: middle; box-shadow: 0 1px 2px rgba(0,0,0,0.05);\">\n          <img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAG/0lEQVR4nOWay29cVx3HP+e+5v30I+M4deOQKGriyqqQEIIgtSAQKxYIITaIDfwHXXbLkg0SSAh1ARtKEApUoVDaqqEkjWrixLEtOS9Hju3Y4zgee5537twXOnc8pbHSJHNnGlvit5mZO+ec3/f7e53fOTOCPovruv7TxqiqKvqlTzwPwF8kIbGfwPtBRBwE4L0QUThg4LvVIw4S8DDeUA4y+GfRr/QbvJzg7c5ShEBRRPDa+S6MuE/AIfoNXlXaNvF9H8t2sV0PVVWI6QpCiOC57/cvnES/wMuFJMBNy+JmucaDWguz5ZOJaBxNxoiikIpq5OI6mhJ++1H3kNDoUQKrC0HL95jdKbNQrpLQNHRD5YV8lGE/wtq2TXZAJ6IJHNdDESo9cHhyDnRjfTlQxnfdcbm8VcL0PUYTCVKGQSKuknU1/jFdYnzQYCCpUfZ86p7fkwfcPfiUXkJHwnA9n5WGidBEQMjQ297IRQyu3qgwklUpZCKsWQ5F0+JWxWS50QrmtRyP3fwOTSJ0CLUTVlCsNvFcn8urZaKKIK5pGIrGsYTG+madVycH8ICdlstWvYVw4LblYwzFsepOEGa9iBbW+jJ0zJbLZq1FPKpSWW/hRGWYuAxmVVQLVjdrHCuMUXNcTNtlY9smrqkkXI9N06W02SSiKRSykcAj3ThD4pUJ3VUr0RFZBmXFeVi1sE0XU/EZz8bQ65BwNI5GI/z23A1OvpgkHTcoNlqsbluUt112qj5bNZekKljZarL4wAyCMWxpVXrZbRumTd10GFA07IhCVTgUt6ucvXCHbD7CT79zjKbrcnW9xrXZbco7Nn7LZ7IQR7EdPrhdpFhtdMzStX6JO1QO+LvKavUWmZhK8UGTn5w6zPxglVLN5kgmysRImrrj8db0Gp/M7XD6UJLvfaXA+FAUy/X48E6JyRN50DvAw1UmEcYDnu+jqSoX59cZyETRDYP55QqnR1PEIwpNx2dmaZvzU/dZXmvyxo9O8drkEHcrdTYsGw+f4aiB7Qgs2+GV4VTXOdCRUB4Qu6oOD8S5tFjix2fGSRkqV5fK3F2rcXH+AYsrZVwXXv/hS7w2OchbM2vUdEE2rZONaiyaLWJCMJlLBkkVdmcQvXabv3r3Nt/66hgncrHgc9Nz8UyHN/+5wsxSmV/+bILfT62y6TqMjaQYTEVIRzUcPCzH5buFHLrskULqD1WFOmGkKApnXhri3atF7jRsZqsmlzZqbCuCb0zk+NpEnr9OrfDBTJG8pjOsaYzoOnFPwTV9JlIJDFUJ9gn2wwOy9MlO888z62ybcOZknobjUbccrswWySZ0Lly5x/e/eZwXRzPUHR8Xn4yhYiiC49kIWg/W75lAQCJYRfDHa+vcLZoU0lFu3ytRs+HUcIyBrMr4ZIFm3SavanieTyqiMJ6KBJN7PS31hYBMQHlw+fvcBmcvrlKpuYwXshQyOt8+c4iaCimhMKQoRFRBLqqF3rj6TmDvYUa2F7NLFa4ulqm1PCaPpxlM62RiOumYFoDvVyvdNwIyLGRX2W6vpTfU3eculu0F5wVNax8t5XFTFgA5WOkDk95DaDeR24C9oDK58hgpj5aPwdcZI8V1w7XTfSmjn4aNqvDrcx9y7da9oME7//Eslm2zslnio+u3mFtc5ee/+xu/+csFSuVaMGb65hJ/eH8qmCvPyD0RCHsvKRXLkFje2OJfM7d4b3ohAPfefxaoNy3ub+4wtXCPTxaWeKGQZyCT5Bdn3w/GvHN5jrcvXedhuRp4oxcSSm9xLzj30QwTx0a5ubxBcWuHbCpGJhEnn0qgqYJMMs7CvQ2uL97n6y8fZ6NU5v7DHU6OFXj70mywhve8CUh9mqayVakxu7jK6fFRxobznP94jkO5NG++c4k/XZjmyFCOmmkxNpzDtFpkEhHO/XuGQ/kMJ44Mc3l+kWqjKW8aQhMI1Y12av9WpU5xq8zLXzqC7TjM3b0fWFaCjxk6P3j1y9xa2eDwQCZI6ut3VjAMjVeOjwUGuHJjiaMjA4G3OmuGIhCGRKeShJdHIXte9x2RzN+u2+nOVcr84jKGrhExdFq2g2nZAZx4NELLtqk1muQzybYiRQnug3zfw9D1YF6pUieia8FeIJP46MjQ7vvu8HxqxmetRnKQTLpUPEYyFkVX1QBgNpVog3cccukkg7k0DUveztk4nhcQ1XSN9a2dtu0FwXv5Kg9H8lk34Dt4HwHdTRj1HkKPitdlCD2WQDck/le7xWfiefdZ0FfsXab9vSyb7fmdR377jNdFBn82Wvp2ufu8RN0T6v2Ng30Q5Yv+Hbefoj4G1+d64KCRUD8HzxND6KCQUJ+A46k5sN8k1Kfo7wrc86xO6jMarqsq9Ly8oXah5//vvxLskf3+t8p/AdBVWqyEvLPLAAAAAElFTkSuQmCC\" style=\"width: 18px; height: 18px; border-radius: 50%; vertical-align: middle; margin-right: 6px;\" alt=\"AURA\">\n          <span style=\"vertical-align: middle;\">AURA</span>\n        </a>",
+          "runAfter": {
+            "Flags": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Scope_Main": {
+          "type": "Scope",
+          "actions": {
+            "WIQL_ByBudget": {
+              "type": "OpenApiConnection",
+              "runAfter": {},
+              "inputs": {
+                "parameters": {
+                  "account": "CDIO-IT-LATAM",
+                  "parameters/Method": "POST",
+                  "parameters/Uri": "CDIO%20Portfolio/_apis/wit/wiql?api-version=7.0",
+                  "parameters/Body": {
+                    "query": "SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = 'CDIO Portfolio' AND [System.State] <> '00 Cancelled' AND [System.State] <> '11 Closed' AND [Custom.PortfolioYear] = @{outputs('Init_Year')} AND [Custom.ITArea] = '@{replace(outputs('Init_Area'), '''', '''''')}' ORDER BY [Custom.ProjectTotalBudget] DESC"
+                  }
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_visualstudioteamservices",
+                  "operationId": "HttpRequest",
+                  "connectionName": "shared_visualstudioteamservices"
+                }
+              }
+            },
+            "Ids_ByBudget": {
+              "type": "Compose",
+              "runAfter": {
+                "WIQL_ByBudget": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": "@{join(take(select(body('WIQL_ByBudget')?['workItems'], item()?['id']), 200), ',')}"
+            },
+            "If_No_Items": {
+              "type": "If",
+              "runAfter": {
+                "Ids_ByBudget": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "equals": [
+                  "@length(coalesce(body('WIQL_ByBudget')?['workItems'], json('[]')))",
+                  0
+                ]
+              },
+              "actions": {
+                "Respond_Empty": {
+                  "type": "Response",
+                  "kind": "Skills",
+                  "runAfter": {},
+                  "inputs": {
+                    "statusCode": 200,
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "report_url": {
+                          "title": "Report URL",
+                          "type": "string",
+                          "x-ms-content-hint": "TEXT",
+                          "x-ms-dynamically-added": true
+                        },
+                        "area": {
+                          "title": "Area",
+                          "type": "string",
+                          "x-ms-content-hint": "TEXT",
+                          "x-ms-dynamically-added": true
+                        },
+                        "summary": {
+                          "title": "Summary",
+                          "type": "string",
+                          "x-ms-content-hint": "TEXT",
+                          "x-ms-dynamically-added": true
+                        }
+                      }
+                    },
+                    "body": {
+                      "report_url": "",
+                      "area": "@{outputs('Init_Area')}",
+                      "summary": "@{concat('No active initiative found for IT Area \"', outputs('Init_Area'), '\" in ', outputs('Init_Year'), '. Check the IT Area string against DevOps: Consumer, Customer Dev, Make (Business Operation), Focus Market (Cust Ops), Commercial Exp, Tech Services, Tax Reform.')}"
+                    }
+                  }
+                },
+                "Stop": {
+                  "type": "Terminate",
+                  "inputs": {
+                    "runStatus": "Succeeded"
+                  },
+                  "runAfter": {
+                    "Respond_Empty": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              }
+            },
+            "Details_ByBudget": {
+              "type": "OpenApiConnection",
+              "runAfter": {
+                "If_No_Items": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "parameters": {
+                  "account": "CDIO-IT-LATAM",
+                  "parameters/Method": "GET",
+                  "parameters/Uri": "@{concat('CDIO%20Portfolio/_apis/wit/workitems?ids=', outputs('Ids_ByBudget'), '&fields=System.Title,System.State,Custom.ITArea,Custom.ProjectType,Custom.CountryDeployed,Custom.GoLiveDate,Custom.PGLSEndDate,Custom.ProjectTotalBudget,Custom.ProjectBenefitValue,Custom.BusinessBenefit,Custom.ProjectITManager,Custom.PaybackinMonths,Custom.ImplementionTimeinMonths,Custom.ProjectITBudget,Custom.Note,Custom.BGorBUEngagement,Custom.SpecifyCross,Custom.PortfolioYear&api-version=7.0')}"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_visualstudioteamservices",
+                  "operationId": "HttpRequest",
+                  "connectionName": "shared_visualstudioteamservices"
+                }
+              }
+            },
+            "Items": {
+              "type": "Select",
+              "runAfter": {
+                "Details_ByBudget": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Details_ByBudget')?['value']",
+                "select": {
+                  "id": "@item()?['id']",
+                  "title": "@coalesce(item()?['fields']?['System.Title'], '')",
+                  "state": "@coalesce(item()?['fields']?['System.State'], '')",
+                  "stateNum": "@if(and(greater(length(string(coalesce(item()?['fields']?['System.State'], ''))), 2), and(contains('0123456789', substring(string(coalesce(item()?['fields']?['System.State'], '')), 0, 1)), contains('0123456789', substring(string(coalesce(item()?['fields']?['System.State'], '')), 1, 1)))), int(substring(string(coalesce(item()?['fields']?['System.State'], '')), 0, 2)), -1)",
+                  "ptype": "@coalesce(item()?['fields']?['Custom.ProjectType'], '')",
+                  "itArea": "@coalesce(item()?['fields']?['Custom.ITArea'], '')",
+                  "country": "@coalesce(item()?['fields']?['Custom.CountryDeployed'], '')",
+                  "bu": "@if(empty(trim(coalesce(item()?['fields']?['Custom.BGorBUEngagement'], ''))), 'Not informed', if(and(contains(toLower(trim(coalesce(item()?['fields']?['Custom.BGorBUEngagement'], ''))), 'cross'), not(empty(trim(coalesce(item()?['fields']?['Custom.SpecifyCross'], ''))))), concat('Cross: ', trim(coalesce(item()?['fields']?['Custom.SpecifyCross'], ''))), trim(coalesce(item()?['fields']?['Custom.BGorBUEngagement'], ''))))",
+                  "golive": "@coalesce(item()?['fields']?['Custom.GoLiveDate'], '')",
+                  "pgls": "@coalesce(item()?['fields']?['Custom.PGLSEndDate'], '')",
+                  "goliveSafe": "@if(empty(coalesce(item()?['fields']?['Custom.GoLiveDate'], '')), '1900-01-01T00:00:00Z', coalesce(item()?['fields']?['Custom.GoLiveDate'], ''))",
+                  "tdate": "@if(empty(coalesce(item()?['fields']?['Custom.GoLiveDate'], '')), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''))",
+                  "tdateSafe": "@if(empty(if(empty(coalesce(item()?['fields']?['Custom.GoLiveDate'], '')), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''))), '1900-01-01T00:00:00Z', if(empty(coalesce(item()?['fields']?['Custom.GoLiveDate'], '')), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''), coalesce(item()?['fields']?['Custom.GoLiveDate'], '')))",
+                  "eq": "@concat('Q', string(add(div(sub(int(formatDateTime(if(empty(if(empty(coalesce(item()?['fields']?['Custom.PGLSEndDate'], '')), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''))), '1900-01-01T00:00:00Z', if(empty(coalesce(item()?['fields']?['Custom.PGLSEndDate'], '')), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''))),'MM')),1),3),1)), ' ', formatDateTime(if(empty(if(empty(coalesce(item()?['fields']?['Custom.PGLSEndDate'], '')), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''))), '1900-01-01T00:00:00Z', if(empty(coalesce(item()?['fields']?['Custom.PGLSEndDate'], '')), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''))),'yyyy'))",
+                  "ty": "@formatDateTime(if(empty(if(empty(coalesce(item()?['fields']?['Custom.GoLiveDate'], '')), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''))), '1900-01-01T00:00:00Z', if(empty(coalesce(item()?['fields']?['Custom.GoLiveDate'], '')), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''))), 'yyyy')",
+                  "budget": "@if(greater(float(coalesce(item()?['fields']?['Custom.ProjectITBudget'], 0)), 0), float(coalesce(item()?['fields']?['Custom.ProjectITBudget'], 0)), float(coalesce(item()?['fields']?['Custom.ProjectTotalBudget'], 0)))",
+                  "benefit": "@float(coalesce(item()?['fields']?['Custom.ProjectBenefitValue'], 0))",
+                  "payback": "@float(coalesce(item()?['fields']?['Custom.PaybackinMonths'], -1))",
+                  "impl": "@float(coalesce(item()?['fields']?['Custom.ImplementionTimeinMonths'], -1))",
+                  "bizDesc": "@coalesce(item()?['fields']?['Custom.BusinessBenefit'], '')",
+                  "manager": "@coalesce(item()?['fields']?['Custom.ProjectITManager']?['displayName'], '')",
+                  "note": "@coalesce(item()?['fields']?['Custom.Note'], '')",
+                  "flag": "@if(empty(if(or(contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'brazil'), contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'brasil')), 'br', if(or(contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'mexico'), contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'méxico')), 'mx', if(contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'argentina'), 'ar', if(or(contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'colombia'), contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'colômbia')), 'co', if(contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'chile'), 'cl', '')))))), '&#127758; ', concat('<img src=\"data:image/png;base64,', coalesce(outputs('Flags')?[if(or(contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'brazil'), contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'brasil')), 'br', if(or(contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'mexico'), contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'méxico')), 'mx', if(contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'argentina'), 'ar', if(or(contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'colombia'), contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'colômbia')), 'co', if(contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'chile'), 'cl', '')))))], ''), '\" width=\"16\" style=\"vertical-align:text-bottom;margin-right:4px;\"> '))"
+                }
+              }
+            },
+            "WIQL_ByDate": {
+              "type": "OpenApiConnection",
+              "runAfter": {
+                "Items": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "parameters": {
+                  "account": "CDIO-IT-LATAM",
+                  "parameters/Method": "POST",
+                  "parameters/Uri": "CDIO%20Portfolio/_apis/wit/wiql?api-version=7.0",
+                  "parameters/Body": {
+                    "query": "SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = 'CDIO Portfolio' AND [System.State] <> '00 Cancelled' AND [System.State] <> '11 Closed' AND [Custom.PortfolioYear] = @{outputs('Init_Year')} AND [Custom.ITArea] = '@{replace(outputs('Init_Area'), '''', '''''')}' ORDER BY [Custom.GoLiveDate] ASC"
+                  }
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_visualstudioteamservices",
+                  "operationId": "HttpRequest",
+                  "connectionName": "shared_visualstudioteamservices"
+                }
+              }
+            },
+            "Ids_ByDate": {
+              "type": "Compose",
+              "runAfter": {
+                "WIQL_ByDate": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": "@{join(take(select(body('WIQL_ByDate')?['workItems'], item()?['id']), 200), ',')}"
+            },
+            "Details_ByDate": {
+              "type": "OpenApiConnection",
+              "runAfter": {
+                "Ids_ByDate": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "parameters": {
+                  "account": "CDIO-IT-LATAM",
+                  "parameters/Method": "GET",
+                  "parameters/Uri": "@{concat('CDIO%20Portfolio/_apis/wit/workitems?ids=', outputs('Ids_ByDate'), '&fields=System.Title,System.State,Custom.ITArea,Custom.ProjectType,Custom.CountryDeployed,Custom.GoLiveDate,Custom.PGLSEndDate,Custom.ProjectTotalBudget,Custom.ProjectBenefitValue,Custom.BusinessBenefit,Custom.ProjectITManager,Custom.PaybackinMonths,Custom.ImplementionTimeinMonths,Custom.ProjectITBudget,Custom.Note,Custom.BGorBUEngagement,Custom.SpecifyCross,Custom.PortfolioYear&api-version=7.0')}"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_visualstudioteamservices",
+                  "operationId": "HttpRequest",
+                  "connectionName": "shared_visualstudioteamservices"
+                }
+              }
+            },
+            "ItemsByDate": {
+              "type": "Select",
+              "runAfter": {
+                "Details_ByDate": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Details_ByDate')?['value']",
+                "select": {
+                  "id": "@item()?['id']",
+                  "title": "@coalesce(item()?['fields']?['System.Title'], '')",
+                  "state": "@coalesce(item()?['fields']?['System.State'], '')",
+                  "stateNum": "@if(and(greater(length(string(coalesce(item()?['fields']?['System.State'], ''))), 2), and(contains('0123456789', substring(string(coalesce(item()?['fields']?['System.State'], '')), 0, 1)), contains('0123456789', substring(string(coalesce(item()?['fields']?['System.State'], '')), 1, 1)))), int(substring(string(coalesce(item()?['fields']?['System.State'], '')), 0, 2)), -1)",
+                  "ptype": "@coalesce(item()?['fields']?['Custom.ProjectType'], '')",
+                  "itArea": "@coalesce(item()?['fields']?['Custom.ITArea'], '')",
+                  "country": "@coalesce(item()?['fields']?['Custom.CountryDeployed'], '')",
+                  "bu": "@if(empty(trim(coalesce(item()?['fields']?['Custom.BGorBUEngagement'], ''))), 'Not informed', if(and(contains(toLower(trim(coalesce(item()?['fields']?['Custom.BGorBUEngagement'], ''))), 'cross'), not(empty(trim(coalesce(item()?['fields']?['Custom.SpecifyCross'], ''))))), concat('Cross: ', trim(coalesce(item()?['fields']?['Custom.SpecifyCross'], ''))), trim(coalesce(item()?['fields']?['Custom.BGorBUEngagement'], ''))))",
+                  "golive": "@coalesce(item()?['fields']?['Custom.GoLiveDate'], '')",
+                  "pgls": "@coalesce(item()?['fields']?['Custom.PGLSEndDate'], '')",
+                  "goliveSafe": "@if(empty(coalesce(item()?['fields']?['Custom.GoLiveDate'], '')), '1900-01-01T00:00:00Z', coalesce(item()?['fields']?['Custom.GoLiveDate'], ''))",
+                  "tdate": "@if(empty(coalesce(item()?['fields']?['Custom.GoLiveDate'], '')), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''))",
+                  "tdateSafe": "@if(empty(if(empty(coalesce(item()?['fields']?['Custom.GoLiveDate'], '')), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''))), '1900-01-01T00:00:00Z', if(empty(coalesce(item()?['fields']?['Custom.GoLiveDate'], '')), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''), coalesce(item()?['fields']?['Custom.GoLiveDate'], '')))",
+                  "eq": "@concat('Q', string(add(div(sub(int(formatDateTime(if(empty(if(empty(coalesce(item()?['fields']?['Custom.PGLSEndDate'], '')), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''))), '1900-01-01T00:00:00Z', if(empty(coalesce(item()?['fields']?['Custom.PGLSEndDate'], '')), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''))),'MM')),1),3),1)), ' ', formatDateTime(if(empty(if(empty(coalesce(item()?['fields']?['Custom.PGLSEndDate'], '')), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''))), '1900-01-01T00:00:00Z', if(empty(coalesce(item()?['fields']?['Custom.PGLSEndDate'], '')), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''))),'yyyy'))",
+                  "ty": "@formatDateTime(if(empty(if(empty(coalesce(item()?['fields']?['Custom.GoLiveDate'], '')), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''))), '1900-01-01T00:00:00Z', if(empty(coalesce(item()?['fields']?['Custom.GoLiveDate'], '')), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''))), 'yyyy')",
+                  "budget": "@if(greater(float(coalesce(item()?['fields']?['Custom.ProjectITBudget'], 0)), 0), float(coalesce(item()?['fields']?['Custom.ProjectITBudget'], 0)), float(coalesce(item()?['fields']?['Custom.ProjectTotalBudget'], 0)))",
+                  "benefit": "@float(coalesce(item()?['fields']?['Custom.ProjectBenefitValue'], 0))",
+                  "payback": "@float(coalesce(item()?['fields']?['Custom.PaybackinMonths'], -1))",
+                  "impl": "@float(coalesce(item()?['fields']?['Custom.ImplementionTimeinMonths'], -1))",
+                  "bizDesc": "@coalesce(item()?['fields']?['Custom.BusinessBenefit'], '')",
+                  "manager": "@coalesce(item()?['fields']?['Custom.ProjectITManager']?['displayName'], '')",
+                  "note": "@coalesce(item()?['fields']?['Custom.Note'], '')",
+                  "flag": "@if(empty(if(or(contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'brazil'), contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'brasil')), 'br', if(or(contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'mexico'), contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'méxico')), 'mx', if(contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'argentina'), 'ar', if(or(contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'colombia'), contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'colômbia')), 'co', if(contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'chile'), 'cl', '')))))), '&#127758; ', concat('<img src=\"data:image/png;base64,', coalesce(outputs('Flags')?[if(or(contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'brazil'), contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'brasil')), 'br', if(or(contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'mexico'), contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'méxico')), 'mx', if(contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'argentina'), 'ar', if(or(contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'colombia'), contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'colômbia')), 'co', if(contains(toLower(string(coalesce(item()?['fields']?['Custom.CountryDeployed'], ''))),'chile'), 'cl', '')))))], ''), '\" width=\"16\" style=\"vertical-align:text-bottom;margin-right:4px;\"> '))"
+                }
+              }
+            },
+            "F_BigRock": {
+              "type": "Query",
+              "runAfter": {
+                "ItemsByDate": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Items')",
+                "where": "@equals(item()?['ptype'], 'Big Rock')"
+              }
+            },
+            "F_Regular": {
+              "type": "Query",
+              "runAfter": {
+                "F_BigRock": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Items')",
+                "where": "@equals(item()?['ptype'], 'Regular')"
+              }
+            },
+            "F_Small": {
+              "type": "Query",
+              "runAfter": {
+                "F_Regular": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Items')",
+                "where": "@contains(toLower(item()?['ptype']), 'small')"
+              }
+            },
+            "F_InProgress": {
+              "type": "Query",
+              "runAfter": {
+                "F_Small": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Items')",
+                "where": "@and(not(contains(toLower(item()?['state']),'deployed')), and(not(contains(toLower(item()?['state']),'holding')), and(not(contains(toLower(item()?['state']),'cancelled')), not(contains(toLower(item()?['state']),'closed')))))"
+              }
+            },
+            "F_InProgress_Dated": {
+              "type": "Query",
+              "runAfter": {
+                "F_InProgress": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_InProgress')",
+                "where": "@not(empty(item()?['golive']))"
+              }
+            },
+            "F_NoDate": {
+              "type": "Query",
+              "runAfter": {
+                "F_InProgress_Dated": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_InProgress')",
+                "where": "@empty(item()?['golive'])"
+              }
+            },
+            "F_OnSchedule": {
+              "type": "Query",
+              "runAfter": {
+                "F_NoDate": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_InProgress_Dated')",
+                "where": "@or(greaterOrEquals(item()?['goliveSafe'], outputs('Init_Now')), contains(toLower(item()?['state']),'pgls'))"
+              }
+            },
+            "F_Delayed": {
+              "type": "Query",
+              "runAfter": {
+                "F_OnSchedule": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_InProgress_Dated')",
+                "where": "@and(less(item()?['goliveSafe'], outputs('Init_Now')), not(contains(toLower(item()?['state']),'pgls')))"
+              }
+            },
+            "F_HasFinancials": {
+              "type": "Query",
+              "runAfter": {
+                "F_Delayed": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Items')",
+                "where": "@and(greater(item()?['benefit'], 0), greater(item()?['budget'], 0))"
+              }
+            },
+            "F_Profitable": {
+              "type": "Query",
+              "runAfter": {
+                "F_HasFinancials": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_HasFinancials')",
+                "where": "@greater(item()?['benefit'], item()?['budget'])"
+              }
+            },
+            "F_HP_Eligible": {
+              "type": "Query",
+              "runAfter": {
+                "F_Profitable": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Items')",
+                "where": "@and(greaterOrEquals(item()?['stateNum'], 6), and(lessOrEquals(item()?['stateNum'], 10), or(greater(item()?['payback'], -1), or(greater(item()?['impl'], -1), or(greater(item()?['benefit'], 0), greater(item()?['budget'], 0))))))"
+              }
+            },
+            "F_HighPotential": {
+              "type": "Query",
+              "runAfter": {
+                "F_HP_Eligible": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_HP_Eligible')",
+                "where": "@or(greaterOrEquals(item()?['benefit'], 1000000), or(and(greater(item()?['payback'], 0), lessOrEquals(item()?['payback'], 12)), or(and(greater(item()?['impl'], 0), lessOrEquals(item()?['impl'], 6)), and(and(greater(item()?['benefit'],0), greater(item()?['budget'],0)), greaterOrEquals(div(item()?['benefit'], item()?['budget']), 2)))))"
+              }
+            },
+            "Quarter_Curr": {
+              "type": "Compose",
+              "inputs": "@{concat('Q', string(add(div(sub(int(formatDateTime(outputs('Init_Now'),'MM')),1),3),1)), ' ', formatDateTime(outputs('Init_Now'),'yyyy'))}",
+              "runAfter": {
+                "F_HighPotential": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Quarter_Next": {
+              "type": "Compose",
+              "inputs": "@{concat('Q', string(if(equals(add(div(sub(int(formatDateTime(outputs('Init_Now'),'MM')),1),3),1),4), 1, add(add(div(sub(int(formatDateTime(outputs('Init_Now'),'MM')),1),3),1),1))), ' ', string(if(equals(add(div(sub(int(formatDateTime(outputs('Init_Now'),'MM')),1),3),1),4), add(int(formatDateTime(outputs('Init_Now'),'yyyy')),1), int(formatDateTime(outputs('Init_Now'),'yyyy')))))}",
+              "runAfter": {
+                "Quarter_Curr": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "F_QPrio": {
+              "type": "Query",
+              "runAfter": {
+                "Quarter_Next": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_BigRock')",
+                "where": "@equals(item()?['eq'], outputs('Quarter_Next'))"
+              }
+            },
+            "F_MainPrio": {
+              "type": "Query",
+              "runAfter": {
+                "F_QPrio": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_BigRock')",
+                "where": "@not(contains(toLower(item()?['state']), 'deployed'))"
+              }
+            },
+            "F_DeployedQ": {
+              "type": "Query",
+              "runAfter": {
+                "F_MainPrio": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Items')",
+                "where": "@and(contains(toLower(item()?['state']), 'deployed'), equals(item()?['eq'], outputs('Quarter_Curr')))"
+              }
+            },
+            "S_MainCards": {
+              "type": "Select",
+              "runAfter": {
+                "F_DeployedQ": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@take(body('F_MainPrio'), 5)",
+                "select": "@concat('<div style=\"margin-bottom:24px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin-bottom:8px;\"><tr><td align=\"left\" valign=\"top\"><span style=\"font-weight:800;color:#1e293b;font-size:14px;\">', item()?['flag'], item()?['title'], '</span><div style=\"margin-top:6px;\"><span style=\"background-color:#f1f5f9;color:#475569;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;margin-right:4px;\">', item()?['itArea'], '</span><span style=\"background-color:#f1f5f9;color:#475569;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;\">&#128100; ', item()?['manager'], '</span></div></td><td align=\"right\" valign=\"top\" width=\"80\"><span style=\"color:#a855f7;font-size:10px;font-weight:800;display:block;margin-bottom:4px;\">', replace(replace(replace(item()?['state'], '10 Deployed', 'Deployed'), '09 PGLS', 'PGLS'), '08 Go-Live', 'Go-Live'), '</span><a href=\"', concat('https://dev.azure.com/CDIO-IT-LATAM/CDIO%20Portfolio/_workitems/edit/', string(item()?['id'])), '\" target=\"_blank\" style=\"background-color:#a855f7;color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;text-decoration:none;display:inline-block;\">-- DevOps</a></td></tr></table>', '<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"font-size:9px;color:#64748b;font-weight:600;text-transform:uppercase;\"><tr><td width=\"33%\">DATE (GO LIVE)</td><td width=\"33%\">TOTAL BUDGET</td><td width=\"33%\">BENEFIT VALUE</td></tr><tr style=\"color:#1e293b;font-weight:700;font-size:12px;\"><td style=\"padding-top:4px;\">', if(empty(item()?['golive']), 'TBD', formatDateTime(item()?['goliveSafe'], 'MMM dd, yyyy')), '</td><td style=\"padding-top:4px;\">', if(greaterOrEquals(item()?['budget'], 1000000), concat('&euro;', formatNumber(div(float(item()?['budget']), 1000000), 'N1', 'en-US'), 'M'), if(greater(item()?['budget'], 0), concat('&euro;', formatNumber(item()?['budget'], 'N0', 'en-US')), 'N/A')), '</td><td style=\"padding-top:4px;\">', if(greaterOrEquals(item()?['benefit'], 1000000), concat('&euro;', formatNumber(div(float(item()?['benefit']), 1000000), 'N1', 'en-US'), 'M'), if(greater(item()?['benefit'], 0), concat('&euro;', formatNumber(item()?['benefit'], 'N0', 'en-US')), 'N/A')), '</td></tr></table>', if(empty(trim(item()?['bizDesc'])), '', concat('<div style=\"margin-top:12px;padding:8px;background-color:#f8fafc;border-left:2px solid #a855f7;border-radius:4px;\"><p style=\"margin:0;font-size:10px;color:#475569;font-style:italic;line-height:1.4;\"><strong style=\"color:#1e293b;font-style:normal;\">Business Benefit:</strong> ', trim(item()?['bizDesc']), '</p></div>')), '<div style=\"border-bottom:1px dashed #cbd5e1;margin-top:16px;\"></div></div>')"
+              }
+            },
+            "S_QPrioCards": {
+              "type": "Select",
+              "runAfter": {
+                "S_MainCards": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@take(body('F_QPrio'), 5)",
+                "select": "@concat('<div style=\"margin-bottom:24px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin-bottom:8px;\"><tr><td align=\"left\" valign=\"top\"><span style=\"font-weight:800;color:#1e293b;font-size:14px;\">', item()?['flag'], item()?['title'], '</span><div style=\"margin-top:6px;\"><span style=\"background-color:#f1f5f9;color:#475569;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;margin-right:4px;\">', item()?['itArea'], '</span><span style=\"background-color:#f1f5f9;color:#475569;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;\">&#128100; ', item()?['manager'], '</span></div></td><td align=\"right\" valign=\"top\" width=\"80\"><span style=\"color:#3b82f6;font-size:10px;font-weight:800;display:block;margin-bottom:4px;\">', replace(replace(replace(item()?['state'], '10 Deployed', 'Deployed'), '09 PGLS', 'PGLS'), '08 Go-Live', 'Go-Live'), '</span><a href=\"', concat('https://dev.azure.com/CDIO-IT-LATAM/CDIO%20Portfolio/_workitems/edit/', string(item()?['id'])), '\" target=\"_blank\" style=\"background-color:#3b82f6;color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;text-decoration:none;display:inline-block;\">-- DevOps</a></td></tr></table>', '<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"font-size:9px;color:#64748b;font-weight:600;text-transform:uppercase;\"><tr><td width=\"33%\">DATE (GO LIVE)</td><td width=\"33%\">TOTAL BUDGET</td><td width=\"33%\">BENEFIT VALUE</td></tr><tr style=\"color:#1e293b;font-weight:700;font-size:12px;\"><td style=\"padding-top:4px;\">', if(empty(item()?['golive']), 'TBD', formatDateTime(item()?['goliveSafe'], 'MMM dd, yyyy')), '</td><td style=\"padding-top:4px;\">', if(greaterOrEquals(item()?['budget'], 1000000), concat('&euro;', formatNumber(div(float(item()?['budget']), 1000000), 'N1', 'en-US'), 'M'), if(greater(item()?['budget'], 0), concat('&euro;', formatNumber(item()?['budget'], 'N0', 'en-US')), 'N/A')), '</td><td style=\"padding-top:4px;\">', if(greaterOrEquals(item()?['benefit'], 1000000), concat('&euro;', formatNumber(div(float(item()?['benefit']), 1000000), 'N1', 'en-US'), 'M'), if(greater(item()?['benefit'], 0), concat('&euro;', formatNumber(item()?['benefit'], 'N0', 'en-US')), 'N/A')), '</td></tr></table>', if(empty(trim(item()?['bizDesc'])), '', concat('<div style=\"margin-top:12px;padding:8px;background-color:#f8fafc;border-left:2px solid #3b82f6;border-radius:4px;\"><p style=\"margin:0;font-size:10px;color:#475569;font-style:italic;line-height:1.4;\"><strong style=\"color:#1e293b;font-style:normal;\">Business Benefit:</strong> ', trim(item()?['bizDesc']), '</p></div>')), '<div style=\"border-bottom:1px dashed #cbd5e1;margin-top:16px;\"></div></div>')"
+              }
+            },
+            "S_DeployedCards": {
+              "type": "Select",
+              "runAfter": {
+                "S_QPrioCards": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_DeployedQ')",
+                "select": "@concat('<div style=\"margin-bottom:24px;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin-bottom:8px;\"><tr><td align=\"left\" valign=\"top\"><span style=\"font-weight:800;color:#1e293b;font-size:14px;\">', item()?['flag'], item()?['title'], '</span><div style=\"margin-top:6px;\"><span style=\"background-color:#f1f5f9;color:#475569;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;margin-right:4px;\">', item()?['itArea'], '</span><span style=\"background-color:#f1f5f9;color:#475569;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;\">&#128100; ', item()?['manager'], '</span></div></td><td align=\"right\" valign=\"top\" width=\"80\"><span style=\"color:#10b981;font-size:10px;font-weight:800;display:block;margin-bottom:4px;\">', replace(replace(replace(item()?['state'], '10 Deployed', 'Deployed'), '09 PGLS', 'PGLS'), '08 Go-Live', 'Go-Live'), '</span><a href=\"', concat('https://dev.azure.com/CDIO-IT-LATAM/CDIO%20Portfolio/_workitems/edit/', string(item()?['id'])), '\" target=\"_blank\" style=\"background-color:#10b981;color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;text-decoration:none;display:inline-block;\">-- DevOps</a></td></tr></table>', '<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"font-size:9px;color:#64748b;font-weight:600;text-transform:uppercase;\"><tr><td width=\"33%\">DATE (GO LIVE)</td><td width=\"33%\">TOTAL BUDGET</td><td width=\"33%\">BENEFIT VALUE</td></tr><tr style=\"color:#1e293b;font-weight:700;font-size:12px;\"><td style=\"padding-top:4px;\">', if(empty(item()?['golive']), 'TBD', formatDateTime(item()?['goliveSafe'], 'MMM dd, yyyy')), '</td><td style=\"padding-top:4px;\">', if(greaterOrEquals(item()?['budget'], 1000000), concat('&euro;', formatNumber(div(float(item()?['budget']), 1000000), 'N1', 'en-US'), 'M'), if(greater(item()?['budget'], 0), concat('&euro;', formatNumber(item()?['budget'], 'N0', 'en-US')), 'N/A')), '</td><td style=\"padding-top:4px;\">', if(greaterOrEquals(item()?['benefit'], 1000000), concat('&euro;', formatNumber(div(float(item()?['benefit']), 1000000), 'N1', 'en-US'), 'M'), if(greater(item()?['benefit'], 0), concat('&euro;', formatNumber(item()?['benefit'], 'N0', 'en-US')), 'N/A')), '</td></tr></table>', if(empty(trim(item()?['bizDesc'])), '', concat('<div style=\"margin-top:12px;padding:8px;background-color:#f8fafc;border-left:2px solid #10b981;border-radius:4px;\"><p style=\"margin:0;font-size:10px;color:#475569;font-style:italic;line-height:1.4;\"><strong style=\"color:#1e293b;font-style:normal;\">Business Benefit:</strong> ', trim(item()?['bizDesc']), '</p></div>')), '<div style=\"border-bottom:1px dashed #cbd5e1;margin-top:16px;\"></div></div>')"
+              }
+            },
+            "S_DelayedCards": {
+              "type": "Select",
+              "runAfter": {
+                "S_DeployedCards": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_Delayed')",
+                "select": "@concat('<div style=\"margin-bottom:24px; padding:16px; border:1.5px solid #fca5a5; border-radius:12px; background-color:#fff5f5; box-shadow:0 2px 4px rgba(239,68,68,0.05);\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin-bottom:12px;\"><tr><td align=\"left\" valign=\"top\"><span style=\"font-weight:800;color:#1e293b;font-size:14px;\">', item()?['flag'], item()?['title'], '</span><div style=\"margin-top:6px;\"><span style=\"background-color:#ffffff;border:1px solid #fecaca;color:#dc2626;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;margin-right:4px;display:inline-block;\">', item()?['itArea'], '</span><span style=\"background-color:#ffffff;border:1px solid #fecaca;color:#dc2626;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;display:inline-block;\">&#128100; ', item()?['manager'], '</span></div></td><td align=\"right\" valign=\"top\" width=\"85\"><span style=\"color:#ef4444;font-size:10px;font-weight:800;display:block;margin-bottom:4px;text-transform:uppercase;\">Delayed</span><a href=\"', concat('https://dev.azure.com/CDIO-IT-LATAM/CDIO%20Portfolio/_workitems/edit/', string(item()?['id'])), '\" target=\"_blank\" style=\"background-color:#ef4444;color:white;padding:3px 8px;border-radius:6px;font-size:9.5px;font-weight:700;text-decoration:none;display:inline-block;\">-- DevOps</a></td></tr></table>', '<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"font-size:11px;color:#334155;border-top:1px dashed #fca5a5;padding-top:10px;margin-top:10px;\"><tr valign=\"top\"><td width=\"35%\"><span style=\"font-size:9px;color:#64748b;font-weight:700;display:block;text-transform:uppercase;margin-bottom:2px;\">Go-Live Date</span><strong style=\"color:#1e293b;font-size:12px;\">', if(empty(item()?['golive']), 'TBD', formatDateTime(item()?['goliveSafe'], 'MMM dd, yyyy')), '</strong></td><td width=\"65%\" style=\"padding-left:14px;border-left:1.5px solid #fecaca;\"><span style=\"font-size:9px;color:#64748b;font-weight:700;display:block;text-transform:uppercase;margin-bottom:2px;\">Delay Justification</span><span style=\"color:#991b1b;font-weight:600;line-height:1.4;\">', if(empty(trim(item()?['note'])), 'No delay justification recorded', trim(item()?['note'])), '</span></td></tr></table></div>')"
+              }
+            },
+            "F_TL_Big": {
+              "type": "Query",
+              "runAfter": {
+                "S_DelayedCards": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('ItemsByDate')",
+                "where": "@and(equals(item()?['ty'], outputs('Init_Year')), equals(item()?['ptype'], 'Big Rock'))"
+              }
+            },
+            "F_TL_Reg": {
+              "type": "Query",
+              "runAfter": {
+                "F_TL_Big": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('ItemsByDate')",
+                "where": "@and(equals(item()?['ty'], outputs('Init_Year')), equals(item()?['ptype'], 'Regular'))"
+              }
+            },
+            "F_TL_Sml": {
+              "type": "Query",
+              "runAfter": {
+                "F_TL_Reg": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('ItemsByDate')",
+                "where": "@and(equals(item()?['ty'], outputs('Init_Year')), and(not(equals(item()?['ptype'], 'Big Rock')), not(equals(item()?['ptype'], 'Regular'))))"
+              }
+            },
+            "S_TL_Big": {
+              "type": "Select",
+              "runAfter": {
+                "F_TL_Sml": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_TL_Big')",
+                "select": "@concat('<tr><td width=\"20\" style=\"border-left:2px solid #ef4444;position:relative;\"><div style=\"width:10px;height:10px;border-radius:50%;border:2px solid #ef4444;background-color:white;position:absolute;left:-7px;top:4px;\"></div></td><td style=\"padding-bottom:24px;padding-left:16px;\"><span style=\"color:#ef4444;font-size:11px;font-weight:700;\">', if(empty(item()?['tdate']), 'TBD', formatDateTime(item()?['tdateSafe'], 'MMM dd, yyyy')), ' (', if(empty(item()?['golive']), 'PGLS', 'Go-Live'), ')</span><br>', '<span style=\"color:#1e293b;font-size:13px;font-weight:700;\">', item()?['flag'], item()?['title'], '</span><span style=\"color:#64748b;font-size:10px;font-weight:600;margin-left:4px;\"> (', item()?['itArea'], ')</span></td></tr>')"
+              }
+            },
+            "S_TL_Reg": {
+              "type": "Select",
+              "runAfter": {
+                "S_TL_Big": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_TL_Reg')",
+                "select": "@concat('<tr><td width=\"20\" style=\"border-left:2px solid #f59e0b;position:relative;\"><div style=\"width:10px;height:10px;border-radius:50%;border:2px solid #d97706;background-color:white;position:absolute;left:-7px;top:4px;\"></div></td><td style=\"padding-bottom:24px;padding-left:16px;\"><span style=\"color:#d97706;font-size:11px;font-weight:700;\">', if(empty(item()?['tdate']), 'TBD', formatDateTime(item()?['tdateSafe'], 'MMM dd, yyyy')), ' (', if(empty(item()?['golive']), 'PGLS', 'Go-Live'), ')</span><br>', '<span style=\"color:#1e293b;font-size:13px;font-weight:700;\">', item()?['flag'], item()?['title'], '</span><span style=\"color:#64748b;font-size:10px;font-weight:600;margin-left:4px;\"> (', item()?['itArea'], ')</span></td></tr>')"
+              }
+            },
+            "S_TL_Sml": {
+              "type": "Select",
+              "runAfter": {
+                "S_TL_Reg": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_TL_Sml')",
+                "select": "@concat('<tr><td width=\"20\" style=\"border-left:2px solid #22c55e;position:relative;\"><div style=\"width:10px;height:10px;border-radius:50%;border:2px solid #16a34a;background-color:white;position:absolute;left:-7px;top:4px;\"></div></td><td style=\"padding-bottom:24px;padding-left:16px;\"><span style=\"color:#16a34a;font-size:11px;font-weight:700;\">', if(empty(item()?['tdate']), 'TBD', formatDateTime(item()?['tdateSafe'], 'MMM dd, yyyy')), ' (', if(empty(item()?['golive']), 'PGLS', 'Go-Live'), ')</span><br>', '<span style=\"color:#1e293b;font-size:13px;font-weight:700;\">', item()?['flag'], item()?['title'], '</span><span style=\"color:#64748b;font-size:10px;font-weight:600;margin-left:4px;\"> (', item()?['itArea'], ')</span></td></tr>')"
+              }
+            },
+            "BU_Distinct": {
+              "type": "Compose",
+              "runAfter": {
+                "S_TL_Sml": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": "@{join(union(select(body('Items'), item()?['bu']), select(body('Items'), item()?['bu'])), '¦')}"
+            },
+            "Var_BU_Rows": {
+              "type": "InitializeVariable",
+              "runAfter": {
+                "BU_Distinct": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "variables": [
+                  {
+                    "name": "BURows",
+                    "type": "string",
+                    "value": ""
+                  }
+                ]
+              }
+            },
+            "Apply_to_each_BU": {
+              "type": "Foreach",
+              "runAfter": {
+                "Var_BU_Rows": [
+                  "Succeeded"
+                ]
+              },
+              "foreach": "@split(outputs('BU_Distinct'), '¦')",
+              "runtimeConfiguration": {
+                "concurrency": {
+                  "repetitions": 1
+                }
+              },
+              "actions": {
+                "BU_Rows": {
+                  "type": "Compose",
+                  "runAfter": {},
+                  "inputs": "@filter(body('Items'), equals(item()?['bu'], items('Apply_to_each_BU')))"
+                },
+                "BU_Benefit": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "BU_Rows": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@if(empty(outputs('BU_Rows')), 0, float(xpath(xml(json(concat('{\"v\":', string(select(outputs('BU_Rows'), float(coalesce(item()?['benefit'], 0)))), '}'))), 'sum(/root/v)')))"
+                },
+                "BU_Budget": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "BU_Benefit": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@if(empty(outputs('BU_Rows')), 0, float(xpath(xml(json(concat('{\"v\":', string(select(outputs('BU_Rows'), float(coalesce(item()?['budget'], 0)))), '}'))), 'sum(/root/v)')))"
+                },
+                "BU_Roi": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "BU_Budget": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@if(equals(outputs('BU_Budget'), 0), -1, div(float(outputs('BU_Benefit')), float(outputs('BU_Budget'))))"
+                },
+                "Append_BU_Row": {
+                  "type": "AppendToStringVariable",
+                  "runAfter": {
+                    "BU_Roi": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "name": "BURows",
+                    "value": "@{concat('<tr><td style=\"padding:6px 10px;font-weight:700;font-size:12px;color:#1e293b;border-bottom:1px solid #e2e8f0;\">', items('Apply_to_each_BU'), '</td><td style=\"padding:6px 10px;font-size:12px;color:#1e293b;border-bottom:1px solid #e2e8f0;text-align:right;\">', formatNumber(div(float(outputs('BU_Benefit')), 1000000), 'N3', 'en-US'), ' Mi', '</td><td style=\"padding:6px 10px;font-size:12px;color:#1e293b;border-bottom:1px solid #e2e8f0;text-align:right;\">', formatNumber(div(float(outputs('BU_Budget')), 1000000), 'N3', 'en-US'), ' Mi', '</td><td style=\"padding:6px 10px;font-size:12px;font-weight:700;text-align:right;border-bottom:1px solid #e2e8f0;color:', if(less(outputs('BU_Roi'), 1), '#ef4444', '#10b981'), '\">', if(less(outputs('BU_Roi'), 0), 'n/a', concat(formatNumber(outputs('BU_Roi'), 'N2', 'en-US'), 'x')), '</td></tr>')}"
+                  }
+                }
+              }
+            },
+            "Html_1_KPIs": {
+              "type": "Compose",
+              "inputs": "@{replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(outputs('Template'), '{{KPI_TOTAL}}', string(length(body('Items')))), '{{KPI_BIGROCK}}', string(length(body('F_BigRock')))), '{{KPI_REGULAR}}', string(length(body('F_Regular')))), '{{KPI_SMALL}}', string(length(body('F_Small')))), '{{KPI_ONSCHED}}', if(equals(length(body('F_InProgress_Dated')), 0), 'N/A', concat(string(round(div(mul(float(length(body('F_OnSchedule'))), 100), float(length(body('F_InProgress_Dated')))))), '%'))), '{{KPI_HIGHPOT}}', if(equals(length(body('F_HP_Eligible')), 0), 'N/A', concat(string(round(div(mul(float(length(body('F_HighPotential'))), 100), float(length(body('F_HP_Eligible')))))), '%'))), '{{KPI_PROFIT}}', if(equals(length(body('F_HasFinancials')), 0), 'N/A', concat(string(round(div(mul(float(length(body('F_Profitable'))), 100), float(length(body('F_HasFinancials')))))), '%'))), '{{KPI_INPROGRESS}}', string(length(body('F_InProgress')))), '{{KPI_DELAYED}}', string(length(body('F_Delayed')))), '{{KPI_HIGHPOT_N}}', string(length(body('F_HighPotential')))), '{{KPI_NODATE}}', string(length(body('F_NoDate'))))}",
+              "runAfter": {
+                "Apply_to_each_BU": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Html_2_Cards": {
+              "type": "Compose",
+              "inputs": "@{replace(replace(replace(replace(replace(replace(outputs('Html_1_KPIs'), '{{CARDS_MAIN}}', if(empty(body('S_MainCards')), '<p>No Main Priorities.</p>', join(body('S_MainCards'), ''))), '{{CARDS_QPRIO}}', if(empty(body('S_QPrioCards')), '<p>No Priorities.</p>', join(body('S_QPrioCards'), ''))), '{{CARDS_DEPLOYED}}', if(empty(body('S_DeployedCards')), '<p>No Deployed Projects.</p>', join(body('S_DeployedCards'), ''))), '{{CARDS_DELAYED}}', if(empty(body('S_DelayedCards')), '<div style=\"border:1px dashed #cbd5e1;background-color:#f8fafc;padding:16px;text-align:center;margin-top:12px;\"><p style=\"color:#94a3b8;font-size:12px;margin:0;\">No delayed projects!</p></div>', join(body('S_DelayedCards'), ''))), '{{QUARTER_CURR}}', outputs('Quarter_Curr')), '{{QUARTER_NEXT}}', outputs('Quarter_Next'))}",
+              "runAfter": {
+                "Html_1_KPIs": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Html_3_Timeline": {
+              "type": "Compose",
+              "inputs": "@{replace(replace(replace(replace(replace(replace(replace(replace(replace(outputs('Html_2_Cards'), '{{TL_BIG_ROWS}}', if(empty(body('S_TL_Big')), '<tr><td style=\"padding-left:14px;font-size:11px;color:#94a3b8;\">No upcoming milestones</td></tr>', join(body('S_TL_Big'), ''))), '{{TL_REG_ROWS}}', if(empty(body('S_TL_Reg')), '<tr><td style=\"padding-left:14px;font-size:11px;color:#94a3b8;\">No upcoming milestones</td></tr>', join(body('S_TL_Reg'), ''))), '{{TL_SML_ROWS}}', if(empty(body('S_TL_Sml')), '<tr><td style=\"padding-left:14px;font-size:11px;color:#94a3b8;\">No upcoming milestones</td></tr>', join(body('S_TL_Sml'), ''))), '{{TL_BIG_N}}', string(length(body('F_TL_Big')))), '{{TL_REG_N}}', string(length(body('F_TL_Reg')))), '{{TL_SML_N}}', string(length(body('F_TL_Sml')))), '{{TL_BIG_PCT}}', if(equals(length(body('Items')),0),'0',string(round(div(mul(float(length(body('F_BigRock'))),100),float(length(body('Items')))))))), '{{TL_REG_PCT}}', if(equals(length(body('Items')),0),'0',string(round(div(mul(float(length(body('F_Regular'))),100),float(length(body('Items')))))))), '{{TL_SML_PCT}}', if(equals(length(body('Items')),0),'0',string(round(div(mul(float(length(body('F_Small'))),100),float(length(body('Items'))))))))}",
+              "runAfter": {
+                "Html_2_Cards": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Html_4_Analysis": {
+              "type": "Compose",
+              "runAfter": {
+                "Html_3_Timeline": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": "@{replace(replace(outputs('Html_3_Timeline'), '{{EXEC_SUMMARY}}', if(empty(trim(outputs('Init_ExecSummary'))), concat('Portfolio of <strong>', outputs('Init_Area'), '</strong> in ', outputs('Init_Year'), ': ', string(length(body('Items'))), ' active initiatives &mdash; ', string(length(body('F_BigRock'))), ' Big Rock, ', string(length(body('F_Regular'))), ' Regular, ', string(length(body('F_Small'))), ' Small. ', string(length(body('F_InProgress'))), ' still running, of which ', string(length(body('F_Delayed'))), ' are past their Go-Live date. ', string(length(body('F_NoDate'))), ' have no Go-Live date at all. <em>No executive summary was supplied by the agent, so this is a count, not an analysis.</em>'), trim(outputs('Init_ExecSummary')))), '{{ANALYSIS_BLOCK}}', if(empty(trim(outputs('Init_Analysis'))), '', concat('<div style=\"margin-bottom:40px;margin-top:32px;border:1px solid #a855f7;border-radius:12px;padding:30px 24px 24px 24px;position:relative;\"><div style=\"position:absolute;top:-14px;left:24px;background-color:#a855f7;color:white;padding:6px 20px;border-radius:20px;font-size:14px;font-weight:800;\">AURA &mdash; Analysis &amp; Decisions</div>', trim(outputs('Init_Analysis')), '</div>')))}"
+            },
+            "Html_Final": {
+              "type": "Compose",
+              "inputs": "@{replace(replace(replace(replace(replace(outputs('Html_4_Analysis'), '{{AREA}}', outputs('Init_Area')), '{{YEAR}}', outputs('Init_Year'))), '{{BU_TABLE}}', concat('<div style=\"margin-bottom: 40px; margin-top: 24px; border: 1px solid #06b6d4; border-radius: 12px; padding: 30px 24px 24px 24px; position: relative;\"><div style=\"position: absolute; top: -14px; left: 24px; background-color: #06b6d4; color: white; padding: 6px 20px; border-radius: 20px; font-size: 14px; font-weight: 800;\">Overview BU</div><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border-collapse:collapse;margin-top:8px;\"><tr style=\"background-color:#f1f5f9;\"><th style=\"padding:8px 10px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;text-align:left;border-bottom:2px solid #cbd5e1;\">BU</th><th style=\"padding:8px 10px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;text-align:right;border-bottom:2px solid #cbd5e1;\">Benefit (&euro;)</th><th style=\"padding:8px 10px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;text-align:right;border-bottom:2px solid #cbd5e1;\">Budget (&euro;)</th><th style=\"padding:8px 10px;font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;text-align:right;border-bottom:2px solid #cbd5e1;\">ROI</th></tr>', variables('BURows'), '</table></div>')), '{{AURA_BUTTON}}', outputs('AURA_Button'))}",
+              "runAfter": {
+                "Html_4_Analysis": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Create_File_SharePoint": {
+              "type": "OpenApiConnection",
+              "runAfter": {
+                "Html_Final": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "parameters": {
+                  "dataset": "@{outputs('CONFIG_SiteUrl')}",
+                  "folderPath": "@{outputs('CONFIG_Folder')}",
+                  "name": "@{concat(formatDateTime(outputs('Init_Now'),'yyyyMMdd_HHmm'), '_CDIO_Report_', replace(outputs('Init_Area'), ' ', '_'), '.html')}",
+                  "body": "@base64ToBinary(base64(outputs('Html_Final')))"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "operationId": "CreateFile",
+                  "connectionName": "shared_sharepointonline"
+                }
+              }
+            },
+            "Respond_Report": {
+              "type": "Response",
+              "kind": "Skills",
+              "runAfter": {
+                "Create_File_SharePoint": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "statusCode": 200,
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "report_url": {
+                      "title": "Report URL",
+                      "type": "string",
+                      "x-ms-content-hint": "TEXT",
+                      "x-ms-dynamically-added": true
+                    },
+                    "area": {
+                      "title": "Area",
+                      "type": "string",
+                      "x-ms-content-hint": "TEXT",
+                      "x-ms-dynamically-added": true
+                    },
+                    "summary": {
+                      "title": "Summary",
+                      "type": "string",
+                      "x-ms-content-hint": "TEXT",
+                      "x-ms-dynamically-added": true
+                    }
+                  }
+                },
+                "body": {
+                  "report_url": "@{concat(outputs('CONFIG_SiteUrl'), replace(coalesce(outputs('Create_File_SharePoint')?['body/Path'], ''), ' ', '%20'))}",
+                  "area": "@{outputs('Init_Area')}",
+                  "summary": "@{concat('Published. Total: ', string(length(body('Items'))), ' | Big Rock: ', string(length(body('F_BigRock'))), ' | On Schedule: ', if(equals(length(body('F_InProgress_Dated')), 0), 'N/A', concat(string(round(div(mul(float(length(body('F_OnSchedule'))), 100), float(length(body('F_InProgress_Dated')))))), '%')), ' | Delayed: ', string(length(body('F_Delayed'))), ' | No Go-Live date: ', string(length(body('F_NoDate'))))}"
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "AURA_Button": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Respond_Error": {
+          "type": "Response",
+          "kind": "Skills",
+          "runAfter": {
+            "Scope_Main": [
+              "Failed",
+              "Skipped",
+              "TimedOut"
+            ]
+          },
+          "inputs": {
+            "statusCode": 200,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "report_url": {
+                  "title": "Report URL",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "area": {
+                  "title": "Area",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "summary": {
+                  "title": "Summary",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                }
+              }
+            },
+            "body": {
+              "report_url": "",
+              "area": "@{outputs('Init_Area')}",
+              "summary": "@{concat('Failed to publish the report for ', outputs('Init_Area'), '. Open the flow run history to see which action failed. Run: ', coalesce(workflow()?['run']?['name'], 'n/a'))}"
+            }
+          }
+        }
+      },
+      "outputs": {}
+    }
+  },
+  "schemaVersion": "1.0.0.0"
+}

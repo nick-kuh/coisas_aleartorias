@@ -3,8 +3,8 @@
   <Entities></Entities>
   <Roles></Roles>
   <Workflows>
-    <Workflow WorkflowId="{b7e3a1c4-5d92-4f08-9a61-3c8de40f27b5}" Name="GerarRelatorioArea">
-      <JsonFileName>/Workflows/GerarRelatorioArea-B7E3A1C4-5D92-4F08-9A61-3C8DE40F27B5.json</JsonFileName>
+    <Workflow WorkflowId="{c8f5d2e1-7a34-4b96-8d05-1e9f3c6a24b7}" Name="PortfolioDataArea">
+      <JsonFileName>/Workflows/PortfolioDataArea-C8F5D2E1-7A34-4B96-8D05-1E9F3C6A24B7.json</JsonFileName>
       <Type>1</Type>
       <Subprocess>0</Subprocess>
       <Category>5</Category>
@@ -26,7 +26,33 @@
       <ModernFlowType>1</ModernFlowType>
       <PrimaryEntity>none</PrimaryEntity>
       <LocalizedNames>
-        <LocalizedName languagecode="1033" description="CDIO - Gerar Relatorio por Area" />
+        <LocalizedName languagecode="1033" description="CDIO - Portfolio Data by Area" />
+      </LocalizedNames>
+    </Workflow>
+    <Workflow WorkflowId="{b7e3a1c4-5d92-4f08-9a61-3c8de40f27b5}" Name="PublishAreaReport">
+      <JsonFileName>/Workflows/PublishAreaReport-B7E3A1C4-5D92-4F08-9A61-3C8DE40F27B5.json</JsonFileName>
+      <Type>1</Type>
+      <Subprocess>0</Subprocess>
+      <Category>5</Category>
+      <Mode>0</Mode>
+      <Scope>4</Scope>
+      <OnDemand>0</OnDemand>
+      <TriggerOnCreate>0</TriggerOnCreate>
+      <TriggerOnDelete>0</TriggerOnDelete>
+      <AsyncAutodelete>0</AsyncAutodelete>
+      <SyncWorkflowLogOnFailure>0</SyncWorkflowLogOnFailure>
+      <StateCode>1</StateCode>
+      <StatusCode>2</StatusCode>
+      <RunAs>1</RunAs>
+      <IsTransacted>1</IsTransacted>
+      <IntroducedVersion>1.0</IntroducedVersion>
+      <IsCustomizable>1</IsCustomizable>
+      <BusinessProcessType>0</BusinessProcessType>
+      <IsCustomProcessingStepAllowedForOtherPublishers>1</IsCustomProcessingStepAllowedForOtherPublishers>
+      <ModernFlowType>1</ModernFlowType>
+      <PrimaryEntity>none</PrimaryEntity>
+      <LocalizedNames>
+        <LocalizedName languagecode="1033" description="CDIO - Publish Area Report" />
       </LocalizedNames>
     </Workflow>
   </Workflows>

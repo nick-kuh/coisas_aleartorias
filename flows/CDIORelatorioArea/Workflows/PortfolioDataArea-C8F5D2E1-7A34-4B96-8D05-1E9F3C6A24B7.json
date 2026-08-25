@@ -1,0 +1,597 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_visualstudioteamservices": {
+        "api": {
+          "name": "shared_visualstudioteamservices"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "unilever_adocdioreport"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_sharepointonline": {
+        "api": {
+          "name": "shared_sharepointonline"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "unilever_spocdioreport"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Skills",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "area"
+              ],
+              "properties": {
+                "area": {
+                  "title": "IT Area",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true,
+                  "description": "IT Area, spelled EXACTLY as in DevOps: Consumer | Customer Dev | Make (Business Operation) | Focus Market (Cust Ops) | Commercial Exp | Tech Services | Tax Reform. Never abbreviate, never translate."
+                },
+                "year": {
+                  "title": "Year",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true,
+                  "description": "Portfolio Year, 4 digits. Leave empty to use the current year."
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": {
+        "Init_Area": {
+          "type": "Compose",
+          "inputs": "@{trim(coalesce(triggerBody()?['area'], ''))}",
+          "runAfter": {}
+        },
+        "Init_Year": {
+          "type": "Compose",
+          "runAfter": {
+            "Init_Area": [
+              "Succeeded"
+            ]
+          },
+          "inputs": "@{if(empty(coalesce(triggerBody()?['year'], '')), formatDateTime(utcNow(),'yyyy'), trim(string(triggerBody()?['year'])))}"
+        },
+        "Init_Now": {
+          "type": "Compose",
+          "inputs": "@{utcNow()}",
+          "runAfter": {
+            "Init_Year": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Scope_Main": {
+          "type": "Scope",
+          "actions": {
+            "WIQL_ByBudget": {
+              "type": "OpenApiConnection",
+              "runAfter": {},
+              "inputs": {
+                "parameters": {
+                  "account": "CDIO-IT-LATAM",
+                  "parameters/Method": "POST",
+                  "parameters/Uri": "CDIO%20Portfolio/_apis/wit/wiql?api-version=7.0",
+                  "parameters/Body": {
+                    "query": "SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = 'CDIO Portfolio' AND [System.State] <> '00 Cancelled' AND [System.State] <> '11 Closed' AND [Custom.PortfolioYear] = @{outputs('Init_Year')} AND [Custom.ITArea] = '@{replace(outputs('Init_Area'), '''', '''''')}' ORDER BY [Custom.ProjectTotalBudget] DESC"
+                  }
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_visualstudioteamservices",
+                  "operationId": "HttpRequest",
+                  "connectionName": "shared_visualstudioteamservices"
+                }
+              }
+            },
+            "Ids_ByBudget": {
+              "type": "Compose",
+              "runAfter": {
+                "WIQL_ByBudget": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": "@{join(take(select(body('WIQL_ByBudget')?['workItems'], item()?['id']), 200), ',')}"
+            },
+            "If_No_Items": {
+              "type": "If",
+              "runAfter": {
+                "Ids_ByBudget": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "equals": [
+                  "@length(coalesce(body('WIQL_ByBudget')?['workItems'], json('[]')))",
+                  0
+                ]
+              },
+              "actions": {
+                "Respond_Empty": {
+                  "type": "Response",
+                  "kind": "Skills",
+                  "runAfter": {},
+                  "inputs": {
+                    "statusCode": 200,
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "area": {
+                          "title": "Area",
+                          "type": "string",
+                          "x-ms-content-hint": "TEXT",
+                          "x-ms-dynamically-added": true
+                        },
+                        "summary": {
+                          "title": "Summary",
+                          "type": "string",
+                          "x-ms-content-hint": "TEXT",
+                          "x-ms-dynamically-added": true
+                        },
+                        "data": {
+                          "title": "Portfolio Data (JSON)",
+                          "type": "string",
+                          "x-ms-content-hint": "TEXT",
+                          "x-ms-dynamically-added": true
+                        }
+                      }
+                    },
+                    "body": {
+                      "area": "@{outputs('Init_Area')}",
+                      "data": "",
+                      "summary": "@{concat('No active initiative found for IT Area \"', outputs('Init_Area'), '\" in ', outputs('Init_Year'), '. Check the IT Area string against DevOps: Consumer, Customer Dev, Make (Business Operation), Focus Market (Cust Ops), Commercial Exp, Tech Services, Tax Reform.')}"
+                    }
+                  }
+                },
+                "Stop": {
+                  "type": "Terminate",
+                  "inputs": {
+                    "runStatus": "Succeeded"
+                  },
+                  "runAfter": {
+                    "Respond_Empty": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              }
+            },
+            "Details_ByBudget": {
+              "type": "OpenApiConnection",
+              "runAfter": {
+                "If_No_Items": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "parameters": {
+                  "account": "CDIO-IT-LATAM",
+                  "parameters/Method": "GET",
+                  "parameters/Uri": "@{concat('CDIO%20Portfolio/_apis/wit/workitems?ids=', outputs('Ids_ByBudget'), '&fields=System.Title,System.State,Custom.ITArea,Custom.ProjectType,Custom.CountryDeployed,Custom.GoLiveDate,Custom.PGLSEndDate,Custom.ProjectTotalBudget,Custom.ProjectBenefitValue,Custom.BusinessBenefit,Custom.ProjectITManager,Custom.PaybackinMonths,Custom.ImplementionTimeinMonths,Custom.ProjectITBudget,Custom.Note,Custom.BGorBUEngagement,Custom.SpecifyCross,Custom.PortfolioYear&api-version=7.0')}"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_visualstudioteamservices",
+                  "operationId": "HttpRequest",
+                  "connectionName": "shared_visualstudioteamservices"
+                }
+              }
+            },
+            "Items": {
+              "type": "Select",
+              "runAfter": {
+                "Details_ByBudget": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Details_ByBudget')?['value']",
+                "select": {
+                  "id": "@item()?['id']",
+                  "title": "@coalesce(item()?['fields']?['System.Title'], '')",
+                  "state": "@coalesce(item()?['fields']?['System.State'], '')",
+                  "stateNum": "@if(and(greater(length(string(coalesce(item()?['fields']?['System.State'], ''))), 2), and(contains('0123456789', substring(string(coalesce(item()?['fields']?['System.State'], '')), 0, 1)), contains('0123456789', substring(string(coalesce(item()?['fields']?['System.State'], '')), 1, 1)))), int(substring(string(coalesce(item()?['fields']?['System.State'], '')), 0, 2)), -1)",
+                  "ptype": "@coalesce(item()?['fields']?['Custom.ProjectType'], '')",
+                  "itArea": "@coalesce(item()?['fields']?['Custom.ITArea'], '')",
+                  "country": "@coalesce(item()?['fields']?['Custom.CountryDeployed'], '')",
+                  "bu": "@if(empty(trim(coalesce(item()?['fields']?['Custom.BGorBUEngagement'], ''))), 'Not informed', if(and(contains(toLower(trim(coalesce(item()?['fields']?['Custom.BGorBUEngagement'], ''))), 'cross'), not(empty(trim(coalesce(item()?['fields']?['Custom.SpecifyCross'], ''))))), concat('Cross: ', trim(coalesce(item()?['fields']?['Custom.SpecifyCross'], ''))), trim(coalesce(item()?['fields']?['Custom.BGorBUEngagement'], ''))))",
+                  "golive": "@coalesce(item()?['fields']?['Custom.GoLiveDate'], '')",
+                  "pgls": "@coalesce(item()?['fields']?['Custom.PGLSEndDate'], '')",
+                  "goliveSafe": "@if(empty(coalesce(item()?['fields']?['Custom.GoLiveDate'], '')), '1900-01-01T00:00:00Z', coalesce(item()?['fields']?['Custom.GoLiveDate'], ''))",
+                  "tdate": "@if(empty(coalesce(item()?['fields']?['Custom.GoLiveDate'], '')), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''))",
+                  "tdateSafe": "@if(empty(if(empty(coalesce(item()?['fields']?['Custom.GoLiveDate'], '')), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''))), '1900-01-01T00:00:00Z', if(empty(coalesce(item()?['fields']?['Custom.GoLiveDate'], '')), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''), coalesce(item()?['fields']?['Custom.GoLiveDate'], '')))",
+                  "eq": "@concat('Q', string(add(div(sub(int(formatDateTime(if(empty(if(empty(coalesce(item()?['fields']?['Custom.PGLSEndDate'], '')), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''))), '1900-01-01T00:00:00Z', if(empty(coalesce(item()?['fields']?['Custom.PGLSEndDate'], '')), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''))),'MM')),1),3),1)), ' ', formatDateTime(if(empty(if(empty(coalesce(item()?['fields']?['Custom.PGLSEndDate'], '')), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''))), '1900-01-01T00:00:00Z', if(empty(coalesce(item()?['fields']?['Custom.PGLSEndDate'], '')), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''))),'yyyy'))",
+                  "ty": "@formatDateTime(if(empty(if(empty(coalesce(item()?['fields']?['Custom.GoLiveDate'], '')), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''))), '1900-01-01T00:00:00Z', if(empty(coalesce(item()?['fields']?['Custom.GoLiveDate'], '')), coalesce(item()?['fields']?['Custom.PGLSEndDate'], ''), coalesce(item()?['fields']?['Custom.GoLiveDate'], ''))), 'yyyy')",
+                  "budget": "@if(greater(float(coalesce(item()?['fields']?['Custom.ProjectITBudget'], 0)), 0), float(coalesce(item()?['fields']?['Custom.ProjectITBudget'], 0)), float(coalesce(item()?['fields']?['Custom.ProjectTotalBudget'], 0)))",
+                  "benefit": "@float(coalesce(item()?['fields']?['Custom.ProjectBenefitValue'], 0))",
+                  "payback": "@float(coalesce(item()?['fields']?['Custom.PaybackinMonths'], -1))",
+                  "impl": "@float(coalesce(item()?['fields']?['Custom.ImplementionTimeinMonths'], -1))",
+                  "bizDesc": "@coalesce(item()?['fields']?['Custom.BusinessBenefit'], '')",
+                  "manager": "@coalesce(item()?['fields']?['Custom.ProjectITManager']?['displayName'], '')",
+                  "note": "@coalesce(item()?['fields']?['Custom.Note'], '')"
+                }
+              }
+            },
+            "F_BigRock": {
+              "type": "Query",
+              "runAfter": {
+                "Items": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Items')",
+                "where": "@equals(item()?['ptype'], 'Big Rock')"
+              }
+            },
+            "F_Regular": {
+              "type": "Query",
+              "runAfter": {
+                "F_BigRock": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Items')",
+                "where": "@equals(item()?['ptype'], 'Regular')"
+              }
+            },
+            "F_Small": {
+              "type": "Query",
+              "runAfter": {
+                "F_Regular": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Items')",
+                "where": "@contains(toLower(item()?['ptype']), 'small')"
+              }
+            },
+            "F_InProgress": {
+              "type": "Query",
+              "runAfter": {
+                "F_Small": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Items')",
+                "where": "@and(not(contains(toLower(item()?['state']),'deployed')), and(not(contains(toLower(item()?['state']),'holding')), and(not(contains(toLower(item()?['state']),'cancelled')), not(contains(toLower(item()?['state']),'closed')))))"
+              }
+            },
+            "F_InProgress_Dated": {
+              "type": "Query",
+              "runAfter": {
+                "F_InProgress": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_InProgress')",
+                "where": "@not(empty(item()?['golive']))"
+              }
+            },
+            "F_NoDate": {
+              "type": "Query",
+              "runAfter": {
+                "F_InProgress_Dated": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_InProgress')",
+                "where": "@empty(item()?['golive'])"
+              }
+            },
+            "F_OnSchedule": {
+              "type": "Query",
+              "runAfter": {
+                "F_NoDate": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_InProgress_Dated')",
+                "where": "@or(greaterOrEquals(item()?['goliveSafe'], outputs('Init_Now')), contains(toLower(item()?['state']),'pgls'))"
+              }
+            },
+            "F_Delayed": {
+              "type": "Query",
+              "runAfter": {
+                "F_OnSchedule": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_InProgress_Dated')",
+                "where": "@and(less(item()?['goliveSafe'], outputs('Init_Now')), not(contains(toLower(item()?['state']),'pgls')))"
+              }
+            },
+            "F_HasFinancials": {
+              "type": "Query",
+              "runAfter": {
+                "F_Delayed": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Items')",
+                "where": "@and(greater(item()?['benefit'], 0), greater(item()?['budget'], 0))"
+              }
+            },
+            "F_Profitable": {
+              "type": "Query",
+              "runAfter": {
+                "F_HasFinancials": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_HasFinancials')",
+                "where": "@greater(item()?['benefit'], item()?['budget'])"
+              }
+            },
+            "F_HP_Eligible": {
+              "type": "Query",
+              "runAfter": {
+                "F_Profitable": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Items')",
+                "where": "@and(greaterOrEquals(item()?['stateNum'], 6), and(lessOrEquals(item()?['stateNum'], 10), or(greater(item()?['payback'], -1), or(greater(item()?['impl'], -1), or(greater(item()?['benefit'], 0), greater(item()?['budget'], 0))))))"
+              }
+            },
+            "F_HighPotential": {
+              "type": "Query",
+              "runAfter": {
+                "F_HP_Eligible": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_HP_Eligible')",
+                "where": "@or(greaterOrEquals(item()?['benefit'], 1000000), or(and(greater(item()?['payback'], 0), lessOrEquals(item()?['payback'], 12)), or(and(greater(item()?['impl'], 0), lessOrEquals(item()?['impl'], 6)), and(and(greater(item()?['benefit'],0), greater(item()?['budget'],0)), greaterOrEquals(div(item()?['benefit'], item()?['budget']), 2)))))"
+              }
+            },
+            "Quarter_Curr": {
+              "type": "Compose",
+              "inputs": "@{concat('Q', string(add(div(sub(int(formatDateTime(outputs('Init_Now'),'MM')),1),3),1)), ' ', formatDateTime(outputs('Init_Now'),'yyyy'))}",
+              "runAfter": {
+                "F_HighPotential": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Quarter_Next": {
+              "type": "Compose",
+              "inputs": "@{concat('Q', string(if(equals(add(div(sub(int(formatDateTime(outputs('Init_Now'),'MM')),1),3),1),4), 1, add(add(div(sub(int(formatDateTime(outputs('Init_Now'),'MM')),1),3),1),1))), ' ', string(if(equals(add(div(sub(int(formatDateTime(outputs('Init_Now'),'MM')),1),3),1),4), add(int(formatDateTime(outputs('Init_Now'),'yyyy')),1), int(formatDateTime(outputs('Init_Now'),'yyyy')))))}",
+              "runAfter": {
+                "Quarter_Curr": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "F_QPrio": {
+              "type": "Query",
+              "runAfter": {
+                "Quarter_Next": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_BigRock')",
+                "where": "@equals(item()?['eq'], outputs('Quarter_Next'))"
+              }
+            },
+            "F_MainPrio": {
+              "type": "Query",
+              "runAfter": {
+                "F_QPrio": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_BigRock')",
+                "where": "@not(contains(toLower(item()?['state']), 'deployed'))"
+              }
+            },
+            "F_DeployedQ": {
+              "type": "Query",
+              "runAfter": {
+                "F_MainPrio": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Items')",
+                "where": "@and(contains(toLower(item()?['state']), 'deployed'), equals(item()?['eq'], outputs('Quarter_Curr')))"
+              }
+            },
+            "Items_Lean": {
+              "type": "Select",
+              "runAfter": {
+                "F_DeployedQ": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Items')",
+                "select": {
+                  "id": "@item()?['id']",
+                  "title": "@item()?['title']",
+                  "state": "@item()?['state']",
+                  "ptype": "@item()?['ptype']",
+                  "itArea": "@item()?['itArea']",
+                  "bu": "@item()?['bu']",
+                  "country": "@item()?['country']",
+                  "golive": "@item()?['golive']",
+                  "pgls": "@item()?['pgls']",
+                  "budget": "@item()?['budget']",
+                  "benefit": "@item()?['benefit']",
+                  "payback": "@item()?['payback']",
+                  "impl": "@item()?['impl']",
+                  "bizDesc": "@item()?['bizDesc']",
+                  "manager": "@item()?['manager']",
+                  "note": "@item()?['note']"
+                }
+              }
+            },
+            "Data_Payload": {
+              "type": "Compose",
+              "runAfter": {
+                "Items_Lean": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "area": "@{outputs('Init_Area')}",
+                "year": "@{outputs('Init_Year')}",
+                "generatedAt": "@{outputs('Init_Now')}",
+                "quarterCurr": "@{outputs('Quarter_Curr')}",
+                "quarterNext": "@{outputs('Quarter_Next')}",
+                "kpis": {
+                  "total": "@length(body('Items'))",
+                  "bigRock": "@length(body('F_BigRock'))",
+                  "regular": "@length(body('F_Regular'))",
+                  "small": "@length(body('F_Small'))",
+                  "inProgress": "@length(body('F_InProgress'))",
+                  "inProgressWithGoLive": "@length(body('F_InProgress_Dated'))",
+                  "noGoLiveDate": "@length(body('F_NoDate'))",
+                  "onSchedule": "@length(body('F_OnSchedule'))",
+                  "delayed": "@length(body('F_Delayed'))",
+                  "hasFinancials": "@length(body('F_HasFinancials'))",
+                  "profitable": "@length(body('F_Profitable'))",
+                  "hpEligible": "@length(body('F_HP_Eligible'))",
+                  "highPotential": "@length(body('F_HighPotential'))"
+                },
+                "ids": {
+                  "delayed": "@select(body('F_Delayed'), item()?['id'])",
+                  "noGoLiveDate": "@select(body('F_NoDate'), item()?['id'])",
+                  "highPotential": "@select(body('F_HighPotential'), item()?['id'])",
+                  "deployedCurrentQuarter": "@select(body('F_DeployedQ'), item()?['id'])",
+                  "nextQuarterBigRocks": "@select(body('F_QPrio'), item()?['id'])"
+                },
+                "projects": "@body('Items_Lean')"
+              }
+            },
+            "Respond_Data": {
+              "type": "Response",
+              "kind": "Skills",
+              "runAfter": {
+                "Data_Payload": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "statusCode": 200,
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "area": {
+                      "title": "Area",
+                      "type": "string",
+                      "x-ms-content-hint": "TEXT",
+                      "x-ms-dynamically-added": true
+                    },
+                    "summary": {
+                      "title": "Summary",
+                      "type": "string",
+                      "x-ms-content-hint": "TEXT",
+                      "x-ms-dynamically-added": true
+                    },
+                    "data": {
+                      "title": "Portfolio Data (JSON)",
+                      "type": "string",
+                      "x-ms-content-hint": "TEXT",
+                      "x-ms-dynamically-added": true
+                    }
+                  }
+                },
+                "body": {
+                  "area": "@{outputs('Init_Area')}",
+                  "data": "@{string(outputs('Data_Payload'))}",
+                  "summary": "@{concat(string(length(body('Items'))), ' active initiatives in ', outputs('Init_Area'), ' (', outputs('Init_Year'), '). Raw portfolio returned in `data`. No file was created.')}"
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Init_Now": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Respond_Error": {
+          "type": "Response",
+          "kind": "Skills",
+          "runAfter": {
+            "Scope_Main": [
+              "Failed",
+              "Skipped",
+              "TimedOut"
+            ]
+          },
+          "inputs": {
+            "statusCode": 200,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "area": {
+                  "title": "Area",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "summary": {
+                  "title": "Summary",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "data": {
+                  "title": "Portfolio Data (JSON)",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                }
+              }
+            },
+            "body": {
+              "area": "@{outputs('Init_Area')}",
+              "data": "",
+              "summary": "@{concat('Failed to read the portfolio of ', outputs('Init_Area'), '. Open the flow run history to see which action failed. Run: ', coalesce(workflow()?['run']?['name'], 'n/a'))}"
+            }
+          }
+        }
+      },
+      "outputs": {}
+    }
+  },
+  "schemaVersion": "1.0.0.0"
+}

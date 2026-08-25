@@ -40,7 +40,7 @@ O checklist linear — o que fazer, em que ordem, o que depende de terceiros e o
 | [`05-arquitetura-3-camadas.md`](docs/standard/05-arquitetura-3-camadas.md) | Por que os tópicos saíram, as três camadas e o checklist de cobertura |
 | [`06-fluxo-transcricoes.md`](docs/standard/06-fluxo-transcricoes.md) | Fluxo do Power Automate para levar a transcrição da LT ao SharePoint — duas rotas |
 | [`07-criar-e-remover-projeto.md`](docs/standard/07-criar-e-remover-projeto.md) | As tools `Create` e `Remove Project` — e por que `Remove` não remove |
-| [`08-relatorio-automatizado.md`](docs/standard/08-relatorio-automatizado.md) | O relatório por IT Area: auditoria do fluxo, o fluxo corrigido, e como o agente passa a escrever a análise |
+| [`08-relatorio-automatizado.md`](docs/standard/08-relatorio-automatizado.md) | O relatório por IT Area: dois fluxos, duas tools, e como o agente passa a escrever a análise em vez de pedi-la ao usuário |
 | [`agent/instructions-standard.md`](agent/instructions-standard.md) | As instruções para colar — 6.367 caracteres, contra 8.096 das antigas |
 | **Dois tetos do produto** | Instruções ~8.000 no total · **descrição de entrada 1.024 por entrada**. `validate-topics.py` mede os dois |
 | [`playbook/`](playbook/) | O playbook analítico (`.md` versionado + `.docx` para o SharePoint) |

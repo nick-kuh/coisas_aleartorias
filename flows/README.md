@@ -4,7 +4,7 @@ Fonte da verdade dos fluxos que o AURA chama como tool. O que você importa no P
 
 | Pasta | Fluxo | Doc |
 |---|---|---|
-| [`CDIORelatorioArea/`](CDIORelatorioArea/) | `GerarRelatorioArea` — relatório executivo por IT Area, publicado no SharePoint | [`docs/standard/08-relatorio-automatizado.md`](../docs/standard/08-relatorio-automatizado.md) |
+| [`CDIORelatorioArea/`](CDIORelatorioArea/) | `PortfolioDataArea` (portfólio em JSON) + `PublishAreaReport` (relatório HTML no SharePoint) | [`docs/standard/08-relatorio-automatizado.md`](../docs/standard/08-relatorio-automatizado.md) |
 
 ## Empacotar
 
@@ -20,7 +20,8 @@ O zip precisa ter `[Content_Types].xml`, `solution.xml` e `customizations.xml` *
 2. Rode `flows/build.sh` e importe.
 3. As referências de conexão (`unilever_adocdioreport`, `unilever_spocdioreport`) são remapeadas na importação — não edite os GUIDs à mão.
 
-## Duas armadilhas de expressão que já custaram caro aqui
+## Três armadilhas que já custaram caro aqui
 
 - **`and()` e `or()` não fazem curto-circuito.** Todos os argumentos são avaliados, então uma guarda à esquerda não protege um `formatDateTime` à direita. Calcule o campo seguro no `Select` e filtre por string.
 - **`if()` avalia os dois ramos em vários runtimes.** Nunca deixe uma função que possa lançar no ramo não escolhido: use uma sentinela (`'1900-01-01T00:00:00Z'`) ou embrulhe em `coalesce`.
+- **Toda entrada do gatilho vira uma pergunta ao usuário quando o agente não consegue preenchê-la.** O Copilot Studio resolve todas as entradas antes de executar, e emite `shouldPromptUser: true` nelas. Entrada opcional que fica vazia numa chamada legítima trava o fluxo. Se duas chamadas precisam de conjuntos de entradas diferentes, são dois fluxos.
