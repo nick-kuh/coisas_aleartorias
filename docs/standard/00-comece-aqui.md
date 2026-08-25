@@ -39,6 +39,7 @@ Divisão por **dependência**, não por assunto: o Bloco A você faz sozinho hoj
 | **D** | Polimento (opcional) | ~15 min | ninguém |
 | **E** | As duas tools novas | ~15 min | ninguém |
 | **F** | Transcrições da LT | ~20 min | ninguém |
+| **G** | Relatório automatizado por IT Area | ~30 min | Bloco C |
 
 > ⚡ **Faça o Bloco 0 agora e o Bloco A em seguida.** O Bloco 0 fica rodando em paralelo com terceiros enquanto você trabalha.
 
@@ -326,6 +327,31 @@ A Rota B (Graph) fica documentada para quando precisar varrer reuniões de vári
 
 ---
 
+# 📄 BLOCO G — relatório automatizado por IT Area (~30 min)
+
+O fluxo `GerarRelatorioArea` que você montou está **bem desenhado e mal blindado**: quatro expressões quebram no primeiro projeto sem Go-Live, dois filtros não filtram nada e o SharePoint ainda está com `SEU_TENANT`. A versão corrigida está versionada em [`flows/`](../../flows/); a auditoria completa e o porquê de cada mudança, em [`08-relatorio-automatizado.md`](08-relatorio-automatizado.md).
+
+A mudança que interessa não é a correção — é a **costura**. O fluxo passa a rodar duas vezes: `mode=data` devolve o portfólio da área em JSON para o agente analisar, `mode=report` publica a página com o resumo e a análise que **o agente escreveu**. O template continua dono do cromo (KPI, timeline, tabela de BU); o agente vira dono do que o relatório diz.
+
+- [ ] `flows/build.sh` → importar `dist/CDIORelatorioArea_1_1_0_0.zip` como solução
+- [ ] Substituir os **três placeholders** do SharePoint (`dataset`, `folderPath`, `table`) — sem isso o fluxo falha
+- [ ] Testar manualmente com `area = Consumer`, `mode = data`, antes de plugar no agente
+- [ ] Adicionar como tool no agente e renomear para **`Relatório da Área`**
+- [ ] Conferir que as 6 entradas estão em **"Dinamicamente com IA"**
+- [ ] Colar as instruções com `§11` (já está em [`agent/instructions-standard.md`](../../agent/instructions-standard.md))
+
+### ✅ Terminei o Bloco G?
+
+| # | Digite | Esperado |
+|---|---|---|
+| 1 | `faz o relatório de Consumer` | Chama `mode=data`, **depois** `mode=report`, e devolve o link |
+| 2 | Abrir a página | Quadro roxo "AURA — Análise e Decisões" antes da tabela de BU, com projetos citados como `Nome (1234)` |
+| 3 | Comparar os números do texto com o JSON do passo 1 | Nenhum número inventado |
+
+> 🔴 **As instruções ficaram com 16 caracteres de folga.** `§11` consumiu quase tudo que sobrava dos 8.000. A próxima seção só entra cortando outra — `python3 scripts/validate-topics.py` mede antes de você colar.
+
+---
+
 ## Onde estão as outras coisas
 
 | Quero… | Vá para |
@@ -337,6 +363,7 @@ A Rota B (Graph) fica documentada para quando precisar varrer reuniões de vári
 | Entender a **arquitetura de 3 camadas** | [`05-arquitetura-3-camadas.md`](05-arquitetura-3-camadas.md) |
 | Montar o fluxo das **transcrições** | [`06-fluxo-transcricoes.md`](06-fluxo-transcricoes.md) |
 | Ajustar **Create / Remove Project** | [`07-criar-e-remover-projeto.md`](07-criar-e-remover-projeto.md) |
+| Montar o **relatório por IT Area** | [`08-relatorio-automatizado.md`](08-relatorio-automatizado.md) |
 | As **instruções** para colar | [`agent/instructions-standard.md`](../../agent/instructions-standard.md) |
 | O **playbook** do SharePoint | [`AURA_Playbook_Analitico.md`](../../playbook/AURA_Playbook_Analitico.md) |
 | Os tópicos antigos (histórico) | [`topics/README.md`](../../topics/README.md) |

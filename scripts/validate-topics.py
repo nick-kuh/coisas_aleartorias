@@ -273,13 +273,14 @@ TOOLS_DO_AGENTE = (
     "Power BI Portfolio Database", "Power BI Master DB Search",
     "DevOps Work Item Details", "Devops Query (Knowledge)",
     "Query Devops IT Area", "Query Devops BU", "Update Project",
-    "Postar mensagem em um chat ou canal",
+    "Postar mensagem em um chat ou canal", "Relatório da Área",
 )
 MARGEM_APERTADA = 74          # avisa quando sobra menos que isto
 
 DOCS_TOOLS = (
     "docs/standard/02-correcao-das-tools.md",
     "docs/standard/07-criar-e-remover-projeto.md",
+    "docs/standard/08-relatorio-automatizado.md",
 )
 DOC_INSTRUCOES = "agent/instructions-standard.md"
 
