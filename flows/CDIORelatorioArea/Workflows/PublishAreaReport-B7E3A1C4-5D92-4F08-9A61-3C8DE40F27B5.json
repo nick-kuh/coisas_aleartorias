@@ -114,7 +114,7 @@
         },
         "CONFIG_SiteUrl": {
           "type": "Compose",
-          "inputs": "https://SEU_TENANT.sharepoint.com/sites/SEU_SITE",
+          "inputs": "https://unilever.sharepoint.com/sites/ITBWLatam",
           "runAfter": {
             "Init_Analysis": [
               "Succeeded"
@@ -169,6 +169,23 @@
           "runAfter": {
             "Flags": [
               "Succeeded"
+            ]
+          }
+        },
+        "Var_BU_Rows": {
+          "type": "InitializeVariable",
+          "runAfter": {
+            "AURA_Button": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "variables": [
+              {
+                "name": "BURows",
+                "type": "string",
+                "value": ""
+              }
             ]
           }
         },
@@ -740,27 +757,10 @@
               },
               "inputs": "@{join(union(select(body('Items'), item()?['bu']), select(body('Items'), item()?['bu'])), '¦')}"
             },
-            "Var_BU_Rows": {
-              "type": "InitializeVariable",
-              "runAfter": {
-                "BU_Distinct": [
-                  "Succeeded"
-                ]
-              },
-              "inputs": {
-                "variables": [
-                  {
-                    "name": "BURows",
-                    "type": "string",
-                    "value": ""
-                  }
-                ]
-              }
-            },
             "Apply_to_each_BU": {
               "type": "Foreach",
               "runAfter": {
-                "Var_BU_Rows": [
+                "BU_Distinct": [
                   "Succeeded"
                 ]
               },
@@ -925,7 +925,7 @@
             }
           },
           "runAfter": {
-            "AURA_Button": [
+            "Var_BU_Rows": [
               "Succeeded"
             ]
           }

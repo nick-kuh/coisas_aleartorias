@@ -5,10 +5,10 @@ Dois fluxos do Power Automate e duas tools no agente. O primeiro devolve o portf
 | | |
 |---|---|
 | Solução | [`flows/CDIORelatorioArea/`](../../flows/CDIORelatorioArea/) · empacote com `flows/build.sh` |
-| Zip pronto | `dist/CDIORelatorioArea_1_2_0_0.zip` |
+| Zip pronto | `dist/CDIORelatorioArea_1_2_0_1.zip` |
 | Seção nas instruções | `§11` de [`agent/instructions-standard.md`](../../agent/instructions-standard.md) |
 
-> ⚠️ **Nada aqui foi executado contra o tenant.** Os dois JSON foram validados estruturalmente — parênteses, aspas, referências entre ações, placeholders do template, limite de 1.024 por descrição de entrada. Os testes de aceite do final existem por isso.
+> ⚠️ **Nada aqui foi executado contra o tenant.** `scripts/validate-flows.py` valida os dois JSON — aninhamento de `InitializeVariable`, `Response` dentro de laço, parênteses e aspas, referências entre ações, placeholders do template e o limite de 1.024 por descrição de entrada. Estrutura, não runtime; os testes de aceite do final existem por isso.
 
 ---
 
@@ -133,7 +133,7 @@ Agora está resolvido nos dois lados:
 
 ### Passo 1 · Pegar o zip
 
-- **Baixar do GitHub:** abra [`dist/CDIORelatorioArea_1_2_0_0.zip`](https://github.com/nick-kuh/coisas_aleartorias/blob/claude/automated-html-report-section-rbmt60/dist/CDIORelatorioArea_1_2_0_0.zip) e clique em **Download raw file** (ícone ⤓ à direita). "Salvar como" na página salva HTML, não o zip.
+- **Baixar do GitHub:** abra [`dist/CDIORelatorioArea_1_2_0_1.zip`](https://github.com/nick-kuh/coisas_aleartorias/blob/claude/automated-html-report-section-rbmt60/dist/CDIORelatorioArea_1_2_0_1.zip) e clique em **Download raw file** (ícone ⤓ à direita). "Salvar como" na página salva HTML, não o zip.
 - **Ou regerar:** `flows/build.sh`.
 
 > ⚠️ **Não reempacote pelo Explorador do Windows.** O Power Automate exige `[Content_Types].xml`, `solution.xml` e `customizations.xml` **na raiz**; zipar a pasta cria um nível a mais e a importação recusa.
@@ -142,26 +142,36 @@ Agora está resolvido nos dois lados:
 
 1. [make.powerautomate.com](https://make.powerautomate.com) → confira o **ambiente** no canto superior direito. É o mesmo do agente. Este é o erro que mais custa tempo.
 2. **Soluções → Importar solução → Procurar** → o zip → **Avançar**.
-3. A tela mostra `CDIORelatorioArea` versão `1.2.0.0`. Como a `1.1.x` já está lá, ele diz **Atualizar**.
+3. A tela mostra `CDIORelatorioArea` versão `1.2.0.1`. Como a `1.1.x` já está lá, ele diz **Atualizar**.
 4. Mapeie as duas conexões: `CDIO Relatorio - Azure DevOps` e `CDIO Relatorio - SharePoint`.
 5. **Importar.** Agora a solução tem **dois** fluxos.
 
 > A `1.1.x` tinha um fluxo só, chamado `GerarRelatorioArea`. Ele é substituído por `PublishAreaReport` — mesmo GUID, então a tool que já apontava para ele continua apontando. `PortfolioDataArea` é novo.
 
-### Passo 3 · Configurar o SharePoint (só no `PublishAreaReport`)
+### Passo 3 · Conferir o SharePoint (só no `PublishAreaReport`)
 
-Abra **`CDIO - Publish Area Report` → Editar**. Depois de `Init Analysis` há duas caixas de texto:
+As duas caixas depois de `Init Analysis` **já vêm com os valores reais** desde a `1.2.0.1`:
 
 | Ação | Valor |
 |---|---|
 | **`CONFIG SiteUrl`** | `https://unilever.sharepoint.com/sites/ITBWLatam` |
 | **`CONFIG Folder`** | `/Shared Documents/CDIO LATAM/Agent Report` |
 
-Já vêm preenchidas com o caminho certo — confira e salve. `CDIO LATAM` é maiúsculo, e o caminho vai **sem** `/sites/ITBWLatam`, que já está no `SiteUrl`.
+Só confira. `CDIO LATAM` é maiúsculo, e o caminho da pasta vai **sem** `/sites/ITBWLatam`, que já está no `SiteUrl`. Se um dia o site mudar, é aqui — e só aqui.
 
 O `PortfolioDataArea` não toca no SharePoint: nada para configurar nele.
 
 ### Passo 4 · Ligar os dois
+
+> 🔴 **Ativar é onde o fluxo inválido aparece.** O Power Automate aceita salvar e importar um fluxo que ele depois recusa executar — a validação só roda no **Ativar**, e a mensagem vem crua:
+>
+> ```
+> Turn on failed. ... 'InvalidVariableInitialization' ... The variable action
+> 'Var_BU_Rows' of type 'InitializeVariable' cannot be nested in an action of
+> type 'Scope_Main'.
+> ```
+>
+> Esse era real e foi corrigido na `1.2.0.1`: **`InitializeVariable` só existe na raiz do fluxo** — nunca dentro de Scope, Condition ou Foreach. `scripts/validate-flows.py` passou a checar isso, junto com `Response` dentro de laço, que tem a mesma natureza. Rode antes de empacotar.
 
 > 🔴 **Solução importada chega com os fluxos DESLIGADOS.** É o passo que mais se pula, e o sintoma não parece com a causa: na lista, o ícone do fluxo ganha um pequeno **⃠** no canto — parece um fluxo "oculto" ou sem permissão, e é só desativado. O agente, ao chamar, devolve:
 >

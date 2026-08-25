@@ -14,14 +14,23 @@ flows/build.sh          # lê a <Version> de solution.xml → dist/CDIORelatorio
 
 O zip precisa ter `[Content_Types].xml`, `solution.xml` e `customizations.xml` **na raiz** — por isso o script zipa de dentro da pasta, e não a pasta.
 
+## Validar antes de empacotar
+
+```bash
+python3 scripts/validate-flows.py
+```
+
+O Power Automate aceita **salvar e importar** um fluxo que ele depois recusa **ativar** — a validação de verdade só roda no `Ativar`, e a mensagem vem crua, sem apontar o arquivo. O script pega essa classe de erro em segundos.
+
 ## Ao mexer no JSON
 
 1. **Suba a `<Version>` em `solution.xml` — sempre.** Nunca reempacote conteúdo diferente sob um número já publicado: quem baixou não tem como distinguir os dois zips, e o Power Automate também não. Já aconteceu aqui.
 2. Rode `flows/build.sh` e importe.
 3. As referências de conexão (`unilever_adocdioreport`, `unilever_spocdioreport`) são remapeadas na importação — não edite os GUIDs à mão.
 
-## Três armadilhas que já custaram caro aqui
+## Quatro armadilhas que já custaram caro aqui
 
 - **`and()` e `or()` não fazem curto-circuito.** Todos os argumentos são avaliados, então uma guarda à esquerda não protege um `formatDateTime` à direita. Calcule o campo seguro no `Select` e filtre por string.
 - **`if()` avalia os dois ramos em vários runtimes.** Nunca deixe uma função que possa lançar no ramo não escolhido: use uma sentinela (`'1900-01-01T00:00:00Z'`) ou embrulhe em `coalesce`.
+- **`InitializeVariable` só existe na raiz do fluxo.** Dentro de Scope, Condition ou Foreach o fluxo importa e salva, e depois recusa ativar com `InvalidVariableInitialization`. `Response` dentro de Foreach/Until é a mesma história.
 - **Toda entrada do gatilho vira uma pergunta ao usuário quando o agente não consegue preenchê-la.** O Copilot Studio resolve todas as entradas antes de executar, e emite `shouldPromptUser: true` nelas. Entrada opcional que fica vazia numa chamada legítima trava o fluxo. Se duas chamadas precisam de conjuntos de entradas diferentes, são dois fluxos.
