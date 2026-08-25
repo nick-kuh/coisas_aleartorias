@@ -20,7 +20,7 @@ O zip precisa ter `[Content_Types].xml`, `solution.xml` e `customizations.xml` *
 python3 scripts/validate-flows.py
 ```
 
-O Power Automate aceita **salvar e importar** um fluxo que ele depois recusa **ativar** — a validação de verdade só roda no `Ativar`, e a mensagem vem crua, sem apontar o arquivo. O script pega essa classe de erro em segundos.
+O Power Automate aceita **salvar e importar** um fluxo que ele depois recusa **ativar** — a validação de verdade só roda no `Ativar`, e a mensagem vem crua, sem apontar o arquivo. O script pega essa classe de erro em segundos — as três que já apareceram aqui estão cobertas.
 
 ## Ao mexer no JSON
 
@@ -28,9 +28,10 @@ O Power Automate aceita **salvar e importar** um fluxo que ele depois recusa **a
 2. Rode `flows/build.sh` e importe.
 3. As referências de conexão (`unilever_adocdioreport`, `unilever_spocdioreport`) são remapeadas na importação — não edite os GUIDs à mão.
 
-## Quatro armadilhas que já custaram caro aqui
+## Cinco armadilhas que já custaram caro aqui
 
 - **`and()` e `or()` não fazem curto-circuito.** Todos os argumentos são avaliados, então uma guarda à esquerda não protege um `formatDateTime` à direita. Calcule o campo seguro no `Select` e filtre por string.
 - **`if()` avalia os dois ramos em vários runtimes.** Nunca deixe uma função que possa lançar no ramo não escolhido: use uma sentinela (`'1900-01-01T00:00:00Z'`) ou embrulhe em `coalesce`.
 - **`InitializeVariable` só existe na raiz do fluxo.** Dentro de Scope, Condition ou Foreach o fluxo importa e salva, e depois recusa ativar com `InvalidVariableInitialization`. `Response` dentro de Foreach/Until é a mesma história.
+- **Gatilho `kind: Skills` declara `$connections` E `$authentication`.** O runtime injeta os dois; declarar só um derruba a ativação com `InvalidTemplate`. Nunca reescreva o bloco `parameters` — copie-o do fluxo de origem.
 - **Toda entrada do gatilho vira uma pergunta ao usuário quando o agente não consegue preenchê-la.** O Copilot Studio resolve todas as entradas antes de executar, e emite `shouldPromptUser: true` nelas. Entrada opcional que fica vazia numa chamada legítima trava o fluxo. Se duas chamadas precisam de conjuntos de entradas diferentes, são dois fluxos.

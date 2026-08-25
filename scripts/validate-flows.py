@@ -17,6 +17,7 @@ Checagens:
   5. body()/outputs() só apontam para ação que existe
   6. placeholder {{X}} do Template com um replace correspondente
   7. descrição de entrada do gatilho <= 1024 chars
+  8. gatilho `Skills` com `$connections` e `$authentication` declarados
 
 Uso:  python3 scripts/validate-flows.py
 """
@@ -142,6 +143,15 @@ def checar(caminho):
         elif LIMITE_DESCRICAO - n < 74:
             avisos.append("descrição da entrada `%s`: %d/%d, só %d de folga"
                           % (nome, n, LIMITE_DESCRICAO, LIMITE_DESCRICAO - n))
+
+    # 8. parâmetros que o runtime injeta e a definição precisa declarar
+    gatilho = defi.get("triggers", {}).get("manual", {})
+    declarados = set((defi.get("parameters") or {}).keys())
+    if gatilho.get("kind") == "Skills":
+        for exigido in ("$connections", "$authentication"):
+            if exigido not in declarados:
+                erros.append("gatilho Skills sem `%s` em definition.parameters — o runtime injeta "
+                             "esse parâmetro e a ativação falha com InvalidTemplate" % exigido)
 
     for marcador in ("SEU_TENANT", "SEU_SITE", "SUBSTITUA"):
         if marcador in bruto:
