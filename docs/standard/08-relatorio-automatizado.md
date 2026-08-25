@@ -1,11 +1,11 @@
 # 8. Relatório automatizado por IT Area
 
-O fluxo `GerarRelatorioArea` lê o portfólio de uma IT Area no Azure DevOps, monta uma página HTML e publica no SharePoint. Este documento faz três coisas: **audita a versão que você exportou** (`CDIORelatorioArea_1_0_0_6`), **entrega a versão corrigida** (`1.1.0.0`, em [`flows/`](../../flows/)) e explica **como tirar o relatório do modo "tópico" e deixar o agente escrever a análise**.
+O fluxo `GerarRelatorioArea` lê o portfólio de uma IT Area no Azure DevOps, monta uma página HTML e publica no SharePoint. Este documento faz três coisas: **audita a versão que você exportou** (`CDIORelatorioArea_1_0_0_6`), **entrega a versão corrigida** (`1.1.0.1`, em [`flows/`](../../flows/)) e explica **como tirar o relatório do modo "tópico" e deixar o agente escrever a análise**.
 
 | | |
 |---|---|
 | Solução corrigida | [`flows/CDIORelatorioArea/`](../../flows/CDIORelatorioArea/) · empacote com `flows/build.sh` |
-| Zip pronto | `dist/CDIORelatorioArea_1_1_0_0.zip` |
+| Zip pronto | `dist/CDIORelatorioArea_1_1_0_1.zip` |
 | Seção nas instruções | `§11` de [`agent/instructions-standard.md`](../../agent/instructions-standard.md) |
 
 > ⚠️ **Nada aqui foi executado contra o seu tenant.** O JSON foi validado estruturalmente (parênteses, aspas, referências entre ações, placeholders do template), não em runtime. Os testes de aceite do final existem por isso.
@@ -77,7 +77,7 @@ Isso não é análise, é a legenda dos cartões que já estão logo acima. E n�
 
 ### A arquitetura: uma tool, duas chamadas
 
-Em vez de dois fluxos, o `1.1.0.0` ganha uma entrada `mode` e roda duas vezes:
+Em vez de dois fluxos, o `1.1.0.1` ganha uma entrada `mode` e roda duas vezes:
 
 ```
 1)  mode = data     →  fluxo devolve o portfólio inteiro da área em JSON + os KPIs que ele calculou
@@ -161,7 +161,7 @@ O `Template` também mudou em dois pontos: o cartão **% On Schedule** ganhou a 
 
 Três caminhos; escolha um.
 
-- **Baixar do GitHub** (mais direto se você não usa git na máquina): abra [`dist/CDIORelatorioArea_1_1_0_0.zip`](https://github.com/nick-kuh/coisas_aleartorias/blob/claude/automated-html-report-section-rbmt60/dist/CDIORelatorioArea_1_1_0_0.zip) na branch `claude/automated-html-report-section-rbmt60` e clique em **Download raw file** (o ícone ⤓ à direita). Não use "Save as" na página do GitHub — isso salva HTML, não o zip.
+- **Baixar do GitHub** (mais direto se você não usa git na máquina): abra [`dist/CDIORelatorioArea_1_1_0_1.zip`](https://github.com/nick-kuh/coisas_aleartorias/blob/claude/automated-html-report-section-rbmt60/dist/CDIORelatorioArea_1_1_0_1.zip) na branch `claude/automated-html-report-section-rbmt60` e clique em **Download raw file** (o ícone ⤓ à direita). Não use "Save as" na página do GitHub — isso salva HTML, não o zip.
 - **Se você já tem o repositório:** `git pull` e o arquivo está em `dist/`.
 - **Regerar do JSON:** `flows/build.sh`. É o que você faz depois de qualquer edição no JSON.
 
@@ -172,11 +172,18 @@ Três caminhos; escolha um.
 1. [make.powerautomate.com](https://make.powerautomate.com) → confira no canto superior direito que você está no **ambiente certo** (o mesmo onde o agente vive). Este é o erro que mais custa tempo.
 2. Menu esquerdo → **Soluções**.
 3. Botão **Importar solução** → **Procurar** → escolha o zip → **Avançar**.
-4. A tela mostra `CDIORelatorioArea`, versão `1.1.0.0`, publicador `UnileverCoPilotStudioPOC`. Como você já importou a `1.0.0.6`, ele vai dizer **"Atualizar"** — é o que você quer: mantém o mesmo fluxo, mesmo ID, e as tools que já apontam para ele continuam apontando.
+4. A tela mostra `CDIORelatorioArea`, versão `1.1.0.1`, publicador `UnileverCoPilotStudioPOC`. Como você já importou a `1.0.0.6`, ele vai dizer **"Atualizar"** — é o que você quer: mantém o mesmo fluxo, mesmo ID, e as tools que já apontam para ele continuam apontando.
 5. **Conexões**: vão aparecer as duas referências — `CDIO Relatorio - Azure DevOps` e `CDIO Relatorio - SharePoint`. Escolha a conexão existente em cada dropdown. Se alguma estiver vazia, clique em **+ Nova conexão**, autentique, volte e selecione (a lista não atualiza sozinha — recarregue o dropdown).
 6. **Importar**. Leva de 1 a 3 minutos.
 
 > Se aparecer **"Uma solução gerenciada não pode ser sobrescrita"**, a `1.0.0.6` entrou como gerenciada. Aí desinstale-a primeiro (**Soluções → ... → Excluir**) e importe de novo — você perde o fluxo antigo, que é justamente o que queremos substituir.
+
+### Como saber qual build você tem
+
+Abra o fluxo e olhe a sequência no topo. **Entre `Init FullHtml` e `Init Now` têm que existir dois nós: `CONFIG SiteUrl` e `CONFIG Pasta`.**
+
+- **Estão lá** → é a `1.1.0.1`. Siga para o Passo 3.
+- **`Init FullHtml` emenda direto em `Init Now`** → você tem um build anterior, em que o endereço do SharePoint ficava enterrado dentro da ação `Criar arquivo SharePoint` e ainda existia uma ação `Propriedades do arquivo` pedindo o GUID da biblioteca. **Reimporte a `1.1.0.1`** em vez de consertar à mão: são três edições espalhadas, uma delas numa expressão.
 
 ### Passo 3 · Preencher os dois campos de configuração
 

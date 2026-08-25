@@ -16,7 +16,7 @@ O zip precisa ter `[Content_Types].xml`, `solution.xml` e `customizations.xml` *
 
 ## Ao mexer no JSON
 
-1. Suba a `<Version>` em `solution.xml` (o Power Automate não reimporta a mesma versão sem `Atualizar`).
+1. **Suba a `<Version>` em `solution.xml` — sempre.** Nunca reempacote conteúdo diferente sob um número já publicado: quem baixou não tem como distinguir os dois zips, e o Power Automate também não. Já aconteceu aqui.
 2. Rode `flows/build.sh` e importe.
 3. As referências de conexão (`unilever_adocdioreport`, `unilever_spocdioreport`) são remapeadas na importação — não edite os GUIDs à mão.
 
