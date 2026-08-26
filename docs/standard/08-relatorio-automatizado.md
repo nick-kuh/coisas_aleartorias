@@ -258,6 +258,33 @@ FORBIDDEN: <img>, base64, any external URL, and any number that did not come fro
 
 ---
 
+## 6.1 O tópico que atalha a arquitetura
+
+Existe no agente um tópico `Create Report`, `OnRecognizedIntent`, com doze frases de gatilho (`relatorio da area`, `gerar relatorio de`, `monta o relatorio de`…). Ele é anterior a esta versão e **precisa sair** — desative ou apague.
+
+O que ele faz:
+
+```yaml
+- kind: InvokeFlowAction
+  flowId: b7e3a1c4-5d92-4f08-9a61-3c8de40f27b5     # PublishAreaReport
+  input:
+    binding:
+      area: =Topic.SelectedArea
+      year: "2026"
+```
+
+Chama o fluxo de **publicação** direto, passando só `area` e `year`. Sem `exec_summary`, sem `analysis_html`, sem nunca ter lido o portfólio. O fluxo não quebra — o `coalesce` cobre os dois campos vazios — e é justamente esse o problema: sai uma página completa, bonita, com o resumo genérico de contagens e **sem o bloco de análise**. O relatório oco que esta arquitetura inteira existe para evitar.
+
+Três defeitos menores no mesmo tópico, todos irrelevantes depois de apagá-lo, mas que valem como registro:
+
+- `year: "2026"` fixo no código, o mesmo defeito que o `Init_Year` do fluxo já não tem;
+- a área sai de um `If` de Power Fx sobre o texto cru, e `"CD" in Upper(...)` casa dentro de **CDIO** — qualquer pedido que mencione a organização e nenhuma área vira `Customer Dev`;
+- e o pior: **é uma corrida.** Às vezes o tópico ganha, às vezes o orquestrador ganha. O mesmo pedido produz o relatório completo ou o oco, sem nada na conversa explicando a diferença.
+
+É a tese do [`05-arquitetura-3-camadas.md`](05-arquitetura-3-camadas.md) aparecendo de novo: tópico prende o agente num fluxo determinístico e disputa com o orquestrador. Os outros dois tópicos já foram desativados por isso; este entrou depois e passou despercebido.
+
+---
+
 ## 7. As instruções
 
 > 🔴 **O agente está rodando as instruções antigas.** O export mostra **8.217 caracteres**, com as seções numeradas até `# 10. THE AREA REPORT` e **sem** a seção de reconciliação com a reunião da LT. O texto do §9 lá é a redação do primeiro export, não a deste repositório: o **Bloco C nunca foi feito**. O que aconteceu foi colar o bloco novo por cima do texto que já estava no agente, numerado como 10 — e por isso ele manda "cross with §10", apontando para si mesmo. E 8.217 está acima do teto de 8.000.
@@ -304,6 +331,7 @@ Boa parte dos tenants roda a biblioteca em **Browser File Handling: Strict**, e 
 | 1 | `PortfolioDataArea` manual, `area = Customer Dev` | JSON de volta; `kpis.total` bate com o Power BI; `noGoLiveDate > 0` numa área com projetos em `01 Idea` |
 | 2 | Idem com uma área inexistente | resposta "No active initiative found", sem erro vermelho no histórico |
 | 3 | `PublishAreaReport` manual com textos de teste | `.html` na pasta, quadro roxo "AURA — Analysis & Decisions" antes da tabela de BU |
+| 0 | `Tópicos` no menu do agente | **não existe** um tópico `Create Report` ativo — ele atalha a arquitetura, ver §6.1 |
 | 4 | Abrir cada tool e reler a descrição | a de `Publish Area Report` fala em publicar, **não** em "Call this FIRST" nem "creates no file" |
 | 5 | No agente: *"faz o relatório de Customer Dev"* | ele chama `Read Area Portfolio`, **depois** `Publish Area Report`, e devolve o link — **sem pedir nada a você** |
 | 6 | Ler a página | resumo e análise **em inglês**, cada projeto como `Nome (1234)` com link |

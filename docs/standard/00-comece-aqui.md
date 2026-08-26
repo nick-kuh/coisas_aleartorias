@@ -341,6 +341,8 @@ Dois fluxos e duas tools. O primeiro devolve o portfólio da IT Area em JSON, o 
 - [ ] Colar a descrição **certa** em cada uma — são diferentes, e trocá-las inverte o roteamento
 - [ ] Conferir que todas as entradas estão em **"Dinamicamente com IA"**
 - [ ] Colar `agent/instructions-standard.md` **inteiro**, substituindo tudo
+- [ ] **Apagar o tópico `Create Report`** — ele chama o fluxo de publicação direto, sem passar pela análise, e disputa com o orquestrador ([§6.1](08-relatorio-automatizado.md))
+- [ ] **Publicar o agente** — sem isso a tool nova responde `FlowNotFound`
 
 ### ✅ Terminei o Bloco G?
 
