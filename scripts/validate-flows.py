@@ -18,6 +18,7 @@ Checagens:
   6. placeholder {{X}} do Template com um replace correspondente
   7. descrição de entrada do gatilho <= 1024 chars
   8. gatilho `Skills` com `$connections` e `$authentication` declarados
+  9. seleção de propriedade sobre campo do DevOps — `?['fields']?['X']?['y']`
 
 Uso:  python3 scripts/validate-flows.py
 """
@@ -143,6 +144,16 @@ def checar(caminho):
         elif LIMITE_DESCRICAO - n < 74:
             avisos.append("descrição da entrada `%s`: %d/%d, só %d de folga"
                           % (nome, n, LIMITE_DESCRICAO, LIMITE_DESCRICAO - n))
+
+    # 9. seleção de propriedade sobre um campo do Azure DevOps
+    # Um campo de identidade volta como objeto {displayName: ...} OU como a string
+    # "Nome <email>", conforme a API e a projeção. `?['displayName']` sobre a string
+    # lança em runtime, e o fluxo só falha quando roda com dado real.
+    for campo in sorted(set(re.findall(
+            r"\?\['fields'\]\?\['([^']+)'\]\?\['[^']+'\]", bruto))):
+        erros.append("seleção de propriedade sobre o campo `%s` — campo do DevOps volta como "
+                     "objeto OU como string \"Nome <email>\"; normalize com split() em vez de "
+                     "`?['displayName']`" % campo)
 
     # 8. parâmetros que o runtime injeta e a definição precisa declarar
     gatilho = defi.get("triggers", {}).get("manual", {})

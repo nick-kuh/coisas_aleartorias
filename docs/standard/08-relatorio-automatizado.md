@@ -5,7 +5,7 @@ Dois fluxos do Power Automate e duas tools no agente. O primeiro devolve o portf
 | | |
 |---|---|
 | Solução | [`flows/CDIORelatorioArea/`](../../flows/CDIORelatorioArea/) · empacote com `flows/build.sh` |
-| Zip pronto | `dist/CDIORelatorioArea_1_2_0_2.zip` |
+| Zip pronto | `dist/CDIORelatorioArea_1_2_0_3.zip` |
 | Seção nas instruções | `§11` de [`agent/instructions-standard.md`](../../agent/instructions-standard.md) |
 
 > ⚠️ **Nada aqui foi executado contra o tenant.** `scripts/validate-flows.py` valida os dois JSON — aninhamento de `InitializeVariable`, `Response` dentro de laço, parênteses e aspas, referências entre ações, placeholders do template e o limite de 1.024 por descrição de entrada. Estrutura, não runtime; os testes de aceite do final existem por isso.
@@ -133,7 +133,7 @@ Agora está resolvido nos dois lados:
 
 ### Passo 1 · Pegar o zip
 
-- **Baixar do GitHub:** abra [`dist/CDIORelatorioArea_1_2_0_2.zip`](https://github.com/nick-kuh/coisas_aleartorias/blob/claude/automated-html-report-section-rbmt60/dist/CDIORelatorioArea_1_2_0_2.zip) e clique em **Download raw file** (ícone ⤓ à direita). "Salvar como" na página salva HTML, não o zip.
+- **Baixar do GitHub:** abra [`dist/CDIORelatorioArea_1_2_0_3.zip`](https://github.com/nick-kuh/coisas_aleartorias/blob/claude/automated-html-report-section-rbmt60/dist/CDIORelatorioArea_1_2_0_3.zip) e clique em **Download raw file** (ícone ⤓ à direita). "Salvar como" na página salva HTML, não o zip.
 - **Ou regerar:** `flows/build.sh`.
 
 > ⚠️ **Não reempacote pelo Explorador do Windows.** O Power Automate exige `[Content_Types].xml`, `solution.xml` e `customizations.xml` **na raiz**; zipar a pasta cria um nível a mais e a importação recusa.
@@ -142,7 +142,7 @@ Agora está resolvido nos dois lados:
 
 1. [make.powerautomate.com](https://make.powerautomate.com) → confira o **ambiente** no canto superior direito. É o mesmo do agente. Este é o erro que mais custa tempo.
 2. **Soluções → Importar solução → Procurar** → o zip → **Avançar**.
-3. A tela mostra `CDIORelatorioArea` versão `1.2.0.2`. Como a `1.1.x` já está lá, ele diz **Atualizar**.
+3. A tela mostra `CDIORelatorioArea` versão `1.2.0.3`. Como a `1.1.x` já está lá, ele diz **Atualizar**.
 4. Mapeie as duas conexões: `CDIO Relatorio - Azure DevOps` e `CDIO Relatorio - SharePoint`.
 5. **Importar.** Agora a solução tem **dois** fluxos.
 
@@ -184,6 +184,22 @@ O `PortfolioDataArea` não toca no SharePoint: nada para configurar nele.
 > Um gatilho `kind: Skills` roda com **dois** parâmetros injetados pelo runtime, `$connections` e `$authentication`, e a definição precisa declarar os dois. O gerador tinha reescrito o bloco `parameters` desse fluxo deixando só `$connections`. Corrigido na `1.2.0.2`.
 >
 > As duas checagens entraram no `scripts/validate-flows.py`, junto com `Response` dentro de laço, que tem a mesma natureza. **Rode antes de empacotar** — as três só apareceriam no `Ativar`.
+
+> 🔴 **E depois de ativar veio o terceiro, que nem o `Ativar` pega.** Os dois fluxos rodaram e falharam dentro do `Scope_Main`, em ~4s, devolvendo ao agente o texto do `Respond_Error`.
+>
+> A causa está no `Custom.ProjectITManager`. Neste projeto ele volta como **string** — `"Deffendi, Vinicius <Vinicius.Deffendi@unilever.com>"` — e não como objeto de identidade. O `Select Items` fazia `?['displayName']` em cima disso, e seleção de propriedade sobre string **lança** em runtime.
+>
+> Um campo de identidade do DevOps volta em uma das duas formas conforme a API e a projeção usadas, então a correção da `1.2.0.3` normaliza as duas sem `?[...]`:
+>
+> ```
+> if(contains(RAW, 'displayName'),
+>    trim(first(split(last(split(RAW, '"displayName":"')), '"'))),
+>    trim(first(split(RAW, '<'))))
+> ```
+>
+> No mesmo passe caiu o `stateNum`, que fazia `substring(state, 0, 1)` protegido por um `length > 2` à esquerda de um `and()` — e `and()` não faz curto-circuito. Agora o texto é preenchido com `'xx'` antes do `substring`, e o `if` escolhe entre **dois literais** dentro do `int()`, de modo que nenhum ramo pode lançar.
+>
+> `validate-flows.py` passou a recusar qualquer `?['fields']?['X']?['y']`.
 
 > 🔴 **Solução importada chega com os fluxos DESLIGADOS.** É o passo que mais se pula, e o sintoma não parece com a causa: na lista, o ícone do fluxo ganha um pequeno **⃠** no canto — parece um fluxo "oculto" ou sem permissão, e é só desativado. O agente, ao chamar, devolve:
 >

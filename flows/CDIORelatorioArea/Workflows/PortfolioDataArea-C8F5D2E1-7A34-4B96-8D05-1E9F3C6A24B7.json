@@ -217,7 +217,7 @@
                   "id": "@item()?['id']",
                   "title": "@coalesce(item()?['fields']?['System.Title'], '')",
                   "state": "@coalesce(item()?['fields']?['System.State'], '')",
-                  "stateNum": "@if(and(greater(length(string(coalesce(item()?['fields']?['System.State'], ''))), 2), and(contains('0123456789', substring(string(coalesce(item()?['fields']?['System.State'], '')), 0, 1)), contains('0123456789', substring(string(coalesce(item()?['fields']?['System.State'], '')), 1, 1)))), int(substring(string(coalesce(item()?['fields']?['System.State'], '')), 0, 2)), -1)",
+                  "stateNum": "@int(if(and(contains('0123456789', substring(concat(string(coalesce(item()?['fields']?['System.State'], '')), 'xx'), 0, 1)), contains('0123456789', substring(concat(string(coalesce(item()?['fields']?['System.State'], '')), 'xx'), 1, 1))), substring(concat(string(coalesce(item()?['fields']?['System.State'], '')), 'xx'), 0, 2), '-1'))",
                   "ptype": "@coalesce(item()?['fields']?['Custom.ProjectType'], '')",
                   "itArea": "@coalesce(item()?['fields']?['Custom.ITArea'], '')",
                   "country": "@coalesce(item()?['fields']?['Custom.CountryDeployed'], '')",
@@ -234,7 +234,7 @@
                   "payback": "@float(coalesce(item()?['fields']?['Custom.PaybackinMonths'], -1))",
                   "impl": "@float(coalesce(item()?['fields']?['Custom.ImplementionTimeinMonths'], -1))",
                   "bizDesc": "@coalesce(item()?['fields']?['Custom.BusinessBenefit'], '')",
-                  "manager": "@coalesce(item()?['fields']?['Custom.ProjectITManager']?['displayName'], '')",
+                  "manager": "@if(contains(string(coalesce(item()?['fields']?['Custom.ProjectITManager'], '')), 'displayName'), trim(first(split(last(split(string(coalesce(item()?['fields']?['Custom.ProjectITManager'], '')), '\"displayName\":\"')), '\"'))), trim(first(split(string(coalesce(item()?['fields']?['Custom.ProjectITManager'], '')), '<'))))",
                   "note": "@coalesce(item()?['fields']?['Custom.Note'], '')"
                 }
               }
