@@ -21,6 +21,7 @@ Checagens:
   9. seleção de propriedade sobre campo do DevOps — `?['fields']?['X']?['y']`
  10. só funções que existem na Workflow Definition Language
  11. soma via `xpath(xml(json(...)))` com o array embrulhado em `root`
+ 12. número de argumentos de cada função de aridade conhecida
 
 Uso:  python3 scripts/validate-flows.py
 """
@@ -106,6 +107,57 @@ def desbalanceada(expr):
     if dentro:
         return "aspa simples não fechada"
     return None
+
+
+# Aridade (mínimo, máximo) das funções de contrato fixo. `None` = sem limite.
+# Editar uma expressão longa à mão é como se perde um argumento sem perceber:
+# os parênteses continuam balanceados e só o runtime reclama.
+ARIDADE = {
+    "replace": (3, 3), "if": (3, 3), "not": (1, 1), "equals": (2, 2),
+    "less": (2, 2), "lessOrEquals": (2, 2), "greater": (2, 2), "greaterOrEquals": (2, 2),
+    "add": (2, 2), "sub": (2, 2), "mul": (2, 2), "div": (2, 2), "mod": (2, 2),
+    "contains": (2, 2), "startsWith": (2, 2), "endsWith": (2, 2),
+    "split": (2, 2), "join": (2, 2), "take": (2, 2), "skip": (2, 2),
+    "indexOf": (2, 2), "lastIndexOf": (2, 2), "xpath": (2, 2),
+    "substring": (2, 3), "formatNumber": (2, 3), "formatDateTime": (1, 3),
+    "length": (1, 1), "empty": (1, 1), "trim": (1, 1), "toLower": (1, 1),
+    "toUpper": (1, 1), "string": (1, 1), "int": (1, 1), "float": (1, 1),
+    "json": (1, 1), "xml": (1, 1), "base64": (1, 1), "base64ToBinary": (1, 1),
+    "first": (1, 1), "last": (1, 1), "array": (1, 1), "bool": (1, 1),
+    "and": (2, None), "or": (2, None), "concat": (1, None), "coalesce": (1, None),
+    "union": (2, None), "intersection": (2, None), "createArray": (1, None),
+}
+
+
+def chamadas(expr):
+    """[(nome, n_args, posição)] de cada chamada, respeitando aspas e aninhamento."""
+    saida, pilha = [], []
+    i, n, dentro = 0, len(expr), False
+    while i < n:
+        c = expr[i]
+        if c == "'":
+            if dentro and i + 1 < n and expr[i + 1] == "'":
+                i += 2
+                continue
+            dentro = not dentro
+            if pilha:
+                pilha[-1][3] = True      # um literal também conta como argumento
+        elif not dentro:
+            if c == "(":
+                m = re.search(r"([A-Za-z_][A-Za-z0-9_]*)\s*$", expr[:i])
+                pilha.append([m.group(1) if m else None, i, 0, False])
+            elif c == ")":
+                if pilha:
+                    nome, pos, virgulas, viu = pilha.pop()
+                    if nome:
+                        saida.append((nome, (virgulas + 1) if (viu or virgulas) else 0, pos))
+            elif c == "," and pilha:
+                pilha[-1][2] += 1
+                pilha[-1][3] = True
+            elif c not in " \t\n" and pilha:
+                pilha[-1][3] = True
+        i += 1
+    return saida
 
 
 def sem_literais(expr):
@@ -204,6 +256,18 @@ def checar(caminho):
             if nome not in FUNCOES:
                 erros.append("função `%s()` não existe na Workflow Definition Language (%s)"
                              % (nome, onde))
+
+    # 12. aridade
+    for onde, expr in expressoes(defi):
+        for nome, n_args, _ in chamadas(expr):
+            limites = ARIDADE.get(nome)
+            if not limites:
+                continue
+            minimo, maximo = limites
+            if n_args < minimo or (maximo is not None and n_args > maximo):
+                esperado = str(minimo) if minimo == maximo else "%s+" % minimo
+                erros.append("`%s()` chamada com %d argumento(s), esperava %s (%s)"
+                             % (nome, n_args, esperado, onde))
 
     # 11. o truque de somar array com xpath só funciona com o array embrulhado
     # em um objeto. `{"v":[1,2]}` vira mais de um elemento na raiz e o xml()
