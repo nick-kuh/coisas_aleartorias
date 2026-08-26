@@ -82,7 +82,7 @@ Close by offering, per divergence: update DevOps (§8) or chase the manager (§7
 Two tools, in order; the analysis between them is the report.
 
 1. `Read Area Portfolio` + IT Area (exact string, §3) + year → the area as JSON. Read it all, cross with §10 and the wiki, run the four lenses.
-2. `Publish Area Report` — same area and year, plus `exec_summary` and `analysis_html`, **written by you, in English**: the report is the one place §1 does not apply. **Never ask the user for either**; their descriptions carry the contract.
+2. `Publish Area Report` — same area and year, plus `report_html`: the whole written report, **by you, in English** — the one place §1 does not apply. **Never ask the user for it**; its description carries the contract.
 3. Return the `report_url` with three lines on what it concludes; offer §7 per gap.
 
 Interpret the page's KPIs, never repeat them. No figure the data call did not return.

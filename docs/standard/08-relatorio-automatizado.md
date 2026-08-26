@@ -5,7 +5,7 @@ Dois fluxos do Power Automate e duas tools no agente. O primeiro devolve o portf
 | | |
 |---|---|
 | Solução | [`flows/CDIORelatorioArea/`](../../flows/CDIORelatorioArea/) · empacote com `flows/build.sh` |
-| Zip pronto | `dist/CDIORelatorioArea_1_2_0_5.zip` |
+| Zip pronto | `dist/CDIORelatorioArea_1_3_0_0.zip` |
 | Seção nas instruções | `§11` de [`agent/instructions-standard.md`](../../agent/instructions-standard.md) |
 
 > ⚠️ **Nada aqui foi executado contra o tenant.** `scripts/validate-flows.py` valida os dois JSON — aninhamento de `InitializeVariable`, `Response` dentro de laço, parênteses e aspas, referências entre ações, placeholders do template e o limite de 1.024 por descrição de entrada. Estrutura, não runtime; os testes de aceite do final existem por isso.
@@ -44,13 +44,13 @@ Dois fluxos, cada um com o seu conjunto de entradas:
 | Fluxo | Entradas | Faz |
 |---|---|---|
 | **`PortfolioDataArea`** | `area`, `year` | consulta o DevOps e devolve JSON. Nenhum campo de texto livre para perguntar |
-| **`PublishAreaReport`** | `area`, `year`, `exec_summary`, `analysis_html` | consulta, renderiza o HTML, publica no SharePoint, devolve o link |
+| **`PublishAreaReport`** | `area`, `year`, `report_html` | consulta, renderiza o HTML, publica no SharePoint, devolve o link |
 
 Na primeira não sobra nada para o binder perguntar. Na segunda, a descrição de cada entrada agora **manda escrever** em vez de dizer "só no modo X" — e abre com `YOU write this - never ask the user for it`. Era a descrição que dizia ao modelo para deixar o campo vazio; era ela que precisava mudar.
 
 `mode` e `full_html` deixaram de existir. Um escape hatch que custa uma pergunta em toda chamada não paga o que entrega.
 
-> 💡 **Se ainda assim ele perguntar:** abra a tool no Copilot Studio, clique em `exec_summary` e procure um controle do tipo *"perguntar ao usuário quando o valor não for encontrado"*. No YAML exportado as entradas são `AutomaticTaskInput` idênticas, sem nada que as distinga — então ou esse controle só vive na UI, ou `shouldPromptUser: true` é o padrão do produto. Desmarcar, se existir, é o reforço.
+> 💡 **Se ainda assim ele perguntar:** abra a tool no Copilot Studio, clique em `report_html` e procure um controle do tipo *"perguntar ao usuário quando o valor não for encontrado"*. No YAML exportado as entradas são `AutomaticTaskInput` idênticas, sem nada que as distinga — então ou esse controle só vive na UI, ou `shouldPromptUser: true` é o padrão do produto. Desmarcar, se existir, é o reforço.
 
 ---
 
@@ -122,7 +122,7 @@ O cromo do template sempre foi inglês — *Monthly Automation Report*, *KPI Sna
 Agora está resolvido nos dois lados:
 
 - `§11` abre a exceção explícita: *"the report is the one place §1 does not apply"*.
-- As descrições de `exec_summary` e `analysis_html` pedem **ENGLISH** em maiúsculas.
+- A descrição de `report_html` pede **ENGLISH** em maiúsculas.
 - O que ainda estava em português dentro do fluxo virou inglês: `Atraso Justificado` → **Delay Justification**, o texto de quando não há justificativa, o resumo automático de reserva, `Não informado` → **Not informed**, a mensagem de área vazia, o nome do arquivo (`..._CDIO_Report_Consumer.html`), e os números da tabela de BU passaram de `pt-BR` para `en-US`.
 
 **A conversa com o agente continua em português.** Só o documento é inglês.
@@ -133,7 +133,7 @@ Agora está resolvido nos dois lados:
 
 ### Passo 1 · Pegar o zip
 
-- **Baixar do GitHub:** abra [`dist/CDIORelatorioArea_1_2_0_5.zip`](https://github.com/nick-kuh/coisas_aleartorias/blob/claude/automated-html-report-section-rbmt60/dist/CDIORelatorioArea_1_2_0_5.zip) e clique em **Download raw file** (ícone ⤓ à direita). "Salvar como" na página salva HTML, não o zip.
+- **Baixar do GitHub:** abra [`dist/CDIORelatorioArea_1_3_0_0.zip`](https://github.com/nick-kuh/coisas_aleartorias/blob/claude/automated-html-report-section-rbmt60/dist/CDIORelatorioArea_1_3_0_0.zip) e clique em **Download raw file** (ícone ⤓ à direita). "Salvar como" na página salva HTML, não o zip.
 - **Ou regerar:** `flows/build.sh`.
 
 > ⚠️ **Não reempacote pelo Explorador do Windows.** O Power Automate exige `[Content_Types].xml`, `solution.xml` e `customizations.xml` **na raiz**; zipar a pasta cria um nível a mais e a importação recusa.
@@ -142,7 +142,7 @@ Agora está resolvido nos dois lados:
 
 1. [make.powerautomate.com](https://make.powerautomate.com) → confira o **ambiente** no canto superior direito. É o mesmo do agente. Este é o erro que mais custa tempo.
 2. **Soluções → Importar solução → Procurar** → o zip → **Avançar**.
-3. A tela mostra `CDIORelatorioArea` versão `1.2.0.5`. Como a `1.1.x` já está lá, ele diz **Atualizar**.
+3. A tela mostra `CDIORelatorioArea` versão `1.3.0.0`. Como a `1.1.x` já está lá, ele diz **Atualizar**.
 4. Mapeie as duas conexões: `CDIO Relatorio - Azure DevOps` e `CDIO Relatorio - SharePoint`.
 5. **Importar.** Agora a solução tem **dois** fluxos.
 
@@ -232,6 +232,26 @@ O `PortfolioDataArea` não toca no SharePoint: nada para configurar nele.
 >
 > Repare no `{"root":{...}}` e no `'}}'` fechando os dois. Também veio do fluxo original, e é a razão de a tabela de BU nunca ter saído. Corrigido na `1.2.0.5`, com a checagem correspondente no validador.
 
+### Duas entradas de texto livre eram uma a mais
+
+Com os cinco erros de expressão fora do caminho, o agente voltou a travar — desta vez pedindo:
+
+> *"Por favor, forneça a análise em HTML para o relatório executivo."*
+
+O plano estava certo e o `Read Area Portfolio` tinha devolvido as 11 iniciativas. O que o binding mostra é o problema:
+
+```
+autoFilled: ['area', 'exec_summary']
+exec_summary  (5956 chars)
+analysis_html  —
+```
+
+O modelo escreveu **tudo** dentro do `exec_summary` — 5.956 caracteres, onde a descrição pedia 3 a 5 frases — e chegou no `analysis_html` sem nada para pôr. Entrada de texto livre que fica vazia vira pergunta ao usuário, e a gente já tinha visto esse filme na §1.
+
+Duas entradas longas obrigam o modelo a **repartir** o que escreveu, e ele reparte quando quer. Na `1.3.0.0` existe **uma só**: `report_html`, com todo o texto do relatório, caindo na caixa do topo — que virou `Executive Summary & Analysis`, branca e mais larga, e recebe blocos (`<div>`, `<table>`) em vez de um `<p>` que o navegador fecharia sozinho no primeiro `<div>`. O quadro roxo separado saiu.
+
+Ela é **opcional**: se vier vazia, a página sai com a contagem automática e uma linha em âmbar dizendo que ninguém escreveu a análise. Relatório degradado e visivelmente degradado é melhor que conversa travada.
+
 > 🔴 **Solução importada chega com os fluxos DESLIGADOS.** É o passo que mais se pula, e o sintoma não parece com a causa: na lista, o ícone do fluxo ganha um pequeno **⃠** no canto — parece um fluxo "oculto" ou sem permissão, e é só desativado. O agente, ao chamar, devolve:
 >
 > ```
@@ -247,7 +267,7 @@ O 💎 ao lado do nome é outra coisa e é esperado: marca fluxo que vive dentro
 
 `PortfolioDataArea` → **Testar → Manualmente**, `area = Customer Dev`. Tem que voltar verde com `data` preenchido e `kpis.total` batendo com o Power BI. Esse teste nem toca no SharePoint: se passar, DevOps e filtros estão de pé.
 
-`PublishAreaReport` → **Testar → Manualmente**, `area = Customer Dev`, `exec_summary = teste`, `analysis_html = <p style="font-size:12px;">teste</p>`. Tem que aparecer um `.html` na pasta e o `report_url` tem que abrir.
+`PublishAreaReport` → **Testar → Manualmente**, `area = Customer Dev`, `report_html = <p style="font-size:13px;">teste</p>`. Tem que aparecer um `.html` na pasta e o `report_url` tem que abrir.
 
 ---
 
@@ -287,20 +307,15 @@ Confira que **todas as entradas** estão em **"Dinamicamente com IA"**. Entrada 
 
 As descrições das entradas vêm prontas do gatilho de cada fluxo. **Não redigite.** As duas que fazem o trabalho pesado, para revisão:
 
-**Descrição da entrada `exec_summary`:**  `425/1024`
+**Descrição da entrada `report_html`** — é este texto que segura o desenho da página:  `976/1024`
 
 ```
-YOU write this - never ask the user for it. The executive summary that opens the report, in ENGLISH, 3 to 5 sentences: money at stake, where risk concentrates, the decision you are asking leadership to make - in that order. Plain prose; only <strong> and <em> are allowed. Name every project as Name (1234). Every figure must come from the Portfolio Data call you just made. If you have not made that call yet, make it first.
-```
-
-**Descrição da entrada `analysis_html`** — é este texto que segura o desenho da página:  `928/1024`
-
-```
-YOU write this - never ask the user for it. Your analysis, in ENGLISH, as an HTML fragment placed in its own section of the report. YOU choose the sub-sections: nothing is mandatory, nothing is forbidden.
-FRAGMENT only: no <html>, <head>, <body>, <style>, <script>, class= or id=. Use <p>, <div>, <table>, <tr>, <td>, <ul>, <li>, <strong>, <em>, <a>, each carrying an inline style=.
-STYLE: font-family:'Segoe UI',sans-serif. Text #1e293b, muted #64748b, border #e2e8f0, soft background #f8fafc. Accents: #a855f7 decision, #06b6d4 section, #ef4444 risk, #10b981 win, #f59e0b watch. Block title 14px/800, body 12px/1.5, note 10px. Tables with border-collapse:collapse and padding:6px 10px.
+YOU write this, always - never ask the user for it. It is the whole written part of the report, in ENGLISH.
+SHAPE: open with 3-5 sentences of executive summary - money at stake, where risk sits, the decision you want from leadership. Then your analysis, in as many sub-sections as you like; nothing is mandatory.
+FRAGMENT only: no <html>, <head>, <body>, <style>, <script>, class= or id=. Use <p>, <div>, <table>, <tr>, <td>, <ul>, <li>, <strong>, <em>, <a>, each with inline style=.
+STYLE: font-family:'Segoe UI',sans-serif. Text #1e293b, muted #64748b, border #e2e8f0. Accents: #a855f7 decision, #06b6d4 section, #ef4444 risk, #10b981 win, #f59e0b watch. Section title 14px/800, body 13px/1.6. Tables border-collapse:collapse, padding:6px 10px.
 PROJECTS: always Name (1234), linked to https://dev.azure.com/CDIO-IT-LATAM/CDIO%20Portfolio/_workitems/edit/1234. Money as EUR 1.4M.
-FORBIDDEN: <img>, base64, any external URL, and any number that did not come from the Portfolio Data call.
+FORBIDDEN: <img>, base64, external URLs, and any number the Portfolio Data call did not return.
 ```
 
 ---
@@ -320,7 +335,7 @@ O que ele faz:
       year: "2026"
 ```
 
-Chama o fluxo de **publicação** direto, passando só `area` e `year`. Sem `exec_summary`, sem `analysis_html`, sem nunca ter lido o portfólio. O fluxo não quebra — o `coalesce` cobre os dois campos vazios — e é justamente esse o problema: sai uma página completa, bonita, com o resumo genérico de contagens e **sem o bloco de análise**. O relatório oco que esta arquitetura inteira existe para evitar.
+Chama o fluxo de **publicação** direto, passando só `area` e `year`. Sem `report_html`, sem nunca ter lido o portfólio. O fluxo não quebra — o `coalesce` cobre o campo vazio — e é justamente esse o problema: sai uma página completa, bonita, com o resumo genérico de contagens e **sem o bloco de análise**. O relatório oco que esta arquitetura inteira existe para evitar.
 
 Três defeitos menores no mesmo tópico, todos irrelevantes depois de apagá-lo, mas que valem como registro:
 
@@ -377,11 +392,11 @@ Boa parte dos tenants roda a biblioteca em **Browser File Handling: Strict**, e 
 |---|---|---|
 | 1 | `PortfolioDataArea` manual, `area = Customer Dev` | JSON de volta; `kpis.total` bate com o Power BI; `noGoLiveDate > 0` numa área com projetos em `01 Idea` |
 | 2 | Idem com uma área inexistente | resposta "No active initiative found", sem erro vermelho no histórico |
-| 3 | `PublishAreaReport` manual com textos de teste | `.html` na pasta, quadro roxo "AURA — Analysis & Decisions" antes da tabela de BU |
+| 3 | `PublishAreaReport` manual com um `report_html` de teste | `.html` na pasta, com o texto na caixa `Executive Summary & Analysis` do topo |
 | 0 | `Tópicos` no menu do agente | **não existe** um tópico `Create Report` ativo — ele atalha a arquitetura, ver §6.1 |
 | 4 | Abrir cada tool e reler a descrição | a de `Publish Area Report` fala em publicar, **não** em "Call this FIRST" nem "creates no file" |
 | 5 | No agente: *"faz o relatório de Customer Dev"* | ele chama `Read Area Portfolio`, **depois** `Publish Area Report`, e devolve o link — **sem pedir nada a você** |
-| 6 | Ler a página | resumo e análise **em inglês**, cada projeto como `Nome (1234)` com link |
+| 6 | Ler a página | resumo e análise **em inglês** na caixa do topo, cada projeto como `Nome (1234)` com link |
 | 7 | Comparar os números do texto com o JSON do passo 1 | nenhum número inventado |
 | 8 | Coluna ROI da tabela de BU | `2.10x`, não `€ 2,10`; vermelho abaixo de `1.00x`; `n/a` sem budget |
 | 9 | Botão AURA no topo do relatório | abre o agente, não a home do Copilot Studio |
