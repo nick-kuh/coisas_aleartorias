@@ -5,7 +5,7 @@ Dois fluxos do Power Automate e duas tools no agente. O primeiro devolve o portf
 | | |
 |---|---|
 | Solução | [`flows/CDIORelatorioArea/`](../../flows/CDIORelatorioArea/) · empacote com `flows/build.sh` |
-| Zip pronto | `dist/CDIORelatorioArea_1_2_0_4.zip` |
+| Zip pronto | `dist/CDIORelatorioArea_1_2_0_5.zip` |
 | Seção nas instruções | `§11` de [`agent/instructions-standard.md`](../../agent/instructions-standard.md) |
 
 > ⚠️ **Nada aqui foi executado contra o tenant.** `scripts/validate-flows.py` valida os dois JSON — aninhamento de `InitializeVariable`, `Response` dentro de laço, parênteses e aspas, referências entre ações, placeholders do template e o limite de 1.024 por descrição de entrada. Estrutura, não runtime; os testes de aceite do final existem por isso.
@@ -133,7 +133,7 @@ Agora está resolvido nos dois lados:
 
 ### Passo 1 · Pegar o zip
 
-- **Baixar do GitHub:** abra [`dist/CDIORelatorioArea_1_2_0_4.zip`](https://github.com/nick-kuh/coisas_aleartorias/blob/claude/automated-html-report-section-rbmt60/dist/CDIORelatorioArea_1_2_0_4.zip) e clique em **Download raw file** (ícone ⤓ à direita). "Salvar como" na página salva HTML, não o zip.
+- **Baixar do GitHub:** abra [`dist/CDIORelatorioArea_1_2_0_5.zip`](https://github.com/nick-kuh/coisas_aleartorias/blob/claude/automated-html-report-section-rbmt60/dist/CDIORelatorioArea_1_2_0_5.zip) e clique em **Download raw file** (ícone ⤓ à direita). "Salvar como" na página salva HTML, não o zip.
 - **Ou regerar:** `flows/build.sh`.
 
 > ⚠️ **Não reempacote pelo Explorador do Windows.** O Power Automate exige `[Content_Types].xml`, `solution.xml` e `customizations.xml` **na raiz**; zipar a pasta cria um nível a mais e a importação recusa.
@@ -142,7 +142,7 @@ Agora está resolvido nos dois lados:
 
 1. [make.powerautomate.com](https://make.powerautomate.com) → confira o **ambiente** no canto superior direito. É o mesmo do agente. Este é o erro que mais custa tempo.
 2. **Soluções → Importar solução → Procurar** → o zip → **Avançar**.
-3. A tela mostra `CDIORelatorioArea` versão `1.2.0.4`. Como a `1.1.x` já está lá, ele diz **Atualizar**.
+3. A tela mostra `CDIORelatorioArea` versão `1.2.0.5`. Como a `1.1.x` já está lá, ele diz **Atualizar**.
 4. Mapeie as duas conexões: `CDIO Relatorio - Azure DevOps` e `CDIO Relatorio - SharePoint`.
 5. **Importar.** Agora a solução tem **dois** fluxos.
 
@@ -215,6 +215,22 @@ O `PortfolioDataArea` não toca no SharePoint: nada para configurar nele.
 > Na `1.2.0.4` cada uso virou ação de verdade: dois `Select` para as listas de IDs, cinco para os conjuntos do payload, um para as BUs, e dentro do laço de BU um `Filter array` mais dois `Select`. O fluxo de dados foi de 32 para 38 ações e o de publicação de 65 para 70 — todas do tipo que o produto reconhece.
 >
 > `validate-flows.py` ganhou a checagem que teria pego isso no primeiro dia: **toda função citada numa expressão é conferida contra a lista da Workflow Definition Language**, ignorando o que está dentro de aspas (senão `rgba(...)` de um estilo CSS viraria falso positivo). Uma fixture reintroduz os quatro erros desta sessão e ele pega os quatro.
+
+> 🔴 **O quinto, e o último da série.** Com o `select()` resolvido, o fluxo de dados passou a funcionar — devolveu `total: 11, bigRock: 6, regular: 4, small: 1` para Customer Dev 2026. O de publicação foi mais longe e parou no laço de BU:
+>
+> ```
+> InvalidTemplate ... action 'BU_Benefit' ... The template language function 'xml'
+> parameter is not valid. The provided value cannot be converted to XML:
+> 'This document already has a 'DocumentElement' node.'
+> ```
+>
+> O truque de somar um array em Power Automate passa por `xpath(xml(json(...)))`, e o array **precisa estar embrulhado num objeto**. Com `{"v":[1,2,3]}` o `xml()` gera três elementos na raiz e recusa o documento. A forma canônica é:
+>
+> ```
+> xpath(xml(json(concat('{"root":{"v":', string(array), '}}'))), 'sum(/root/v)')
+> ```
+>
+> Repare no `{"root":{...}}` e no `'}}'` fechando os dois. Também veio do fluxo original, e é a razão de a tabela de BU nunca ter saído. Corrigido na `1.2.0.5`, com a checagem correspondente no validador.
 
 > 🔴 **Solução importada chega com os fluxos DESLIGADOS.** É o passo que mais se pula, e o sintoma não parece com a causa: na lista, o ícone do fluxo ganha um pequeno **⃠** no canto — parece um fluxo "oculto" ou sem permissão, e é só desativado. O agente, ao chamar, devolve:
 >

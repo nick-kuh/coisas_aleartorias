@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Empacota a solução do fluxo no zip que o Power Automate importa.
-# Uso: flows/build.sh   →   dist/CDIORelatorioArea_1_2_0_4.zip
+# Uso: flows/build.sh   →   dist/CDIORelatorioArea_1_2_0_5.zip
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 src="$root/flows/CDIORelatorioArea"

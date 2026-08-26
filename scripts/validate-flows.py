@@ -20,6 +20,7 @@ Checagens:
   8. gatilho `Skills` com `$connections` e `$authentication` declarados
   9. seleção de propriedade sobre campo do DevOps — `?['fields']?['X']?['y']`
  10. só funções que existem na Workflow Definition Language
+ 11. soma via `xpath(xml(json(...)))` com o array embrulhado em `root`
 
 Uso:  python3 scripts/validate-flows.py
 """
@@ -202,6 +203,15 @@ def checar(caminho):
             if nome not in FUNCOES:
                 erros.append("função `%s()` não existe na Workflow Definition Language (%s)"
                              % (nome, onde))
+
+    # 11. o truque de somar array com xpath só funciona com o array embrulhado
+    # em um objeto. `{"v":[1,2]}` vira mais de um elemento na raiz e o xml()
+    # recusa com "This document already has a 'DocumentElement' node".
+    for onde, expr in expressoes(defi):
+        if "xml(json(" in expr and '{\\"root\\":' not in expr and '{"root":' not in expr:
+            erros.append("soma por xpath em %s sem embrulhar o array: use "
+                         "concat('{\"root\":{\"v\":', string(array), '}}') e "
+                         "xpath 'sum(/root/v)'" % onde)
 
     # 9. seleção de propriedade sobre um campo do Azure DevOps
     # Um campo de identidade volta como objeto {displayName: ...} OU como a string

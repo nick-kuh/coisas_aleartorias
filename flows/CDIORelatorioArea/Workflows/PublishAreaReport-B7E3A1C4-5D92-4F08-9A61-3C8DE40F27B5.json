@@ -846,7 +846,7 @@
                       "Succeeded"
                     ]
                   },
-                  "inputs": "@if(empty(body('BU_Rows')), 0, float(xpath(xml(json(concat('{\"v\":', string(body('BU_benefits')), '}'))), 'sum(/root/v)')))"
+                  "inputs": "@if(empty(body('BU_Rows')), 0, float(xpath(xml(json(concat('{\"root\":{\"v\":', string(body('BU_benefits')), '}}'))), 'sum(/root/v)')))"
                 },
                 "BU_Budget": {
                   "type": "Compose",
@@ -855,7 +855,7 @@
                       "Succeeded"
                     ]
                   },
-                  "inputs": "@if(empty(body('BU_Rows')), 0, float(xpath(xml(json(concat('{\"v\":', string(body('BU_budgets')), '}'))), 'sum(/root/v)')))"
+                  "inputs": "@if(empty(body('BU_Rows')), 0, float(xpath(xml(json(concat('{\"root\":{\"v\":', string(body('BU_budgets')), '}}'))), 'sum(/root/v)')))"
                 },
                 "BU_Roi": {
                   "type": "Compose",
