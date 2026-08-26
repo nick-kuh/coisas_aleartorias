@@ -19,6 +19,7 @@ Checagens:
   7. descrição de entrada do gatilho <= 1024 chars
   8. gatilho `Skills` com `$connections` e `$authentication` declarados
   9. seleção de propriedade sobre campo do DevOps — `?['fields']?['X']?['y']`
+ 10. só funções que existem na Workflow Definition Language
 
 Uso:  python3 scripts/validate-flows.py
 """
@@ -31,6 +32,37 @@ import sys
 
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
 LIMITE_DESCRICAO = 1024
+
+# Funções da Workflow Definition Language. `select` e `filter` NÃO estão aqui de
+# propósito: são AÇÕES (Select / Filter array), não funções de expressão. Escrever
+# `select(...)` dentro de uma expressão importa, salva e ativa — e só quebra ao
+# rodar, com `InvalidTemplate: The template function 'select' is not defined`.
+FUNCOES = {
+    # coleções
+    "chunk", "contains", "empty", "first", "intersection", "item", "items", "join",
+    "last", "length", "reverse", "skip", "sort", "take", "union",
+    # strings
+    "concat", "endsWith", "formatNumber", "guid", "indexOf", "lastIndexOf", "nthIndexOf",
+    "replace", "slice", "split", "startsWith", "substring", "toLower", "toUpper", "trim",
+    # lógica
+    "and", "equals", "greater", "greaterOrEquals", "if", "less", "lessOrEquals", "not", "or",
+    # conversão
+    "array", "base64", "base64ToBinary", "base64ToString", "binary", "bool", "coalesce",
+    "createArray", "dataUri", "dataUriToBinary", "dataUriToString", "decodeBase64",
+    "decodeDataUri", "decodeUriComponent", "encodeUriComponent", "float", "int", "json",
+    "string", "uriComponent", "uriComponentToBinary", "uriComponentToString", "xml",
+    # matemática
+    "add", "div", "max", "min", "mod", "mul", "rand", "range", "round", "sub",
+    # data
+    "addDays", "addHours", "addMinutes", "addSeconds", "addToTime", "convertFromUtc",
+    "convertTimeZone", "convertToUtc", "dayOfMonth", "dayOfWeek", "dayOfYear",
+    "formatDateTime", "getFutureTime", "getPastTime", "startOfDay", "startOfHour",
+    "startOfMonth", "subtractFromTime", "ticks", "utcNow",
+    # referências e fluxo
+    "action", "actionBody", "actionOutputs", "body", "outputs", "parameters", "result",
+    "trigger", "triggerBody", "triggerFormDataValue", "triggerOutputs", "variables",
+    "workflow", "listCallbackUrl", "xpath",
+}
 
 
 def achatar(acoes, profundidade=0, caminho=""):
@@ -72,6 +104,24 @@ def desbalanceada(expr):
     if dentro:
         return "aspa simples não fechada"
     return None
+
+
+def sem_literais(expr):
+    """Remove o conteúdo das strings da expressão. `rgba(...)` dentro de um estilo
+    CSS ou `Make (Business Operation)` dentro de uma mensagem não são chamadas."""
+    saida, dentro, i = [], False, 0
+    while i < len(expr):
+        c = expr[i]
+        if c == "'":
+            if dentro and i + 1 < len(expr) and expr[i + 1] == "'":
+                i += 2
+                continue
+            dentro = not dentro
+            saida.append("'")
+        elif not dentro:
+            saida.append(c)
+        i += 1
+    return "".join(saida)
 
 
 def expressoes(obj, caminho=""):
@@ -144,6 +194,14 @@ def checar(caminho):
         elif LIMITE_DESCRICAO - n < 74:
             avisos.append("descrição da entrada `%s`: %d/%d, só %d de folga"
                           % (nome, n, LIMITE_DESCRICAO, LIMITE_DESCRICAO - n))
+
+    # 10. funções que não existem
+    for onde, expr in expressoes(defi):
+        for nome in set(re.findall(r"(?<![\w'])([a-zA-Z_][a-zA-Z0-9_]*)\s*\(",
+                                   sem_literais(expr))):
+            if nome not in FUNCOES:
+                erros.append("função `%s()` não existe na Workflow Definition Language (%s)"
+                             % (nome, onde))
 
     # 9. seleção de propriedade sobre um campo do Azure DevOps
     # Um campo de identidade volta como objeto {displayName: ...} OU como a string

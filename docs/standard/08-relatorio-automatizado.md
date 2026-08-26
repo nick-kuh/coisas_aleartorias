@@ -5,7 +5,7 @@ Dois fluxos do Power Automate e duas tools no agente. O primeiro devolve o portf
 | | |
 |---|---|
 | Solução | [`flows/CDIORelatorioArea/`](../../flows/CDIORelatorioArea/) · empacote com `flows/build.sh` |
-| Zip pronto | `dist/CDIORelatorioArea_1_2_0_3.zip` |
+| Zip pronto | `dist/CDIORelatorioArea_1_2_0_4.zip` |
 | Seção nas instruções | `§11` de [`agent/instructions-standard.md`](../../agent/instructions-standard.md) |
 
 > ⚠️ **Nada aqui foi executado contra o tenant.** `scripts/validate-flows.py` valida os dois JSON — aninhamento de `InitializeVariable`, `Response` dentro de laço, parênteses e aspas, referências entre ações, placeholders do template e o limite de 1.024 por descrição de entrada. Estrutura, não runtime; os testes de aceite do final existem por isso.
@@ -133,7 +133,7 @@ Agora está resolvido nos dois lados:
 
 ### Passo 1 · Pegar o zip
 
-- **Baixar do GitHub:** abra [`dist/CDIORelatorioArea_1_2_0_3.zip`](https://github.com/nick-kuh/coisas_aleartorias/blob/claude/automated-html-report-section-rbmt60/dist/CDIORelatorioArea_1_2_0_3.zip) e clique em **Download raw file** (ícone ⤓ à direita). "Salvar como" na página salva HTML, não o zip.
+- **Baixar do GitHub:** abra [`dist/CDIORelatorioArea_1_2_0_4.zip`](https://github.com/nick-kuh/coisas_aleartorias/blob/claude/automated-html-report-section-rbmt60/dist/CDIORelatorioArea_1_2_0_4.zip) e clique em **Download raw file** (ícone ⤓ à direita). "Salvar como" na página salva HTML, não o zip.
 - **Ou regerar:** `flows/build.sh`.
 
 > ⚠️ **Não reempacote pelo Explorador do Windows.** O Power Automate exige `[Content_Types].xml`, `solution.xml` e `customizations.xml` **na raiz**; zipar a pasta cria um nível a mais e a importação recusa.
@@ -142,7 +142,7 @@ Agora está resolvido nos dois lados:
 
 1. [make.powerautomate.com](https://make.powerautomate.com) → confira o **ambiente** no canto superior direito. É o mesmo do agente. Este é o erro que mais custa tempo.
 2. **Soluções → Importar solução → Procurar** → o zip → **Avançar**.
-3. A tela mostra `CDIORelatorioArea` versão `1.2.0.3`. Como a `1.1.x` já está lá, ele diz **Atualizar**.
+3. A tela mostra `CDIORelatorioArea` versão `1.2.0.4`. Como a `1.1.x` já está lá, ele diz **Atualizar**.
 4. Mapeie as duas conexões: `CDIO Relatorio - Azure DevOps` e `CDIO Relatorio - SharePoint`.
 5. **Importar.** Agora a solução tem **dois** fluxos.
 
@@ -200,6 +200,21 @@ O `PortfolioDataArea` não toca no SharePoint: nada para configurar nele.
 > No mesmo passe caiu o `stateNum`, que fazia `substring(state, 0, 1)` protegido por um `length > 2` à esquerda de um `and()` — e `and()` não faz curto-circuito. Agora o texto é preenchido com `'xx'` antes do `substring`, e o `if` escolhe entre **dois literais** dentro do `int()`, de modo que nenhum ramo pode lançar.
 >
 > `validate-flows.py` passou a recusar qualquer `?['fields']?['X']?['y']`.
+
+> 🔴 **E o quarto, que é a raiz de tudo.** Com a `1.2.0.3` no ar, o histórico finalmente mostrou a ação vermelha:
+>
+> ```
+> InvalidTemplate. Unable to process template language expressions in action
+> 'Ids_ByBudget': 'The template function 'select' is not defined or not valid.'
+> ```
+>
+> **`select()` e `filter()` não são funções de expressão no Power Automate.** São **ações** — `Select` e `Filter array`. Escrever `select(...)` dentro de um `@{}` importa, salva e ativa sem uma palavra, e só quebra ao rodar.
+>
+> Esse trecho veio do fluxo original, não foi coisa que eu inventei — o que também responde uma pergunta que ficou aberta a sessão inteira: **o fluxo `1.0.0.6` nunca funcionou ponta a ponta.** O `Ids_ByBudget` dele tinha exatamente a mesma expressão, e é a terceira ação de todas.
+>
+> Na `1.2.0.4` cada uso virou ação de verdade: dois `Select` para as listas de IDs, cinco para os conjuntos do payload, um para as BUs, e dentro do laço de BU um `Filter array` mais dois `Select`. O fluxo de dados foi de 32 para 38 ações e o de publicação de 65 para 70 — todas do tipo que o produto reconhece.
+>
+> `validate-flows.py` ganhou a checagem que teria pego isso no primeiro dia: **toda função citada numa expressão é conferida contra a lista da Workflow Definition Language**, ignorando o que está dentro de aspas (senão `rgba(...)` de um estilo CSS viraria falso positivo). Uma fixture reintroduz os quatro erros desta sessão e ele pega os quatro.
 
 > 🔴 **Solução importada chega com os fluxos DESLIGADOS.** É o passo que mais se pula, e o sintoma não parece com a causa: na lista, o ícone do fluxo ganha um pequeno **⃠** no canto — parece um fluxo "oculto" ou sem permissão, e é só desativado. O agente, ao chamar, devolve:
 >

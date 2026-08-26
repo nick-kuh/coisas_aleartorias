@@ -211,14 +211,26 @@
                 }
               }
             },
-            "Ids_ByBudget": {
-              "type": "Compose",
+            "Sel_Ids_ByBudget": {
+              "type": "Select",
               "runAfter": {
                 "WIQL_ByBudget": [
                   "Succeeded"
                 ]
               },
-              "inputs": "@{join(take(select(body('WIQL_ByBudget')?['workItems'], item()?['id']), 200), ',')}"
+              "inputs": {
+                "from": "@take(coalesce(body('WIQL_ByBudget')?['workItems'], json('[]')), 200)",
+                "select": "@item()?['id']"
+              }
+            },
+            "Ids_ByBudget": {
+              "type": "Compose",
+              "runAfter": {
+                "Sel_Ids_ByBudget": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": "@{join(body('Sel_Ids_ByBudget'), ',')}"
             },
             "If_No_Items": {
               "type": "If",
@@ -365,14 +377,26 @@
                 }
               }
             },
-            "Ids_ByDate": {
-              "type": "Compose",
+            "Sel_Ids_ByDate": {
+              "type": "Select",
               "runAfter": {
                 "WIQL_ByDate": [
                   "Succeeded"
                 ]
               },
-              "inputs": "@{join(take(select(body('WIQL_ByDate')?['workItems'], item()?['id']), 200), ',')}"
+              "inputs": {
+                "from": "@take(coalesce(body('WIQL_ByDate')?['workItems'], json('[]')), 200)",
+                "select": "@item()?['id']"
+              }
+            },
+            "Ids_ByDate": {
+              "type": "Compose",
+              "runAfter": {
+                "Sel_Ids_ByDate": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": "@{join(body('Sel_Ids_ByDate'), ',')}"
             },
             "Details_ByDate": {
               "type": "OpenApiConnection",
@@ -748,14 +772,26 @@
                 "select": "@concat('<tr><td width=\"20\" style=\"border-left:2px solid #22c55e;position:relative;\"><div style=\"width:10px;height:10px;border-radius:50%;border:2px solid #16a34a;background-color:white;position:absolute;left:-7px;top:4px;\"></div></td><td style=\"padding-bottom:24px;padding-left:16px;\"><span style=\"color:#16a34a;font-size:11px;font-weight:700;\">', if(empty(item()?['tdate']), 'TBD', formatDateTime(item()?['tdateSafe'], 'MMM dd, yyyy')), ' (', if(empty(item()?['golive']), 'PGLS', 'Go-Live'), ')</span><br>', '<span style=\"color:#1e293b;font-size:13px;font-weight:700;\">', item()?['flag'], item()?['title'], '</span><span style=\"color:#64748b;font-size:10px;font-weight:600;margin-left:4px;\"> (', item()?['itArea'], ')</span></td></tr>')"
               }
             },
-            "BU_Distinct": {
-              "type": "Compose",
+            "Sel_BUs": {
+              "type": "Select",
               "runAfter": {
                 "S_TL_Sml": [
                   "Succeeded"
                 ]
               },
-              "inputs": "@{join(union(select(body('Items'), item()?['bu']), select(body('Items'), item()?['bu'])), '¦')}"
+              "inputs": {
+                "from": "@body('Items')",
+                "select": "@item()?['bu']"
+              }
+            },
+            "BU_Distinct": {
+              "type": "Compose",
+              "runAfter": {
+                "Sel_BUs": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": "@{join(union(body('Sel_BUs'), body('Sel_BUs')), '¦')}"
             },
             "Apply_to_each_BU": {
               "type": "Foreach",
@@ -772,18 +808,45 @@
               },
               "actions": {
                 "BU_Rows": {
-                  "type": "Compose",
+                  "type": "Query",
                   "runAfter": {},
-                  "inputs": "@filter(body('Items'), equals(item()?['bu'], items('Apply_to_each_BU')))"
+                  "inputs": {
+                    "from": "@body('Items')",
+                    "where": "@equals(item()?['bu'], items('Apply_to_each_BU'))"
+                  }
                 },
-                "BU_Benefit": {
-                  "type": "Compose",
+                "BU_benefits": {
+                  "type": "Select",
                   "runAfter": {
                     "BU_Rows": [
                       "Succeeded"
                     ]
                   },
-                  "inputs": "@if(empty(outputs('BU_Rows')), 0, float(xpath(xml(json(concat('{\"v\":', string(select(outputs('BU_Rows'), float(coalesce(item()?['benefit'], 0)))), '}'))), 'sum(/root/v)')))"
+                  "inputs": {
+                    "from": "@body('BU_Rows')",
+                    "select": "@float(coalesce(item()?['benefit'], 0))"
+                  }
+                },
+                "BU_budgets": {
+                  "type": "Select",
+                  "runAfter": {
+                    "BU_benefits": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "from": "@body('BU_Rows')",
+                    "select": "@float(coalesce(item()?['budget'], 0))"
+                  }
+                },
+                "BU_Benefit": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "BU_budgets": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@if(empty(body('BU_Rows')), 0, float(xpath(xml(json(concat('{\"v\":', string(body('BU_benefits')), '}'))), 'sum(/root/v)')))"
                 },
                 "BU_Budget": {
                   "type": "Compose",
@@ -792,7 +855,7 @@
                       "Succeeded"
                     ]
                   },
-                  "inputs": "@if(empty(outputs('BU_Rows')), 0, float(xpath(xml(json(concat('{\"v\":', string(select(outputs('BU_Rows'), float(coalesce(item()?['budget'], 0)))), '}'))), 'sum(/root/v)')))"
+                  "inputs": "@if(empty(body('BU_Rows')), 0, float(xpath(xml(json(concat('{\"v\":', string(body('BU_budgets')), '}'))), 'sum(/root/v)')))"
                 },
                 "BU_Roi": {
                   "type": "Compose",

@@ -8,7 +8,7 @@
     <Descriptions>
       <Description description="Dois fluxos: Portfolio Data by Area devolve o portfolio em JSON para o agente analisar; Publish Area Report renderiza o relatorio executivo em HTML e publica no SharePoint." languagecode="1033" />
     </Descriptions>
-    <Version>1.2.0.3</Version>
+    <Version>1.2.0.4</Version>
     <Managed>0</Managed>
     <Publisher>
       <UniqueName>UnileverCoPilotStudioPOC</UniqueName>

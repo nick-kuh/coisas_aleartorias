@@ -109,14 +109,26 @@
                 }
               }
             },
-            "Ids_ByBudget": {
-              "type": "Compose",
+            "Sel_Ids_ByBudget": {
+              "type": "Select",
               "runAfter": {
                 "WIQL_ByBudget": [
                   "Succeeded"
                 ]
               },
-              "inputs": "@{join(take(select(body('WIQL_ByBudget')?['workItems'], item()?['id']), 200), ',')}"
+              "inputs": {
+                "from": "@take(coalesce(body('WIQL_ByBudget')?['workItems'], json('[]')), 200)",
+                "select": "@item()?['id']"
+              }
+            },
+            "Ids_ByBudget": {
+              "type": "Compose",
+              "runAfter": {
+                "Sel_Ids_ByBudget": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": "@{join(body('Sel_Ids_ByBudget'), ',')}"
             },
             "If_No_Items": {
               "type": "If",
@@ -466,10 +478,70 @@
                 }
               }
             },
+            "Sel_Ids_F_Delayed": {
+              "type": "Select",
+              "runAfter": {
+                "Items_Lean": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_Delayed')",
+                "select": "@item()?['id']"
+              }
+            },
+            "Sel_Ids_F_NoDate": {
+              "type": "Select",
+              "runAfter": {
+                "Sel_Ids_F_Delayed": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_NoDate')",
+                "select": "@item()?['id']"
+              }
+            },
+            "Sel_Ids_F_HighPotential": {
+              "type": "Select",
+              "runAfter": {
+                "Sel_Ids_F_NoDate": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_HighPotential')",
+                "select": "@item()?['id']"
+              }
+            },
+            "Sel_Ids_F_DeployedQ": {
+              "type": "Select",
+              "runAfter": {
+                "Sel_Ids_F_HighPotential": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_DeployedQ')",
+                "select": "@item()?['id']"
+              }
+            },
+            "Sel_Ids_F_QPrio": {
+              "type": "Select",
+              "runAfter": {
+                "Sel_Ids_F_DeployedQ": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('F_QPrio')",
+                "select": "@item()?['id']"
+              }
+            },
             "Data_Payload": {
               "type": "Compose",
               "runAfter": {
-                "Items_Lean": [
+                "Sel_Ids_F_QPrio": [
                   "Succeeded"
                 ]
               },
@@ -495,11 +567,11 @@
                   "highPotential": "@length(body('F_HighPotential'))"
                 },
                 "ids": {
-                  "delayed": "@select(body('F_Delayed'), item()?['id'])",
-                  "noGoLiveDate": "@select(body('F_NoDate'), item()?['id'])",
-                  "highPotential": "@select(body('F_HighPotential'), item()?['id'])",
-                  "deployedCurrentQuarter": "@select(body('F_DeployedQ'), item()?['id'])",
-                  "nextQuarterBigRocks": "@select(body('F_QPrio'), item()?['id'])"
+                  "delayed": "@body('Sel_Ids_F_Delayed')",
+                  "noGoLiveDate": "@body('Sel_Ids_F_NoDate')",
+                  "highPotential": "@body('Sel_Ids_F_HighPotential')",
+                  "deployedCurrentQuarter": "@body('Sel_Ids_F_DeployedQ')",
+                  "nextQuarterBigRocks": "@body('Sel_Ids_F_QPrio')"
                 },
                 "projects": "@body('Items_Lean')"
               }
