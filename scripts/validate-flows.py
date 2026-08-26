@@ -34,10 +34,11 @@ import sys
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
 LIMITE_DESCRICAO = 1024
 
-# Funções da Workflow Definition Language. `select` e `filter` NÃO estão aqui de
-# propósito: são AÇÕES (Select / Filter array), não funções de expressão. Escrever
-# `select(...)` dentro de uma expressão importa, salva e ativa — e só quebra ao
-# rodar, com `InvalidTemplate: The template function 'select' is not defined`.
+# Funções da Workflow Definition Language. Três ausências são de propósito:
+# `select` e `filter` são AÇÕES (Select / Filter array), e `round` simplesmente
+# não existe — arredondar para inteiro é `formatNumber(x, 'F0')`. As três
+# importam, salvam e ativam, e só quebram ao rodar com
+# `InvalidTemplate: The template function '...' is not defined`.
 FUNCOES = {
     # coleções
     "chunk", "contains", "empty", "first", "intersection", "item", "items", "join",
@@ -53,7 +54,7 @@ FUNCOES = {
     "decodeDataUri", "decodeUriComponent", "encodeUriComponent", "float", "int", "json",
     "string", "uriComponent", "uriComponentToBinary", "uriComponentToString", "xml",
     # matemática
-    "add", "div", "max", "min", "mod", "mul", "rand", "range", "round", "sub",
+    "add", "div", "max", "min", "mod", "mul", "rand", "range", "sub",
     # data
     "addDays", "addHours", "addMinutes", "addSeconds", "addToTime", "convertFromUtc",
     "convertTimeZone", "convertToUtc", "dayOfMonth", "dayOfWeek", "dayOfYear",

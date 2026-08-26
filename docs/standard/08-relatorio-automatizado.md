@@ -5,7 +5,7 @@ Dois fluxos do Power Automate e duas tools no agente. O primeiro devolve o portf
 | | |
 |---|---|
 | Solução | [`flows/CDIORelatorioArea/`](../../flows/CDIORelatorioArea/) · empacote com `flows/build.sh` |
-| Zip pronto | `dist/CDIORelatorioArea_1_3_0_0.zip` |
+| Zip pronto | `dist/CDIORelatorioArea_1_3_0_1.zip` |
 | Seção nas instruções | `§11` de [`agent/instructions-standard.md`](../../agent/instructions-standard.md) |
 
 > ⚠️ **Nada aqui foi executado contra o tenant.** `scripts/validate-flows.py` valida os dois JSON — aninhamento de `InitializeVariable`, `Response` dentro de laço, parênteses e aspas, referências entre ações, placeholders do template e o limite de 1.024 por descrição de entrada. Estrutura, não runtime; os testes de aceite do final existem por isso.
@@ -133,7 +133,7 @@ Agora está resolvido nos dois lados:
 
 ### Passo 1 · Pegar o zip
 
-- **Baixar do GitHub:** abra [`dist/CDIORelatorioArea_1_3_0_0.zip`](https://github.com/nick-kuh/coisas_aleartorias/blob/claude/automated-html-report-section-rbmt60/dist/CDIORelatorioArea_1_3_0_0.zip) e clique em **Download raw file** (ícone ⤓ à direita). "Salvar como" na página salva HTML, não o zip.
+- **Baixar do GitHub:** abra [`dist/CDIORelatorioArea_1_3_0_1.zip`](https://github.com/nick-kuh/coisas_aleartorias/blob/claude/automated-html-report-section-rbmt60/dist/CDIORelatorioArea_1_3_0_1.zip) e clique em **Download raw file** (ícone ⤓ à direita). "Salvar como" na página salva HTML, não o zip.
 - **Ou regerar:** `flows/build.sh`.
 
 > ⚠️ **Não reempacote pelo Explorador do Windows.** O Power Automate exige `[Content_Types].xml`, `solution.xml` e `customizations.xml` **na raiz**; zipar a pasta cria um nível a mais e a importação recusa.
@@ -142,7 +142,7 @@ Agora está resolvido nos dois lados:
 
 1. [make.powerautomate.com](https://make.powerautomate.com) → confira o **ambiente** no canto superior direito. É o mesmo do agente. Este é o erro que mais custa tempo.
 2. **Soluções → Importar solução → Procurar** → o zip → **Avançar**.
-3. A tela mostra `CDIORelatorioArea` versão `1.3.0.0`. Como a `1.1.x` já está lá, ele diz **Atualizar**.
+3. A tela mostra `CDIORelatorioArea` versão `1.3.0.1`. Como a `1.1.x` já está lá, ele diz **Atualizar**.
 4. Mapeie as duas conexões: `CDIO Relatorio - Azure DevOps` e `CDIO Relatorio - SharePoint`.
 5. **Importar.** Agora a solução tem **dois** fluxos.
 
@@ -251,6 +251,39 @@ O modelo escreveu **tudo** dentro do `exec_summary` — 5.956 caracteres, onde a
 Duas entradas longas obrigam o modelo a **repartir** o que escreveu, e ele reparte quando quer. Na `1.3.0.0` existe **uma só**: `report_html`, com todo o texto do relatório, caindo na caixa do topo — que virou `Executive Summary & Analysis`, branca e mais larga, e recebe blocos (`<div>`, `<table>`) em vez de um `<p>` que o navegador fecharia sozinho no primeiro `<div>`. O quadro roxo separado saiu.
 
 Ela é **opcional**: se vier vazia, a página sai com a contagem automática e uma linha em âmbar dizendo que ninguém escreveu a análise. Relatório degradado e visivelmente degradado é melhor que conversa travada.
+
+### `round()` também não existe
+
+Passado o laço de BU, o `Html_1_KPIs` parou com a mesma família de erro:
+
+```
+InvalidTemplate ... action 'Html_1_KPIs' ... The template function 'round'
+is not defined or not valid.
+```
+
+A Workflow Definition Language tem `add`, `sub`, `mul`, `div`, `mod`, `min`, `max`, `rand` e `range` — e **não tem `round`**. Arredondar para inteiro é `formatNumber(x, 'F0')`, que já devolve string, então o `string()` em volta também sai:
+
+```
+string(round(div(mul(a,100), b)))     →     formatNumber(div(mul(a,100), b), 'F0')
+```
+
+Três lugares: as duas percentagens do `Html_1_KPIs`, as três da timeline e o `summary` da resposta. Corrigido na `1.3.0.1`.
+
+Pior: eu tinha **adicionado `round` à whitelist do validador** um turno antes, quando ele acusou a função e eu presumi falso positivo. O validador estava certo e eu o ensinei errado.
+
+### As 47 funções, auditadas de uma vez
+
+Depois desse, parei de corrigir uma por vez e listei **todas as funções usadas nos dois fluxos**: 47 distintas. Só `round` era inválida; as outras 46 são reais. A lista, para referência:
+
+```
+add and base64 base64ToBinary body coalesce concat contains div empty equals
+first float formatDateTime formatNumber greater greaterOrEquals if int item
+items join json last length less lessOrEquals mul not or outputs replace
+split string sub substring take toLower triggerBody trim union utcNow
+variables workflow xml xpath
+```
+
+Esse levantamento é reprodutível — é o mesmo caminho que o `validate-flows.py` percorre, e vale repetir a cada mudança grande.
 
 > 🔴 **Solução importada chega com os fluxos DESLIGADOS.** É o passo que mais se pula, e o sintoma não parece com a causa: na lista, o ícone do fluxo ganha um pequeno **⃠** no canto — parece um fluxo "oculto" ou sem permissão, e é só desativado. O agente, ao chamar, devolve:
 >
