@@ -40,23 +40,28 @@
           "inputs": {
             "schema": {
               "type": "object",
-              "required": [
-                "area"
-              ],
+              "required": [],
               "properties": {
-                "area": {
-                  "title": "IT Area",
+                "scope_label": {
+                  "title": "Scope Label",
                   "type": "string",
+                  "description": "Short English label for the report header and the file name, describing what you filtered. Examples: \"Customer Dev\", \"Make (Business Operation) - Brazil\", \"Amanda Papucci - all areas\", \"Big Rocks above EUR 100k\", \"Whole portfolio\". Under 60 characters. It must describe the same set the wiql_filter selects, and be identical in both tool calls.",
                   "x-ms-content-hint": "TEXT",
-                  "x-ms-dynamically-added": true,
-                  "description": "IT Area, spelled EXACTLY as in DevOps: Consumer | Customer Dev | Make (Business Operation) | Focus Market (Cust Ops) | Commercial Exp | Tech Services | Tax Reform. Never abbreviate, never translate."
+                  "x-ms-dynamically-added": true
+                },
+                "wiql_filter": {
+                  "title": "WIQL Filter",
+                  "type": "string",
+                  "description": "Extra WIQL WHERE clauses, each starting with AND. Leave empty for the whole portfolio.\nAlready applied by the flow: the team project, State <> '00 Cancelled', State <> '11 Closed', and the year.\nFIELDS: [Custom.ITArea] [Custom.ProjectITManager] [Custom.CountryDeployed] [Custom.ProjectType] [Custom.BGorBUEngagement] [Custom.SpecifyCross] [Custom.BusinessBenefit] [Custom.ProjectTotalBudget] [Custom.ProjectBenefitValue] [Custom.GoLiveDate] [Custom.PGLSEndDate] [System.State] [System.AssignedTo] [System.Title]\nOPERATORS: = <> > < >= <= CONTAINS IN. Strings in single quotes, numbers and dates bare.\nEXAMPLES:\nAND [Custom.ITArea] = 'Customer Dev'\nAND [Custom.ProjectITManager] CONTAINS 'Papucci'\nAND [Custom.ITArea] = 'Make (Business Operation)' AND [Custom.CountryDeployed] CONTAINS 'Brazil'\nAND [Custom.ProjectType] = 'Big Rock' AND [Custom.ProjectTotalBudget] > 100000\nNever invent a field. Pass the EXACT same string to both tools.",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
                 },
                 "year": {
                   "title": "Year",
                   "type": "string",
+                  "description": "Portfolio Year, 4 digits. Leave empty for the current year. Pass \"all\" to drop the year filter entirely, for reports spanning several years. The Upcoming Milestones timeline always groups a single year; with \"all\" it uses the current year.",
                   "x-ms-content-hint": "TEXT",
-                  "x-ms-dynamically-added": true,
-                  "description": "Portfolio Year, 4 digits. Leave empty to use the current year."
+                  "x-ms-dynamically-added": true
                 }
               }
             }
@@ -64,25 +69,43 @@
         }
       },
       "actions": {
-        "Init_Area": {
+        "Init_Scope": {
           "type": "Compose",
-          "inputs": "@{trim(coalesce(triggerBody()?['area'], ''))}",
-          "runAfter": {}
+          "runAfter": {},
+          "inputs": "@{if(empty(trim(coalesce(triggerBody()?['scope_label'], ''))), 'Whole portfolio', trim(coalesce(triggerBody()?['scope_label'], '')))}"
+        },
+        "Init_Filter": {
+          "type": "Compose",
+          "runAfter": {
+            "Init_Scope": [
+              "Succeeded"
+            ]
+          },
+          "inputs": "@{trim(coalesce(triggerBody()?['wiql_filter'], ''))}"
         },
         "Init_Year": {
           "type": "Compose",
           "runAfter": {
-            "Init_Area": [
+            "Init_Filter": [
               "Succeeded"
             ]
           },
-          "inputs": "@{if(empty(coalesce(triggerBody()?['year'], '')), formatDateTime(utcNow(),'yyyy'), trim(string(triggerBody()?['year'])))}"
+          "inputs": "@{if(empty(trim(coalesce(triggerBody()?['year'], ''))), formatDateTime(utcNow(),'yyyy'), trim(string(triggerBody()?['year'])))}"
+        },
+        "Init_TLYear": {
+          "type": "Compose",
+          "runAfter": {
+            "Init_Year": [
+              "Succeeded"
+            ]
+          },
+          "inputs": "@{if(equals(toLower(outputs('Init_Year')), 'all'), formatDateTime(utcNow(),'yyyy'), outputs('Init_Year'))}"
         },
         "Init_Now": {
           "type": "Compose",
           "inputs": "@{utcNow()}",
           "runAfter": {
-            "Init_Year": [
+            "Init_TLYear": [
               "Succeeded"
             ]
           }
@@ -99,7 +122,7 @@
                   "parameters/Method": "POST",
                   "parameters/Uri": "CDIO%20Portfolio/_apis/wit/wiql?api-version=7.0",
                   "parameters/Body": {
-                    "query": "SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = 'CDIO Portfolio' AND [System.State] <> '00 Cancelled' AND [System.State] <> '11 Closed' AND [Custom.PortfolioYear] = @{outputs('Init_Year')} AND [Custom.ITArea] = '@{replace(outputs('Init_Area'), '''', '''''')}' ORDER BY [Custom.ProjectTotalBudget] DESC"
+                    "query": "SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = 'CDIO Portfolio' AND [System.State] <> '00 Cancelled' AND [System.State] <> '11 Closed'@{if(equals(toLower(outputs('Init_Year')), 'all'), '', concat(' AND [Custom.PortfolioYear] = ', outputs('Init_Year')))} @{outputs('Init_Filter')} ORDER BY [Custom.ProjectTotalBudget] DESC"
                   }
                 },
                 "host": {
@@ -174,9 +197,9 @@
                       }
                     },
                     "body": {
-                      "area": "@{outputs('Init_Area')}",
+                      "area": "@{outputs('Init_Scope')}",
                       "data": "",
-                      "summary": "@{concat('No active initiative found for IT Area \"', outputs('Init_Area'), '\" in ', outputs('Init_Year'), '. Check the IT Area string against DevOps: Consumer, Customer Dev, Make (Business Operation), Focus Market (Cust Ops), Commercial Exp, Tech Services, Tax Reform.')}"
+                      "summary": "@{concat('No initiative matched ', outputs('Init_Scope'), ' (year ', outputs('Init_Year'), '). Filter used: ', if(empty(outputs('Init_Filter')), '(none)', outputs('Init_Filter')), '. Check the field names and the exact strings against DevOps before retrying.')}"
                     }
                   }
                 },
@@ -546,7 +569,8 @@
                 ]
               },
               "inputs": {
-                "area": "@{outputs('Init_Area')}",
+                "scope": "@{outputs('Init_Scope')}",
+                "wiqlFilter": "@{outputs('Init_Filter')}",
                 "year": "@{outputs('Init_Year')}",
                 "generatedAt": "@{outputs('Init_Now')}",
                 "quarterCurr": "@{outputs('Quarter_Curr')}",
@@ -610,9 +634,9 @@
                   }
                 },
                 "body": {
-                  "area": "@{outputs('Init_Area')}",
+                  "area": "@{outputs('Init_Scope')}",
                   "data": "@{string(outputs('Data_Payload'))}",
-                  "summary": "@{concat(string(length(body('Items'))), ' active initiatives in ', outputs('Init_Area'), ' (', outputs('Init_Year'), '). Raw portfolio returned in `data`. No file was created.')}"
+                  "summary": "@{concat(string(length(body('Items'))), ' initiatives matched ', outputs('Init_Scope'), ' (year ', outputs('Init_Year'), '). Pass the SAME scope_label, wiql_filter and year to Publish Area Report. Raw portfolio in `data`. No file was created.')}"
                 }
               }
             }
@@ -659,9 +683,9 @@
               }
             },
             "body": {
-              "area": "@{outputs('Init_Area')}",
+              "area": "@{outputs('Init_Scope')}",
               "data": "",
-              "summary": "@{concat('Failed to read the portfolio of ', outputs('Init_Area'), '. Open the flow run history to see which action failed. Run: ', coalesce(workflow()?['run']?['name'], 'n/a'))}"
+              "summary": "@{concat('Failed to read the portfolio of ', outputs('Init_Scope'), '. Open the flow run history to see which action failed. Run: ', coalesce(workflow()?['run']?['name'], 'n/a'))}"
             }
           }
         }

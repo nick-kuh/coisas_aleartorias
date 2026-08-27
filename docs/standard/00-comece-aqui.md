@@ -333,7 +333,7 @@ Dois fluxos e duas tools. O primeiro devolve o portfólio da IT Area em JSON, o 
 
 > ⚠️ **Faça o Bloco C antes.** O export mostra que o agente ainda roda as instruções antigas com o bloco do relatório colado por cima, numerado como 10 e apontando para si mesmo, somando 8.217 chars. O `§11` só funciona sobre o `instructions-standard.md` inteiro.
 
-- [ ] Baixar `dist/CDIORelatorioArea_1_3_0_2.zip` (ou gerar com `flows/build.sh`) e importar em **Soluções → Importar solução**, mapeando as duas conexões
+- [ ] Baixar `dist/CDIORelatorioArea_1_4_0_0.zip` (ou gerar com `flows/build.sh`) e importar em **Soluções → Importar solução**, mapeando as duas conexões
 - [ ] No `CDIO - Publish Area Report`: conferir `CONFIG SiteUrl` e `CONFIG Folder` e salvar
 - [ ] **Ativar os dois fluxos** — chegam desligados; o ⃠ no ícone é isso, e o agente responde `FlowDisabled`
 - [ ] Testar cada fluxo manualmente antes de encostar no agente
@@ -349,6 +349,7 @@ Dois fluxos e duas tools. O primeiro devolve o portfólio da IT Area em JSON, o 
 | # | Digite | Esperado |
 |---|---|---|
 | 1 | `faz o relatório de Customer Dev` | Chama `Read Area Portfolio`, **depois** `Publish Area Report`, devolve o link — **sem pedir nada a você** |
+| 1b | `faz o relatório dos projetos da Amanda Papucci` | Mesmo fluxo, com `wiql_filter` de gerente — a página tem só os projetos dela |
 | 2 | Abrir a página | Resumo e análise em inglês na caixa do topo, projetos como `Nome (1234)` |
 | 3 | Comparar os números do texto com o JSON do passo 1 | Nenhum número inventado |
 

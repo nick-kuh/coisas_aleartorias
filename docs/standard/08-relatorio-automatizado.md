@@ -5,7 +5,7 @@ Dois fluxos do Power Automate e duas tools no agente. O primeiro devolve o portf
 | | |
 |---|---|
 | Solução | [`flows/CDIORelatorioArea/`](../../flows/CDIORelatorioArea/) · empacote com `flows/build.sh` |
-| Zip pronto | `dist/CDIORelatorioArea_1_3_0_2.zip` |
+| Zip pronto | `dist/CDIORelatorioArea_1_4_0_0.zip` |
 | Seção nas instruções | `§11` de [`agent/instructions-standard.md`](../../agent/instructions-standard.md) |
 
 > ⚠️ **Nada aqui foi executado contra o tenant.** `scripts/validate-flows.py` valida os dois JSON — aninhamento de `InitializeVariable`, `Response` dentro de laço, parênteses e aspas, referências entre ações, placeholders do template e o limite de 1.024 por descrição de entrada. Estrutura, não runtime; os testes de aceite do final existem por isso.
@@ -43,8 +43,8 @@ Dois fluxos, cada um com o seu conjunto de entradas:
 
 | Fluxo | Entradas | Faz |
 |---|---|---|
-| **`PortfolioDataArea`** | `area`, `year` | consulta o DevOps e devolve JSON. Nenhum campo de texto livre para perguntar |
-| **`PublishAreaReport`** | `area`, `year`, `report_html` | consulta, renderiza o HTML, publica no SharePoint, devolve o link |
+| **`PortfolioDataArea`** | `scope_label`, `wiql_filter`, `year` | consulta o DevOps e devolve JSON. Nenhum campo de texto livre para perguntar |
+| **`PublishAreaReport`** | `scope_label`, `wiql_filter`, `year`, `report_html` | consulta, renderiza o HTML, publica no SharePoint, devolve o link |
 
 Na primeira não sobra nada para o binder perguntar. Na segunda, a descrição de cada entrada agora **manda escrever** em vez de dizer "só no modo X" — e abre com `YOU write this - never ask the user for it`. Era a descrição que dizia ao modelo para deixar o campo vazio; era ela que precisava mudar.
 
@@ -133,7 +133,7 @@ Agora está resolvido nos dois lados:
 
 ### Passo 1 · Pegar o zip
 
-- **Baixar do GitHub:** abra [`dist/CDIORelatorioArea_1_3_0_2.zip`](https://github.com/nick-kuh/coisas_aleartorias/blob/claude/automated-html-report-section-rbmt60/dist/CDIORelatorioArea_1_3_0_2.zip) e clique em **Download raw file** (ícone ⤓ à direita). "Salvar como" na página salva HTML, não o zip.
+- **Baixar do GitHub:** abra [`dist/CDIORelatorioArea_1_4_0_0.zip`](https://github.com/nick-kuh/coisas_aleartorias/blob/claude/automated-html-report-section-rbmt60/dist/CDIORelatorioArea_1_4_0_0.zip) e clique em **Download raw file** (ícone ⤓ à direita). "Salvar como" na página salva HTML, não o zip.
 - **Ou regerar:** `flows/build.sh`.
 
 > ⚠️ **Não reempacote pelo Explorador do Windows.** O Power Automate exige `[Content_Types].xml`, `solution.xml` e `customizations.xml` **na raiz**; zipar a pasta cria um nível a mais e a importação recusa.
@@ -142,7 +142,7 @@ Agora está resolvido nos dois lados:
 
 1. [make.powerautomate.com](https://make.powerautomate.com) → confira o **ambiente** no canto superior direito. É o mesmo do agente. Este é o erro que mais custa tempo.
 2. **Soluções → Importar solução → Procurar** → o zip → **Avançar**.
-3. A tela mostra `CDIORelatorioArea` versão `1.3.0.2`. Como a `1.1.x` já está lá, ele diz **Atualizar**.
+3. A tela mostra `CDIORelatorioArea` versão `1.4.0.0`. Como a `1.1.x` já está lá, ele diz **Atualizar**.
 4. Mapeie as duas conexões: `CDIO Relatorio - Azure DevOps` e `CDIO Relatorio - SharePoint`.
 5. **Importar.** Agora a solução tem **dois** fluxos.
 
@@ -285,6 +285,60 @@ variables workflow xml xpath
 
 Esse levantamento é reprodutível — é o mesmo caminho que o `validate-flows.py` percorre, e vale repetir a cada mudança grande.
 
+### 1.4.0.0 — o filtro deixa de ser só IT Area
+
+O primeiro relatório publicado revelou o limite do desenho. O pedido era *"somente os projetos de Amanda Papucci de Make"*; o agente **achou** os 80 projetos dela via DAX no Power BI, escreveu a análise sobre eles — e na hora de publicar só conseguiu passar `area: 'Make (Business Operation)'`. A página saiu com as 63 iniciativas da área inteira. A tool não tinha vocabulário para dizer "gerente".
+
+Trocamos a entrada `area` por três:
+
+| Entrada | Para quê |
+|---|---|
+| `wiql_filter` | as cláusulas `AND` que **o agente escreve** — área, gerente, país, tipo, orçamento, ou nada |
+| `scope_label` | o rótulo que vai no cabeçalho e no nome do arquivo |
+| `year` | 4 dígitos, vazio = ano corrente, `all` = sem filtro de ano |
+
+É o mesmo padrão que já funciona no `Power BI Portfolio Database`: a descrição da entrada carrega o dicionário de campos e o modelo escreve a consulta. O que o fluxo continua garantindo sozinho é o team project e a exclusão de `00 Cancelled` e `11 Closed`.
+
+Três exemplos do WIQL que sai:
+
+```sql
+-- scope_label: "Customer Dev"        wiql_filter: AND [Custom.ITArea] = 'Customer Dev'
+... AND [Custom.PortfolioYear] = 2026 AND [Custom.ITArea] = 'Customer Dev'
+
+-- scope_label: "Amanda Papucci"      wiql_filter: AND [Custom.ProjectITManager] CONTAINS 'Papucci'
+... AND [Custom.PortfolioYear] = 2026 AND [Custom.ProjectITManager] CONTAINS 'Papucci'
+
+-- scope_label: "Whole portfolio"     wiql_filter: (vazio)      year: all
+... AND [System.State] <> '00 Cancelled' AND [System.State] <> '11 Closed'
+```
+
+**O risco novo é a divergência entre as duas chamadas.** Se o agente analisar um recorte e publicar outro, a página fica coerente por dentro e mentirosa por fora. Três defesas: a descrição manda passar a string **idêntica** nas duas; o `§11` repete (*"the same three, verbatim"*); e o `summary` da chamada de dados devolve literalmente *"Pass the SAME scope_label, wiql_filter and year to Publish Area Report"*, para o agente copiar em vez de reescrever.
+
+O `{{AREA}}` do template virou `{{SCOPE}}`, e o nome do arquivo sai do rótulo com parênteses, barras e vírgulas removidos — o primeiro relatório gerou `..._Make_(Business_Operation).html`, com parênteses na URL.
+
+**Descrição da entrada `wiql_filter`** — é este texto que ensina o agente a escrever WIQL:  `936/1024`
+
+```
+Extra WIQL WHERE clauses, each starting with AND. Leave empty for the whole portfolio.
+Already applied by the flow: the team project, State <> '00 Cancelled', State <> '11 Closed', and the year.
+FIELDS: [Custom.ITArea] [Custom.ProjectITManager] [Custom.CountryDeployed] [Custom.ProjectType] [Custom.BGorBUEngagement] [Custom.SpecifyCross] [Custom.BusinessBenefit] [Custom.ProjectTotalBudget] [Custom.ProjectBenefitValue] [Custom.GoLiveDate] [Custom.PGLSEndDate] [System.State] [System.AssignedTo] [System.Title]
+OPERATORS: = <> > < >= <= CONTAINS IN. Strings in single quotes, numbers and dates bare.
+EXAMPLES:
+AND [Custom.ITArea] = 'Customer Dev'
+AND [Custom.ProjectITManager] CONTAINS 'Papucci'
+AND [Custom.ITArea] = 'Make (Business Operation)' AND [Custom.CountryDeployed] CONTAINS 'Brazil'
+AND [Custom.ProjectType] = 'Big Rock' AND [Custom.ProjectTotalBudget] > 100000
+Never invent a field. Pass the EXACT same string to both tools.
+```
+
+**Descrição da entrada `scope_label`:**  `344/1024`
+
+```
+Short English label for the report header and the file name, describing what you filtered. Examples: "Customer Dev", "Make (Business Operation) - Brazil", "Amanda Papucci - all areas", "Big Rocks above EUR 100k", "Whole portfolio". Under 60 characters. It must describe the same set the wiql_filter selects, and be identical in both tool calls.
+```
+
+---
+
 ### E o último: um `replace()` manco
 
 ```
@@ -311,9 +365,9 @@ O 💎 ao lado do nome é outra coisa e é esperado: marca fluxo que vive dentro
 
 ### Passo 5 · Testar cada um sozinho
 
-`PortfolioDataArea` → **Testar → Manualmente**, `area = Customer Dev`. Tem que voltar verde com `data` preenchido e `kpis.total` batendo com o Power BI. Esse teste nem toca no SharePoint: se passar, DevOps e filtros estão de pé.
+`PortfolioDataArea` → **Testar → Manualmente**, `scope_label = Customer Dev` e `wiql_filter = AND [Custom.ITArea] = 'Customer Dev'`. Tem que voltar verde com `data` preenchido e `kpis.total` batendo com o Power BI. Esse teste nem toca no SharePoint: se passar, DevOps e filtros estão de pé.
 
-`PublishAreaReport` → **Testar → Manualmente**, `area = Customer Dev`, `report_html = <p style="font-size:13px;">teste</p>`. Tem que aparecer um `.html` na pasta e o `report_url` tem que abrir.
+`PublishAreaReport` → **Testar → Manualmente**, os mesmos `scope_label` e `wiql_filter`, mais `report_html = <p style="font-size:13px;">teste</p>`. Tem que aparecer um `.html` na pasta e o `report_url` tem que abrir.
 
 ---
 
@@ -381,7 +435,7 @@ O que ele faz:
       year: "2026"
 ```
 
-Chama o fluxo de **publicação** direto, passando só `area` e `year`. Sem `report_html`, sem nunca ter lido o portfólio. O fluxo não quebra — o `coalesce` cobre o campo vazio — e é justamente esse o problema: sai uma página completa, bonita, com o resumo genérico de contagens e **sem o bloco de análise**. O relatório oco que esta arquitetura inteira existe para evitar.
+Chama o fluxo de **publicação** direto, passando só `area` e `year` — entradas que nem existem mais desde a `1.4.0.0`. Sem `report_html`, sem nunca ter lido o portfólio. O fluxo não quebra — o `coalesce` cobre o campo vazio — e é justamente esse o problema: sai uma página completa, bonita, com o resumo genérico de contagens e **sem o bloco de análise**. O relatório oco que esta arquitetura inteira existe para evitar.
 
 Três defeitos menores no mesmo tópico, todos irrelevantes depois de apagá-lo, mas que valem como registro:
 
@@ -435,8 +489,9 @@ Boa parte dos tenants roda a biblioteca em **Browser File Handling: Strict**, e 
 
 | # | O que fazer | O que provar |
 |---|---|---|
-| 1 | `PortfolioDataArea` manual, `area = Customer Dev` | JSON de volta; `kpis.total` bate com o Power BI; `noGoLiveDate > 0` numa área com projetos em `01 Idea` |
-| 2 | Idem com uma área inexistente | resposta "No active initiative found", sem erro vermelho no histórico |
+| 1 | `PortfolioDataArea` manual, `scope_label = Customer Dev`, `wiql_filter = AND [Custom.ITArea] = 'Customer Dev'` | JSON de volta; `kpis.total` bate com o Power BI |
+| 2 | Idem com um filtro que não casa com nada | resposta "No initiative matched", ecoando o filtro usado, sem erro vermelho |
+| 2b | Idem com `wiql_filter` vazio e `year = all` | portfólio inteiro, todos os anos |
 | 3 | `PublishAreaReport` manual com um `report_html` de teste | `.html` na pasta, com o texto na caixa `Executive Summary & Analysis` do topo |
 | 0 | `Tópicos` no menu do agente | **não existe** um tópico `Create Report` ativo — ele atalha a arquitetura, ver §6.1 |
 | 4 | Abrir cada tool e reler a descrição | a de `Publish Area Report` fala em publicar, **não** em "Call this FIRST" nem "creates no file" |
