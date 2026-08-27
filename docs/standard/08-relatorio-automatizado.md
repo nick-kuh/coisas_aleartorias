@@ -5,7 +5,7 @@ Dois fluxos do Power Automate e duas tools no agente. O primeiro devolve o portf
 | | |
 |---|---|
 | Solução | [`flows/CDIORelatorioArea/`](../../flows/CDIORelatorioArea/) · empacote com `flows/build.sh` |
-| Zip pronto | `dist/CDIORelatorioArea_1_4_0_0.zip` |
+| Zip pronto | `dist/CDIORelatorioArea_1_4_1_0.zip` |
 | Seção nas instruções | `§11` de [`agent/instructions-standard.md`](../../agent/instructions-standard.md) |
 
 > ⚠️ **Nada aqui foi executado contra o tenant.** `scripts/validate-flows.py` valida os dois JSON — aninhamento de `InitializeVariable`, `Response` dentro de laço, parênteses e aspas, referências entre ações, placeholders do template e o limite de 1.024 por descrição de entrada. Estrutura, não runtime; os testes de aceite do final existem por isso.
@@ -133,7 +133,7 @@ Agora está resolvido nos dois lados:
 
 ### Passo 1 · Pegar o zip
 
-- **Baixar do GitHub:** abra [`dist/CDIORelatorioArea_1_4_0_0.zip`](https://github.com/nick-kuh/coisas_aleartorias/blob/claude/automated-html-report-section-rbmt60/dist/CDIORelatorioArea_1_4_0_0.zip) e clique em **Download raw file** (ícone ⤓ à direita). "Salvar como" na página salva HTML, não o zip.
+- **Baixar do GitHub:** abra [`dist/CDIORelatorioArea_1_4_1_0.zip`](https://github.com/nick-kuh/coisas_aleartorias/blob/claude/automated-html-report-section-rbmt60/dist/CDIORelatorioArea_1_4_1_0.zip) e clique em **Download raw file** (ícone ⤓ à direita). "Salvar como" na página salva HTML, não o zip.
 - **Ou regerar:** `flows/build.sh`.
 
 > ⚠️ **Não reempacote pelo Explorador do Windows.** O Power Automate exige `[Content_Types].xml`, `solution.xml` e `customizations.xml` **na raiz**; zipar a pasta cria um nível a mais e a importação recusa.
@@ -142,7 +142,7 @@ Agora está resolvido nos dois lados:
 
 1. [make.powerautomate.com](https://make.powerautomate.com) → confira o **ambiente** no canto superior direito. É o mesmo do agente. Este é o erro que mais custa tempo.
 2. **Soluções → Importar solução → Procurar** → o zip → **Avançar**.
-3. A tela mostra `CDIORelatorioArea` versão `1.4.0.0`. Como a `1.1.x` já está lá, ele diz **Atualizar**.
+3. A tela mostra `CDIORelatorioArea` versão `1.4.1.0`. Como a `1.1.x` já está lá, ele diz **Atualizar**.
 4. Mapeie as duas conexões: `CDIO Relatorio - Azure DevOps` e `CDIO Relatorio - SharePoint`.
 5. **Importar.** Agora a solução tem **dois** fluxos.
 
@@ -337,6 +337,36 @@ Never invent a field. Pass the EXACT same string to both tools.
 Short English label for the report header and the file name, describing what you filtered. Examples: "Customer Dev", "Make (Business Operation) - Brazil", "Amanda Papucci - all areas", "Big Rocks above EUR 100k", "Whole portfolio". Under 60 characters. It must describe the same set the wiql_filter selects, and be identical in both tool calls.
 ```
 
+### 1.4.1.0 — opcional demais é tão ruim quanto obrigatório demais
+
+A `1.4.0.0` marcou todas as entradas como opcionais, para nunca mais travar pedindo texto ao usuário. O resultado foi o oposto do esperado:
+
+```
+41 TRIG CDIO-PortfolioDatabyArea
+42 BIND {}
+46 TRIG CDIO-PublishAreaReport
+47 BIND {}
+```
+
+**Zero argumentos nas duas chamadas.** Os defaults entraram, e o relatório saiu como `Whole portfolio, year 2026: 139 iniciativas`, com onze gerentes e várias áreas — quando o pedido era a carteira de uma gestora só.
+
+Entre o binder **perguntar** e o binder **calar e reportar o escopo errado**, perguntar é infinitamente melhor: a pergunta é visível e recuperável, o escopo errado é uma página que parece certa e mente. Então `scope_label`, `wiql_filter` e `report_html` voltaram a ser **obrigatórios**; só `year` continua opcional, porque tem default honesto.
+
+A descrição do `wiql_filter` passou a abrir com o aviso — *"NEVER omit this — an empty value silently reports the whole portfolio"* — e a dar o valor literal para quando o portfólio inteiro **é** a intenção: `AND [System.Id] > 0`. Assim "sem filtro" deixa de ser indistinguível de "esqueci o filtro".
+
+### O code interpreter competindo com o fluxo
+
+No mesmo teste, o pedido *"consegue criar em html por favor"* levou o orquestrador para outro lugar:
+
+```
+29 TRIG P:CodeTool
+30 BIND {'input': 'Create a standalone, self-contained HTML executive report file named "Relatorio_Amanda_Papucci.html"...'}
+```
+
+Ele escreveu uma página inteira do zero, com `<style>`, classes e layout próprios — bonita, e **com os dados corretos**: conferi os 17 projetos citados contra as 77 linhas que o DAX devolveu, e todos são da Amanda. Mas não é o template, não passa pelo fluxo, não tem KPI calculado nem timeline, e não vai para o SharePoint.
+
+O `codeInterpreter` está ligado no agente e responde bem a "gere um html". Duas defesas: o `§11` ganhou **"Never build the page yourself — no code interpreter, no hand-written HTML"**, e a descrição da tool de publicação passou a dizer que ela **é dona** da página. Se ainda assim ele desviar, o desligamento do code interpreter (Configurações → IA generativa) é a opção definitiva — ao custo de perder a análise ad-hoc que ele faz bem.
+
 ---
 
 ### E o último: um `replace()` manco
@@ -383,7 +413,7 @@ Copilot Studio → agente → **Ferramentas → Adicionar uma ferramenta → Flu
 | **Renomear para** | **`Read Area Portfolio`** |
 
 ```
-Returns the full portfolio of one CDIO LATAM IT Area as JSON - every active initiative plus the KPIs. Call this FIRST, whenever a report is asked for, and analyse what comes back. It creates no file.
+Returns one slice of the CDIO LATAM portfolio as JSON - every matching initiative plus the KPIs. YOU write the wiql_filter: IT Area, manager, country, project type, budget, or any combination of them. Call this FIRST whenever a report is asked for, or whenever a portfolio question needs project-level data. It creates no file.
 ```
 
 ### Tool 2
@@ -394,7 +424,7 @@ Returns the full portfolio of one CDIO LATAM IT Area as JSON - every active init
 | **Renomear para** | **`Publish Area Report`** |
 
 ```
-Publishes the CDIO IT Portfolio LATAM executive report for one IT Area to SharePoint and returns the link. Call it only after Read Area Portfolio, passing the executive summary and the analysis YOU wrote in English. Never ask the user to write them.
+Publishes the CDIO IT Portfolio LATAM executive report to SharePoint and returns the link. This tool OWNS the report page: never build the HTML yourself and never use the code interpreter for it. Call it only after Read Area Portfolio, passing the SAME scope_label, wiql_filter and year, plus the report_html YOU wrote in English.
 ```
 
 > ⚠️ **Duas armadilhas neste passo.**

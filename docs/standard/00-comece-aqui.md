@@ -333,7 +333,7 @@ Dois fluxos e duas tools. O primeiro devolve o portfólio da IT Area em JSON, o 
 
 > ⚠️ **Faça o Bloco C antes.** O export mostra que o agente ainda roda as instruções antigas com o bloco do relatório colado por cima, numerado como 10 e apontando para si mesmo, somando 8.217 chars. O `§11` só funciona sobre o `instructions-standard.md` inteiro.
 
-- [ ] Baixar `dist/CDIORelatorioArea_1_4_0_0.zip` (ou gerar com `flows/build.sh`) e importar em **Soluções → Importar solução**, mapeando as duas conexões
+- [ ] Baixar `dist/CDIORelatorioArea_1_4_1_0.zip` (ou gerar com `flows/build.sh`) e importar em **Soluções → Importar solução**, mapeando as duas conexões
 - [ ] No `CDIO - Publish Area Report`: conferir `CONFIG SiteUrl` e `CONFIG Folder` e salvar
 - [ ] **Ativar os dois fluxos** — chegam desligados; o ⃠ no ícone é isso, e o agente responde `FlowDisabled`
 - [ ] Testar cada fluxo manualmente antes de encostar no agente

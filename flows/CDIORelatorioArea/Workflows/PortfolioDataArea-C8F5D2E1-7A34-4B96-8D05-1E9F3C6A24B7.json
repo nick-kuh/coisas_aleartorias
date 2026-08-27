@@ -40,7 +40,10 @@
           "inputs": {
             "schema": {
               "type": "object",
-              "required": [],
+              "required": [
+                "scope_label",
+                "wiql_filter"
+              ],
               "properties": {
                 "scope_label": {
                   "title": "Scope Label",
@@ -52,7 +55,7 @@
                 "wiql_filter": {
                   "title": "WIQL Filter",
                   "type": "string",
-                  "description": "Extra WIQL WHERE clauses, each starting with AND. Leave empty for the whole portfolio.\nAlready applied by the flow: the team project, State <> '00 Cancelled', State <> '11 Closed', and the year.\nFIELDS: [Custom.ITArea] [Custom.ProjectITManager] [Custom.CountryDeployed] [Custom.ProjectType] [Custom.BGorBUEngagement] [Custom.SpecifyCross] [Custom.BusinessBenefit] [Custom.ProjectTotalBudget] [Custom.ProjectBenefitValue] [Custom.GoLiveDate] [Custom.PGLSEndDate] [System.State] [System.AssignedTo] [System.Title]\nOPERATORS: = <> > < >= <= CONTAINS IN. Strings in single quotes, numbers and dates bare.\nEXAMPLES:\nAND [Custom.ITArea] = 'Customer Dev'\nAND [Custom.ProjectITManager] CONTAINS 'Papucci'\nAND [Custom.ITArea] = 'Make (Business Operation)' AND [Custom.CountryDeployed] CONTAINS 'Brazil'\nAND [Custom.ProjectType] = 'Big Rock' AND [Custom.ProjectTotalBudget] > 100000\nNever invent a field. Pass the EXACT same string to both tools.",
+                  "description": "The WIQL WHERE clauses that define this report, each starting with AND. NEVER omit this - an empty value silently reports the whole portfolio.\nAlready applied by the flow: team project, State <> '00 Cancelled', <> '11 Closed', year.\nFIELDS: [Custom.ITArea] [Custom.ProjectITManager] [Custom.CountryDeployed] [Custom.ProjectType] [Custom.BGorBUEngagement] [Custom.SpecifyCross] [Custom.BusinessBenefit] [Custom.GoLiveDate] [Custom.ProjectTotalBudget] [Custom.ProjectBenefitValue] [System.State] [System.Title]\nOPERATORS: = <> > < >= <= CONTAINS IN. Strings in single quotes, numbers bare.\nFor the WHOLE portfolio with no filter at all, pass exactly: AND [System.Id] > 0\nEXAMPLES:\nAND [Custom.ITArea] = 'Customer Dev'\nAND [Custom.ProjectITManager] CONTAINS 'Papucci'\nAND [Custom.ITArea] = 'Make (Business Operation)' AND [Custom.ProjectITManager] CONTAINS 'Papucci'\nAND [Custom.ProjectType] = 'Big Rock' AND [Custom.CountryDeployed] CONTAINS 'Brazil'\nNever invent a field. Pass the EXACT same string to both tools.",
                   "x-ms-content-hint": "TEXT",
                   "x-ms-dynamically-added": true
                 },
