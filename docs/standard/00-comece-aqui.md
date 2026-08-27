@@ -303,7 +303,7 @@ Guia completo, passo a passo: [`06-fluxo-transcricoes.md`](06-fluxo-transcricoes
 
 ### F1 · Rota A2, manual (~15 min) — rede de segurança
 
-- [ ] Criar a biblioteca `Transcricoes LT` com as colunas `DataReuniao` e `Origem`, e a subpasta `_entrada`
+- [ ] Criar a pasta `Transcription LT Meetings` com as colunas `DataReuniao` e `Origem`, e a subpasta `_entrada`
 - [ ] Fluxo: gatilho no `_entrada` → limpar → gravar como `LT-AAAA-MM-DD.txt`
 - [ ] A cada LT: no player, **Baixar ⌄ → .vtt** e soltar no `_entrada`. Dois cliques
 
@@ -336,6 +336,7 @@ A Rota B (Graph) fica documentada para quando precisar varrer reuniões de vári
 | Decidir sobre Work IQ | [`04-work-iq.md`](04-work-iq.md) |
 | Entender a **arquitetura de 3 camadas** | [`05-arquitetura-3-camadas.md`](05-arquitetura-3-camadas.md) |
 | Montar o fluxo das **transcrições** | [`06-fluxo-transcricoes.md`](06-fluxo-transcricoes.md) |
+| **Replicar** o fluxo para as outras áreas e contas | [`08-gerar-os-fluxos.md`](08-gerar-os-fluxos.md) |
 | Ajustar **Create / Remove Project** | [`07-criar-e-remover-projeto.md`](07-criar-e-remover-projeto.md) |
 | As **instruções** para colar | [`agent/instructions-standard.md`](../../agent/instructions-standard.md) |
 | O **playbook** do SharePoint | [`AURA_Playbook_Analitico.md`](../../playbook/AURA_Playbook_Analitico.md) |

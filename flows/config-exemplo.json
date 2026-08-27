@@ -1,0 +1,19 @@
+{
+  "nomeDoFluxo": "AURA - Transcricoes LT (<Pessoa>)",
+  "descricao": "Captura a transcricao das LT gravadas no OneDrive de <Pessoa> e grava o texto limpo na biblioteca do CDIO LATAM.",
+
+  "donoDaConta": "<upn>@unilever.com",
+  "datasetOrigem": "https://<tenant>-my.sharepoint.com/personal/<upn_com_underline>",
+  "driveId": "<driveId da pessoa, capturado uma vez no DevTools>",
+  "folderId": "<driveId>.<itemId da pasta de gravacoes>",
+  "pastaGravacoes": "Recordings",
+
+  "areas": [
+    { "nome": "Consumer", "palavras": ["consumer"] },
+    { "nome": "CD",       "palavras": ["customer", "cd"] }
+  ],
+
+  "datasetDestino": "https://<tenant>.sharepoint.com/sites/<site>",
+  "pastaDestino": "/Shared Documents/CDIO LATAM/Transcription LT Meetings",
+  "bibliotecaDestino": "<GUID da biblioteca, ou remova a chave para pular o Update file properties>"
+}

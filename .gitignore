@@ -1,0 +1,5 @@
+
+# pacotes gerados e configs preenchidos — carregam identificadores reais
+flows/*.zip
+flows/config-*.json
+!flows/config-exemplo.json

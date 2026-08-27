@@ -78,7 +78,7 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 >         │
 >         ▼
 > DESTINO — site de equipe do CDIO LATAM
-> https://<tenant>.sharepoint.com/sites/<CDIO-LATAM>/Transcricoes LT/LT-2026-08-19.txt
+> https://<tenant>.sharepoint.com/sites/<site>/Shared Documents/CDIO LATAM/Transcription LT Meetings/LT-Consumer-2026-08-19-1929.txt
 >         │
 >         ▼
 >    fonte de conhecimento do agente
@@ -87,7 +87,7 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 > | | Onde | O que acontece |
 > |---|---|---|
 > | **Origem** | OneDrive, pasta `Recordings` | o `.mp4` chega com a transcrição anexada |
-> | **Destino** | site do CDIO LATAM, `Transcricoes LT` | o `.txt` limpo é gravado, e é o que o agente lê |
+> | **Destino** | site do CDIO LATAM, pasta `Transcription LT Meetings` | o `.txt` limpo é gravado, e é o que o agente lê |
 
 > ## ✅ Rota A validada no tenant em 19/08/2026
 >
@@ -154,7 +154,7 @@ Para não depender de alguém lembrar: no convite da LT → **Opções de reuni�
 ## 1. Preparar o destino no SharePoint
 
 1. No site do CDIO LATAM → **Novo → Biblioteca de documentos**
-2. Nome: **`Transcricoes LT`**
+2. Pasta: **`Transcription LT Meetings`**, dentro de `Shared Documents/CDIO LATAM` — 🔴 **o caminho tem que ser exatamente o mesmo que a fonte de conhecimento do agente aponta**
 3. Dentro dela, **+ Adicionar coluna**:
 
 | Coluna | Tipo | Para quê |
@@ -774,7 +774,7 @@ Depois, **SharePoint → Criar arquivo**:
 > | `Criar arquivo` | **Caminho da pasta** | você digita ou navega |
 > | `Atualizar propriedades` | **Nome da biblioteca** | lista suspensa |
 >
-> Se a lista suspensa ficou em `Documentos` e o arquivo foi para `Transcricoes LT`, o item não existe ali mesmo — mesma mensagem, causa completamente diferente. Dez segundos de conferência descartam isso.
+> Se a lista suspensa ficou numa biblioteca e o arquivo foi para outra, o item não existe ali mesmo — mesma mensagem, causa completamente diferente. Dez segundos de conferência descartam isso.
 >
 > ### 2º — o `Id` é o identificador certo, e não está vazio?
 >
@@ -836,7 +836,7 @@ Depois, **SharePoint → Criar arquivo**:
 
 ## 3. Ligar no agente
 
-Copilot Studio → **Conhecimento** → a fonte `Transcription LT Meetings` deve apontar para a biblioteca **`Transcricoes LT`**.
+Copilot Studio → **Conhecimento** → a fonte `Transcription LT Meetings` deve apontar para a **mesma pasta** em que o passo 12 grava: `Shared Documents/CDIO LATAM/Transcription LT Meetings`.
 
 Descrição da fonte — é ela que dispara a busca:
 
@@ -1018,7 +1018,7 @@ Idêntico à Rota A, trocando só o gatilho:
 | Campo | Valor |
 |---|---|
 | Endereço do site | o site do CDIO LATAM |
-| Nome da biblioteca | `Transcricoes LT` |
+| Nome da biblioteca | a biblioteca que **contém** a pasta de destino — normalmente `Documentos` / `Shared Documents`, não a subpasta |
 | Pasta | `/_entrada` |
 
 Crie a subpasta `_entrada` dentro da biblioteca. É a caixa de entrada — o arquivo cru cai ali, e o limpo vai para a raiz.
@@ -1248,7 +1248,7 @@ Uma correção só apagou as três — e a correção certa acabou sendo **parar
 - [ ] Site e `driveId` guardados: são as duas peças que nunca mudam
 - [ ] Decidido entre Forma 1 (caminho) e Forma 2 (`itemId`), conforme o teste
 - [ ] Chamada do passo 5 devolvendo o VTT cru — **é o portão, teste isolado antes do resto**
-- [ ] Biblioteca `Transcricoes LT` criada, com as colunas `DataReuniao` e `Origem`
+- [ ] Pasta `Transcription LT Meetings` criada, com as colunas `DataReuniao` e `Origem`
 - [ ] Fluxo criado e testado numa reunião de teste, com transcrição ligada
 - [ ] **Compose de diagnóstico rodado uma vez** — `triggerOutputs()` puro, para ler os nomes de campo reais em vez de adivinhar
 - [ ] **Saída de cada Compose conferida** — verde não basta; o `UrlTranscricao` precisa ter uma URL de verdade dentro
