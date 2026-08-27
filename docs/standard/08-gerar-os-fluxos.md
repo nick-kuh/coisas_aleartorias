@@ -48,6 +48,20 @@ Na tela de importação:
 
 **3. Ligar o fluxo.** Ele nasce desligado.
 
+## Como testar sem envolver ninguém
+
+O classificador olha o **nome do arquivo**, que o Teams tira do **título da reunião**. E a regra é `contains`, não igualdade:
+
+> O título do teste **não precisa ser igual** ao da reunião real. Precisa só **conter** a palavra-chave. `LT Make teste` é reconhecido como `Make` do mesmo jeito que `LT Make`.
+
+Isso libera testar numa reunião nova, sem tocar nas recorrentes e sem convidar ninguém — reunião sozinho, com transcrição ligada, gera transcrição.
+
+**Mas a gravação cai no OneDrive de quem clica em gravar.** Então testar o fluxo do William exige que **ele** grave. Para validar a estrutura antes de envolver alguém, gere um pacote apontando para o **seu próprio** OneDrive, com as quatro áreas na lista, e teste sozinho. O que você valida ali — classificador, guardas, `Tolera`, nome do arquivo — é idêntico ao que vai rodar na conta deles.
+
+> 🔴 **Apague o `.txt` de teste depois.** O nome de saída guarda só a **área**, não o título: um teste vira `LT-Make-AAAA-MM-DD-HHmm.txt`, indistinguível de uma LT de verdade. E a pasta de destino é justamente a que o agente indexa — uma transcrição de teste ali faz o agente responder bobagem sobre a LT de Make.
+>
+> Se preferir não correr esse risco, aponte o `pastaDestino` para uma pasta de teste enquanto valida, e devolva depois.
+
 ## O teste de aceite, em três gravações
 
 | # | O que gravar | O que tem que acontecer |
