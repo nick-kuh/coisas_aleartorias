@@ -389,7 +389,9 @@ No fluxo da outra pessoa, os mesmos dois níveis com `'make'` → `Make` e `'foc
 - **Se sim** → todo o resto do fluxo
 - **Se não** → **Controle → Encerrar**, `Failed`, código `AreaNaoIdentificada`, mensagem citando `@{triggerOutputs()?['body/Name']}`
 
-Mesma lógica das outras guardas daqui: impedir o arquivo ruim **e** te avisar. Se alguém renomear a reunião recorrente, você descobre por um fluxo vermelho no mesmo dia.
+Mesma lógica das outras guardas daqui: impedir o arquivo ruim **e** te avisar.
+
+> 📌 Se você já filtra a área no passo 1 — que é o recomendado quando a pasta é pessoal — esta guarda vira **segunda rede**: só dispara se o filtro externo deixar passar algo ambíguo. Manter as duas custa nada e cobre o caso em que alguém mexe numa das expressões e esquece a outra.
 
 ### Passo 3 — esperar e listar as transcrições
 
@@ -917,18 +919,36 @@ O conector do SharePoint aparece em três lugares do fluxo, e eles alcançam coi
 
 **Confira se o organizador consegue escrever na biblioteca de transcrições.** Se sim, uma conexão só por fluxo resolve tudo e fica mais simples de manter.
 
-### Pré-requisito: o título da reunião tem que dizer a área
+### Não renomeie as reuniões: ancore nas palavras que o título já tem
 
-O Teams batiza a gravação a partir do **título da reunião**, então é dali que o passo 2b tira a área. Isso exige uma convenção — a única mudança fora do Power Automate, e de dois minutos por reunião:
+O Teams batiza a gravação a partir do **título da reunião**, e a regra do passo 2b é `contains`, não igualdade. Se as quatro recorrentes seguem um padrão como `BPC Leadership Meeting - Make`, **elas já classificam certo** — não há convenção nova a impor.
 
-| Área | Título da reunião recorrente |
-|---|---|
-| Customer Dev | `LT Customer Dev` |
-| Consumer | `LT Consumer` |
-| Focus Market | `LT Focus Market` |
-| Make | `LT Make` |
+> ## 🔴 Palavra-chave curta é armadilha
+>
+> Um `contains` solto pega mais do que você quer. Testado com os nomes reais:
+>
+> | Nome do arquivo | Só a palavra da área | Com âncora |
+> |---|---|---|
+> | `BPC Leadership Meeting - CD-…` | CD ✅ | CD ✅ |
+> | `CDIO Sync Semanal-…` | **CD** 🔴 | (nenhuma) ✅ |
+> | `Make roadmap review-…` | **Make** 🔴 | (nenhuma) ✅ |
+> | `1:1 com o CD lead-…` | **CD** 🔴 | (nenhuma) ✅ |
+>
+> **`cd` cabe dentro de `cdio`.** Numa área chamada CDIO LATAM isso não é hipótese remota — e o estrago é do pior tipo: a reunião errada seria baixada, limpa e gravada como `LT-CD-AAAA-MM-DD-HHmm.txt` na pasta que o agente indexa, **indistinguível de uma LT real**. O agente responderia sobre a LT de CD citando uma reunião que não é ela, com a autoridade de quem leu a transcrição oficial. Nenhum passo do fluxo ficaria vermelho.
 
-Sem isso nada rio abaixo é determinístico. Com isso, o resto é uma expressão — a do passo 2b.
+### A âncora
+
+Exija também um trecho que **só as LT têm** — o prefixo comum do título:
+
+```
+and(contains(nome, 'leadership meeting'), contains(nome, 'cd'))
+```
+
+Duas condições em vez de uma. `CDIO Sync` morre na primeira, antes de o `cd` ser avaliado.
+
+**Ancore no trecho estável, não na string exata.** Aqui a âncora é `leadership meeting` e não `leadership meeting - cd`, porque o separador no nome do arquivo pode não ser exatamente ` - ` — o Teams monta o nome a partir do assunto e pode normalizar. A precisão vem da **combinação** de duas condições, não de acertar um formato que você não viu.
+
+> 🔎 **Antes de escolher as palavras, olhe a pasta.** Liste os nomes que já existem em `Recordings` — inclusive os das reuniões que **não** são LT — e rode suas candidatas contra eles. É o mesmo princípio de sempre: ler o que o produto devolve em vez de supor.
 
 ### Montar o segundo fluxo sem refazer nada
 

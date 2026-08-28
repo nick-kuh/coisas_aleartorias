@@ -18,11 +18,16 @@ NOME = "triggerOutputs()?['body/Name']"
 NOME_LOWER = f"toLower({NOME})"
 
 
-def expr_area(areas):
+def expr_area(areas, prefixo=None):
     """Compose Area: o nome da area, ou string vazia se nao reconhecer.
 
     E a unica fonte da verdade da classificacao — a condicao do fluxo so
     checa se este Compose resolveu. Assim as palavras-chave vivem num lugar so.
+
+    `prefixo` e uma ancora obrigatoria: quando informado, cada area so casa se
+    o nome tambem contiver esse texto. Existe porque palavra-chave curta cabe
+    dentro de outra palavra — 'cd' cabe em 'cdio', e sem a ancora uma reuniao
+    "CDIO Sync" viraria uma transcricao de LT de CD, gravada com cara de certa.
     """
     def nivel(i):
         if i >= len(areas):
@@ -30,6 +35,8 @@ def expr_area(areas):
         a = areas[i]
         termos = [f"contains({NOME_LOWER}, '{k.lower()}')" for k in a["palavras"]]
         teste = termos[0] if len(termos) == 1 else "or(" + ", ".join(termos) + ")"
+        if prefixo:
+            teste = f"and(contains({NOME_LOWER}, '{prefixo.lower()}'), {teste})"
         return f"if({teste}, '{a['nome']}', {nivel(i + 1)})"
     return "@" + nivel(0)
 
@@ -158,7 +165,8 @@ def definicao(c):
             }
         },
         "actions": {
-            "Area": {"runAfter": {}, "type": "Compose", "inputs": expr_area(c["areas"])},
+            "Area": {"runAfter": {}, "type": "Compose",
+                     "inputs": expr_area(c["areas"], c.get("prefixoObrigatorio"))},
             "Condition": {
                 "runAfter": {"Area": ["Succeeded"]},
                 "type": "If",
@@ -262,4 +270,4 @@ if __name__ == "__main__":
         sys.exit(__doc__)
     cfg = json.load(open(sys.argv[1], encoding="utf-8"))
     print("gerado:", pacote(cfg, sys.argv[2]))
-    print("  Area:", expr_area(cfg["areas"]))
+    print("  Area:", expr_area(cfg["areas"], cfg.get("prefixoObrigatorio")))

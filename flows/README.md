@@ -20,7 +20,7 @@ de importar.
 | | |
 |---|---|
 | Gatilho | OneDrive, **somente propriedades**, com `splitOn` |
-| `Area` | classifica a reunião pelo nome do arquivo — **fonte única** das palavras-chave |
+| `Area` | classifica a reunião pelo nome do arquivo — **fonte única** das palavras-chave. Com `prefixoObrigatorio`, cada área exige também uma **âncora**, porque palavra curta cabe dentro de outra (`cd` em `cdio`) |
 | `Condition` | `.mp4` **e** área reconhecida. Gravação de outra reunião cai no ramo vazio e o fluxo termina **verde sem fazer nada** |
 | `Caminho` | pasta de gravações do config + `%20` no espaço |
 | `Do until` | `Delay` de 30 s, `Passo_4`, e um `Tolera` que impede o `404` de "ainda processando" derrubar o loop |

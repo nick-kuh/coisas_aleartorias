@@ -12,7 +12,7 @@ São **quatro reuniões de área** em **duas contas de OneDrive**. Cada fluxo mu
 | `driveId` | dentro da URI do passo 3 |
 | `folderId` | `driveId.itemId` da pasta de gravações |
 | pasta em `Caminho` | `Recordings` / `Gravações` / `Grabaciones` |
-| palavras-chave do `Area` | as duas áreas daquela pessoa |
+| palavras-chave do `Area` | as duas áreas daquela pessoa, mais a âncora |
 
 O `scripts/gerar-fluxo.py` recebe esses cinco valores num JSON e cospe um pacote de importação pronto. O que **não** muda — espera, listagem, download, limpeza, gravação — vem sempre igual, porque vem do mesmo código.
 
@@ -25,6 +25,29 @@ python3 scripts/gerar-fluxo.py /tmp/config-pessoa.json /tmp/fluxo-pessoa.zip
 ```
 
 O script imprime a expressão do `Area` que montou. **Leia antes de importar** — é a única parte que depende de convenção humana.
+
+> ## 🔎 Antes de gerar: leia um nome de arquivo real
+>
+> Abra a pasta `Recordings` e olhe os nomes que já estão lá — inclusive os das reuniões que **não** são LT. Dez segundos, e confirma o que de outro modo é suposição: como o título entra no nome do arquivo, e o que mais mora naquela pasta.
+>
+> **É lá que você escolhe a âncora.** O `prefixoObrigatorio` tem que ser um trecho que **só as LT têm** — nas quatro do CDIO LATAM, `leadership meeting`.
+
+## 🔴 Palavra-chave curta é armadilha
+
+Um `contains` solto pega mais do que você quer:
+
+| Nome do arquivo | Só a palavra da área | Com a âncora |
+|---|---|---|
+| `BPC Leadership Meeting - CD-…` | CD ✅ | CD ✅ |
+| `CDIO Sync Semanal-…` | **CD** 🔴 | (nenhuma) ✅ |
+| `Make roadmap review-…` | **Make** 🔴 | (nenhuma) ✅ |
+| `1:1 com o CD lead-…` | **CD** 🔴 | (nenhuma) ✅ |
+
+**`cd` cabe dentro de `cdio`.** E o estrago é do pior tipo: a reunião errada seria baixada, limpa e gravada como `LT-CD-AAAA-MM-DD-HHmm.txt` na pasta que o agente indexa — **indistinguível de uma LT real**, sem nenhum passo do fluxo ficar vermelho.
+
+O `prefixoObrigatorio` fecha isso: cada área vira `and(contains(nome, <âncora>), <palavra da área>)`.
+
+**Ancore no trecho estável, não na string exata.** `leadership meeting`, e não `leadership meeting - cd` — o separador no nome do arquivo pode não ser exatamente ` - `. A precisão vem da combinação de duas condições, não de acertar um formato que você não viu.
 
 > 🔒 O config preenchido e o `.zip` gerado carregam UPN, `driveId` e GUID de biblioteca reais. O `.gitignore` já os exclui; não force o commit.
 
@@ -52,7 +75,7 @@ Na tela de importação:
 
 O classificador olha o **nome do arquivo**, que o Teams tira do **título da reunião**. E a regra é `contains`, não igualdade:
 
-> O título do teste **não precisa ser igual** ao da reunião real. Precisa só **conter** a palavra-chave. `LT Make teste` é reconhecido como `Make` do mesmo jeito que `LT Make`.
+> O título do teste **não precisa ser igual** ao da reunião real, mas precisa conter a **âncora** e a palavra da área. Com a âncora `leadership meeting`, um teste chamado `BPC Leadership Meeting - Make teste` vira `Make`; um chamado só `Make teste` **não entra** — e está certo assim, é a mesma regra que impede a reunião errada de virar transcrição de LT.
 
 Isso libera testar numa reunião nova, sem tocar nas recorrentes e sem convidar ninguém — reunião sozinho, com transcrição ligada, gera transcrição.
 
