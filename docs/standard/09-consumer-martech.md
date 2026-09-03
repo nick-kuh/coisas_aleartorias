@@ -187,3 +187,38 @@ No export a fonte está como **`BW_MarTech_2026_Controle_Projetos.xlsx`**. Funci
 ✅ **Teste de aceite:** digite "relatório de Marketing". O agente deve responder pelo
 **Excel de Consumer** (frentes/farol) — **não** disparar o relatório DevOps. E ao
 pedir "monta o HTML da agenda de Consumer", ele escreve a página do board.
+
+---
+
+## O que REALMENTE faz o Consumer parar de ir ao DevOps (descrição das tools)
+
+No Copilot Studio generativo, **o agente escolhe a ferramenta pela descrição dela** —
+e a descrição pesa mais que as instruções. Não basta o `# 0.`: enquanto uma tool de
+DevOps disser "use para qualquer relatório/área", o agente vai chamá-la para Consumer.
+
+Ex.: a tool **Read Area Portfolio** diz *"Call this FIRST whenever a report is asked
+for"*. É por isso que "dashboard/relatório de Consumer" ainda cai no DevOps.
+
+**Correção:** em **Ferramentas (Tools)**, abra cada tool abaixo e **acrescente esta
+frase no fim da Descrição** (não apague o resto):
+
+> NOT for Consumer BPC / B&W Marketing Technology / MarTech (its frentes, the BR/MX/AR
+> farol) — that portfolio is the Consumer MarTech Tracker Excel; use the
+> consumer-martech skill, never this tool, for it.
+
+Tools a editar (as 3 primeiras são as que mais vazam):
+
+| Prioridade | Tool (nome no agente) |
+|---|---|
+| **Obrigatória** | **Read Area Portfolio** (CDIO - Portfolio Data by Area) |
+| **Obrigatória** | **Publish Area Report** (CDIO - Publish Area Report) |
+| **Obrigatória** | **Power BI Portfolio Database** |
+| Recomendada | Power BI Master DB Search |
+| Recomendada | Query Devops IT Area · Query Devops BU · Devops Query (Knowledge) |
+| Recomendada | Obter os detalhes do item de trabalho (Work Item Details) |
+
+Isso, somado ao `# 0.` e ao conhecimento **Consumer MarTech Tracker**, fecha as três
+portas: instruções, conhecimento e **seleção de ferramenta**.
+
+✅ **Teste:** "monta o dashboard de Consumer" e "relatório de Marketing" devem sair
+do Excel (frentes/farol + HTML), sem chamar Read Area Portfolio nem Power BI.
