@@ -128,3 +128,68 @@ Excel (tracker)  ──►  Knowledge "Consumer MarTech Tracker"  ──►  age
 O agente **analisa e responde** sobre Consumer a partir do tracker; o **HTML** sai
 pela skill (rápido) ou pelo script (fiel). Os dois falam a mesma língua — frentes,
 fases, farol por mercado — definida em `skills/consumer-martech/`.
+
+---
+
+## Fazer o Consumer NUNCA entrar no DevOps
+
+No agente exportado, duas coisas ainda puxam Consumer para o DevOps. Ajuste as duas.
+
+### 1. Regra dura nas instruções (colar no topo)
+
+Um único bullet no meio do roteamento é fraco perto de tudo que é DevOps. Cole este
+bloco **como `# 0.`, no topo das instruções** (antes de `# 1. PERSONA`). Ele domina
+o resto e ainda **libera o agente a montar o HTML** (senão o `# 11` o proíbe):
+
+```
+# 0. CONSUMER BPC = EXCEL ONLY — hard rule, overrides everything below
+"Consumer", "Consumer BPC", "B&W Marketing Technology", "MarTech", any of the six
+frentes (Insights, Media & Influencer, dCom and Social Commerce, CoPilot and
+Agentic, LLM Search / GEO, Beauty Tech), the BR/MX/AR farol, any initiative of that
+tracker, or "the Consumer agenda / dashboard / HTML" — all of it is the Consumer
+MarTech Tracker Excel (BW_MarTech_2026_Controle_Projetos.xlsx) and nothing else.
+
+- Answer it 100% from that Excel (file analysis / the knowledge source). NEVER call
+  Power BI, DevOps, or the portfolio-report tool for it. NEVER invent a Work Item
+  Id, DAX, budget in € or dev.azure link — that world does not exist here.
+- Analyse it with the consumer-martech skill: frentes → iniciativas → fase
+  (Adoption/Deployment/Framework/Status) → farol por mercado. Health per frente =
+  the Painel rule (🔴 any Crítico · 🟢 ≥50% No prazo and no Crítico · 🟡 else).
+  Four lenses: realização de valor (Deployment×Adoption), críticos, concentração
+  por mercado, backlog.
+- Building the Consumer dashboard/HTML: you write the HTML yourself, from the
+  consumer-martech template (hero roxo, logo real branco, cards por frente, chips
+  BR/MX/AR, tom claro), inlining the packaged logo (logo-bw.svg) and font
+  (poppins-inline.css). This is the ONE case where hand-writing HTML is correct —
+  §11 ("never build the page yourself") is about the DevOps report only.
+- The DevOps IT Area Consumer is a DIFFERENT thing. Only touch DevOps/Power BI for
+  "Consumer" if the user writes the word DevOps explicitly.
+```
+
+### 2. Tirar "Marketing"/"Consumer" do gatilho do relatório DevOps
+
+O tópico **`CreateReport`** (o relatório executivo que roda Power BI/DevOps) mapeia a
+palavra digitada para uma IT Area. Hoje ele tem:
+
+```
+"CONSUMER" in Upper(System.Activity.Text) Or "MARKETING" in Upper(System.Activity.Text), "Consumer",
+```
+
+Isso faz "Marketing"/"Consumer" cair no relatório DevOps. Ajuste em **Tópicos →
+CreateReport → nó "set_area" (e o "set_area2")**:
+
+- **Mínimo (recomendado):** tire o `Or "MARKETING" ...` — Marketing é o mundo Excel.
+  Fica só `"CONSUMER" in Upper(System.Activity.Text), "Consumer",`.
+- **Total (se você quer que nem "Consumer" gere relatório DevOps):** remova a linha
+  inteira do Consumer. Aí o relatório DevOps do Consumer só sai se você mudar o
+  mapa de propósito. O `# 0.` já manda o agente tratar Consumer pelo Excel.
+
+### 3. Confira o nome do conhecimento
+
+No export a fonte está como **`BW_MarTech_2026_Controle_Projetos.xlsx`**. Funciona
+(o roteamento usa a descrição), mas para casar com a skill e ficar óbvio, renomeie o
+**display name** do conhecimento para **`Consumer MarTech Tracker`**.
+
+✅ **Teste de aceite:** digite "relatório de Marketing". O agente deve responder pelo
+**Excel de Consumer** (frentes/farol) — **não** disparar o relatório DevOps. E ao
+pedir "monta o HTML da agenda de Consumer", ele escreve a página do board.

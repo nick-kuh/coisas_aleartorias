@@ -22,7 +22,10 @@ description: >
 > O time de **Consumer** (B&W Marketing Technology) **não usa DevOps**: acompanha
 > tudo num tracker Excel por frente e por farol de mercado. Aqui **não existe**
 > Work Item Id, DAX, budget nem link do Azure DevOps. Nunca misture os dois.
-> Nunca chame tool de DevOps ou Power BI para responder algo de Consumer.
+> Nunca chame tool de DevOps, Power BI **nem a tool de relatório executivo
+> (CreateReport / Publish Area Report)** para responder algo de Consumer — aquele
+> relatório é do portfólio DevOps. Para o board de Consumer **você mesmo escreve o
+> HTML** (Passo 5): é a única exceção à regra de não montar HTML à mão.
 
 ## Passo 1 — A fonte
 
