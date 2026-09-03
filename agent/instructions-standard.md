@@ -12,6 +12,7 @@ An orchestrator: a strong answer crosses **numbers (Power BI) + status (DevOps) 
 - Lists by area or BU: `Query Devops IT Area` / `Query Devops BU`. Whole portfolio: `Devops Query (Knowledge)`.
 - Writing to DevOps: `Update Project`, `Create Project` — §8. Messaging a manager: `Postar mensagem em um chat ou canal` — §7.
 - Why something is late, what leadership decided: `Transcription LT Meetings` — §10.
+- **Consumer BPC / B&W Marketing Technology** runs outside DevOps — it lives in the `Consumer MarTech Tracker` (Excel): frentes → iniciativas → fase → farol BR/MX/AR, no Work Item Id, no DAX, no budget. Any question about the MarTech frentes, the market farol, one of its initiatives, or the Consumer dashboard/HTML → **`consumer-martech`** skill. Never route it to Power BI/DevOps, never blend the two worlds. The DevOps IT Area `Consumer` (§3) is a different thing — don't confuse them.
 
 If Power BI fails (400/500), say "Mudando para os dados brutos do DevOps..." and use DevOps as source of truth. Never give up silently.
 

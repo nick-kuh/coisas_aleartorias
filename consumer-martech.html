@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>B&amp;W MarTech 2026 — Controle de Projetos</title>
+<style>
+  :root{
+    --ground:#EEF0F3; --surface:#FFFFFF; --surface2:#F6F7F9;
+    --ink:#191C22; --muted:#5D6371; --faint:#868D9B;
+    --line:#D6DAE1; --line-soft:#E5E8ED;
+    --accent:#A85B06; --accent-bg:#F7EBD8;
+    --good:#0B6E5F; --good-bg:#DDEFEA;
+    --warn:#9A6A00; --warn-bg:#FBEFC9;
+    --bad:#A82A2F;  --bad-bg:#F8E1E1;
+    --idle:#6A7180; --idle-bg:#E7E9ED;
+    --na:#9AA0AC;   --na-bg:#F1F2F4;
+    --shadow:0 1px 2px rgba(25,28,34,.06),0 8px 24px -12px rgba(25,28,34,.18);
+    --display:ui-serif,"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    --body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+    --data:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --ground:#121419; --surface:#1A1D24; --surface2:#21252D;
+    --ink:#E7EAEF; --muted:#99A0AE; --faint:#6E7684;
+    --line:#2E333D; --line-soft:#262B33;
+    --accent:#E9A33F; --accent-bg:#3A2C14;
+    --good:#46C3A8; --good-bg:#12332E;
+    --warn:#E9B84B; --warn-bg:#37300F;
+    --bad:#E8737B;  --bad-bg:#38191C;
+    --idle:#9AA2B0; --idle-bg:#262A31;
+    --na:#767D8B;   --na-bg:#20242B;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.7);
+  }}
+  :root[data-theme="dark"]{
+    --ground:#121419; --surface:#1A1D24; --surface2:#21252D;
+    --ink:#E7EAEF; --muted:#99A0AE; --faint:#6E7684;
+    --line:#2E333D; --line-soft:#262B33;
+    --accent:#E9A33F; --accent-bg:#3A2C14;
+    --good:#46C3A8; --good-bg:#12332E;
+    --warn:#E9B84B; --warn-bg:#37300F;
+    --bad:#E8737B;  --bad-bg:#38191C;
+    --idle:#9AA2B0; --idle-bg:#262A31;
+    --na:#767D8B;   --na-bg:#20242B;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.7);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--ground);color:var(--ink);
+    font-family:var(--body);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px 96px;}
+  header.mast{border-bottom:1px solid var(--line);padding:56px 0 0;margin-bottom:36px;}
+  .eyebrow{font-family:var(--data);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);margin:0 0 16px;}
+  h1{font-family:var(--display);font-weight:600;font-size:clamp(30px,5vw,50px);line-height:1.06;
+    letter-spacing:-.018em;text-wrap:balance;margin:0 0 18px;}
+  .lede{font-size:17px;color:var(--muted);margin:0 0 28px;max-width:66ch;}
+  .lede strong{color:var(--ink);font-weight:600;}
+  .board{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;
+    background:var(--line);border:1px solid var(--line);border-radius:3px;overflow:hidden;margin-bottom:8px;}
+  .board .cell{background:var(--surface);padding:16px 18px 18px;}
+  .board .k{font-family:var(--data);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--faint);margin:0 0 9px;}
+  .board .v{font-family:var(--data);font-variant-numeric:tabular-nums;font-size:24px;letter-spacing:-.02em;margin:0;}
+  .v.bad{color:var(--bad);} .v.warn{color:var(--warn);} .v.good{color:var(--good);} .v.idle{color:var(--idle);}
+  .board .note{font-size:12px;color:var(--muted);margin:6px 0 0;line-height:1.4;}
+  .stamp{font-family:var(--data);font-size:11.5px;color:var(--faint);margin:0 0 40px;}
+  section{padding-top:52px;}
+  h2{font-family:var(--display);font-weight:600;font-size:clamp(22px,2.9vw,29px);letter-spacing:-.012em;
+    line-height:1.2;margin:0 0 8px;padding-bottom:12px;border-bottom:2px solid var(--ink);display:inline-block;}
+  .sec-note{color:var(--muted);font-size:14px;margin:14px 0 22px;max-width:70ch;}
+  h3{font-family:var(--display);font-weight:600;font-size:20px;margin:0;letter-spacing:-.01em;}
+  .frente-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:40px 0 12px;}
+  .frente-head .farol{font-size:17px;}
+  .frente-head .meta{font-family:var(--data);font-size:11.5px;color:var(--faint);
+    letter-spacing:.04em;margin-left:auto;}
+  .scroller{overflow-x:auto;border:1px solid var(--line);border-radius:3px;background:var(--surface);box-shadow:var(--shadow);}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:680px;}
+  th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line-soft);vertical-align:middle;}
+  thead th{font-family:var(--data);font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--faint);font-weight:500;background:var(--surface2);border-bottom:1px solid var(--line);
+    position:sticky;top:0;}
+  tbody tr:last-child td{border-bottom:none;}
+  th.mkt,td.mkt{text-align:center;white-space:nowrap;}
+  td.ini{font-weight:600;} td.item{color:var(--muted);}
+  td.fase{font-family:var(--data);font-size:11px;letter-spacing:.03em;color:var(--muted);text-transform:uppercase;}
+  .pill{font-family:var(--data);font-size:10px;letter-spacing:.04em;text-transform:uppercase;
+    padding:3px 8px;border-radius:3px;white-space:nowrap;display:inline-block;font-weight:600;}
+  .pill.good{background:var(--good-bg);color:var(--good);}
+  .pill.warn{background:var(--warn-bg);color:var(--warn);}
+  .pill.bad{background:var(--bad-bg);color:var(--bad);}
+  .pill.idle{background:var(--idle-bg);color:var(--idle);}
+  .pill.na{background:var(--na-bg);color:var(--na);}
+  .health{width:100%;border-collapse:collapse;font-size:14px;}
+  .health th,.health td{padding:11px 14px;border-bottom:1px solid var(--line-soft);}
+  .health thead th{font-family:var(--data);font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--faint);font-weight:500;background:var(--surface2);}
+  .health td.num{font-family:var(--data);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;}
+  .health tr.total td{font-weight:700;border-top:2px solid var(--line);background:var(--surface2);}
+  .bar{height:6px;border-radius:3px;background:var(--idle-bg);overflow:hidden;min-width:60px;}
+  .bar>span{display:block;height:100%;background:var(--good);}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:22px;}
+  .legend .pill{margin-right:7px;}
+  footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);
+    font-size:12.5px;color:var(--faint);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <p class="eyebrow">Consumer BPC · Farol por mercado</p>
+    <h1>B&amp;W Marketing Technology 2026</h1>
+    <p class="lede">Controle de projetos do time de <strong>Consumer</strong> — que roda fora do
+      DevOps. Cada iniciativa é acompanhada por frente e por fase, com o farol de status de
+      <strong>Brasil, México e Argentina</strong> lado a lado. Atualize o status semanalmente.</p>
+    
+    <div class="board">
+      <div class="cell"><p class="k">Iniciativas</p><p class="v">19</p><p class="note">em 6 frentes</p></div>
+      <div class="cell"><p class="k">Células de status</p><p class="v">103</p><p class="note">BR·MX·AR, exclui N/A</p></div>
+      <div class="cell"><p class="k">No prazo</p><p class="v good">48</p><p class="note">47% do ativo</p></div>
+      <div class="cell"><p class="k">Atenção</p><p class="v warn">12</p><p class="note">risco moderado</p></div>
+      <div class="cell"><p class="k">Crítico</p><p class="v bad">2</p><p class="note">requer ação</p></div>
+      <div class="cell"><p class="k">Não iniciado</p><p class="v idle">41</p><p class="note">backlog</p></div>
+    </div>
+    <p class="stamp">Gerado de BW_MarTech_2026_Controle_Projetos.xlsx · atualizado em 03/09/2026</p>
+  </header>
+
+  <section>
+    <h2>Saúde por frente</h2>
+    <p class="sec-note">Contagem das células de status BR+MX+AR de cada frente (exclui N/A).
+      Farol: <strong>🔴</strong> qualquer crítico · <strong>🟢</strong> ≥ 50% no prazo e sem crítico ·
+      <strong>🟡</strong> demais casos.</p>
+    
+    <div class="scroller">
+      <table class="health">
+        <thead><tr>
+          <th>Frente</th><th class="num">No prazo</th><th class="num">Atenção</th>
+          <th class="num">Crítico</th><th class="num">Não iniciado</th>
+          <th class="num">Ativo</th><th class="num">% No prazo</th><th>&nbsp;</th>
+        </tr></thead>
+        <tbody>
+        <tr>
+          <td>🔴&nbsp; Insights</td>
+          <td class="num">9</td>
+          <td class="num">1</td>
+          <td class="num">2</td>
+          <td class="num">8</td>
+          <td class="num">20</td>
+          <td class="num">45%</td>
+          <td><div class="bar"><span style="width:45%"></span></div></td>
+        </tr>
+        <tr>
+          <td>🟡&nbsp; Media &amp; Influencer</td>
+          <td class="num">7</td>
+          <td class="num">3</td>
+          <td class="num">0</td>
+          <td class="num">8</td>
+          <td class="num">18</td>
+          <td class="num">39%</td>
+          <td><div class="bar"><span style="width:39%"></span></div></td>
+        </tr>
+        <tr>
+          <td>🟡&nbsp; dCom and Social Commerce</td>
+          <td class="num">3</td>
+          <td class="num">5</td>
+          <td class="num">0</td>
+          <td class="num">6</td>
+          <td class="num">14</td>
+          <td class="num">21%</td>
+          <td><div class="bar"><span style="width:21%"></span></div></td>
+        </tr>
+        <tr>
+          <td>🟢&nbsp; CoPilot and Agentic</td>
+          <td class="num">20</td>
+          <td class="num">0</td>
+          <td class="num">0</td>
+          <td class="num">4</td>
+          <td class="num">24</td>
+          <td class="num">83%</td>
+          <td><div class="bar"><span style="width:83%"></span></div></td>
+        </tr>
+        <tr>
+          <td>🟡&nbsp; LLM Search / GEO</td>
+          <td class="num">6</td>
+          <td class="num">3</td>
+          <td class="num">0</td>
+          <td class="num">12</td>
+          <td class="num">21</td>
+          <td class="num">29%</td>
+          <td><div class="bar"><span style="width:29%"></span></div></td>
+        </tr>
+        <tr>
+          <td>🟢&nbsp; Beauty Tech</td>
+          <td class="num">3</td>
+          <td class="num">0</td>
+          <td class="num">0</td>
+          <td class="num">3</td>
+          <td class="num">6</td>
+          <td class="num">50%</td>
+          <td><div class="bar"><span style="width:50%"></span></div></td>
+        </tr>
+        <tr class="total">
+          <td>TOTAL</td>
+          <td class="num">48</td>
+          <td class="num">12</td>
+          <td class="num">2</td>
+          <td class="num">41</td>
+          <td class="num">103</td>
+          <td class="num">47%</td>
+          <td></td>
+        </tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Tracker por frente</h2>
+    <p class="sec-note">As iniciativas de cada frente, a fase (Adoption, Deployment, Framework, Status)
+      e o farol por mercado.</p>
+    
+      <div class="frente-head">
+        <span class="farol">🔴</span>
+        <h3>Insights</h3>
+        <span class="meta">9 no prazo · 1 atenção · 2 crítico · 8 não iniciado · 45%</span>
+      </div>
+      <div class="scroller">
+        <table>
+          <thead><tr>
+            <th>Iniciativa</th><th>Item</th><th>Fase</th>
+            <th class="mkt">BR</th><th class="mkt">MX</th><th class="mkt">AR</th>
+          </tr></thead>
+          <tbody>
+          <tr>
+            <td class="ini">Winnin</td>
+            <td class="item"></td>
+            <td class="fase">Deployment</td>
+            <td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Winnin</td>
+            <td class="item"></td>
+            <td class="fase">Adoption</td>
+            <td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill warn" title="At Risk">Atenção</span></td>
+          </tr>
+          <tr>
+            <td class="ini">5Vs Dashboard</td>
+            <td class="item"></td>
+            <td class="fase">Deployment</td>
+            <td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td>
+          </tr>
+          <tr>
+            <td class="ini">5Vs Dashboard</td>
+            <td class="item"></td>
+            <td class="fase">Adoption</td>
+            <td class="mkt"><span class="pill bad" title="Critical">Crítico</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td>
+          </tr>
+          <tr>
+            <td class="ini">FIBRA</td>
+            <td class="item"></td>
+            <td class="fase">Deployment</td>
+            <td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill na" title="N/A">N/A</span></td><td class="mkt"><span class="pill na" title="N/A">N/A</span></td>
+          </tr>
+          <tr>
+            <td class="ini">FIBRA</td>
+            <td class="item"></td>
+            <td class="fase">Adoption</td>
+            <td class="mkt"><span class="pill bad" title="Critical">Crítico</span></td><td class="mkt"><span class="pill na" title="N/A">N/A</span></td><td class="mkt"><span class="pill na" title="N/A">N/A</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Share and Markets</td>
+            <td class="item"></td>
+            <td class="fase">Deployment</td>
+            <td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Share and Markets</td>
+            <td class="item"></td>
+            <td class="fase">Adoption</td>
+            <td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td>
+          </tr></tbody>
+        </table>
+      </div>
+      <div class="frente-head">
+        <span class="farol">🟡</span>
+        <h3>Media &amp; Influencer</h3>
+        <span class="meta">7 no prazo · 3 atenção · 0 crítico · 8 não iniciado · 39%</span>
+      </div>
+      <div class="scroller">
+        <table>
+          <thead><tr>
+            <th>Iniciativa</th><th>Item</th><th>Fase</th>
+            <th class="mkt">BR</th><th class="mkt">MX</th><th class="mkt">AR</th>
+          </tr></thead>
+          <tbody>
+          <tr>
+            <td class="ini">Media Data Automation</td>
+            <td class="item"></td>
+            <td class="fase">Deployment</td>
+            <td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Media Data Automation</td>
+            <td class="item"></td>
+            <td class="fase">Adoption</td>
+            <td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Rapid ROI Always On</td>
+            <td class="item"></td>
+            <td class="fase">Deployment</td>
+            <td class="mkt"><span class="pill warn" title="At Risk">Atenção</span></td><td class="mkt"><span class="pill warn" title="At Risk">Atenção</span></td><td class="mkt"><span class="pill warn" title="At Risk">Atenção</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Rapid ROI Always On</td>
+            <td class="item"></td>
+            <td class="fase">Adoption</td>
+            <td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Influencer Management</td>
+            <td class="item"></td>
+            <td class="fase">Deployment</td>
+            <td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Influencer Management</td>
+            <td class="item"></td>
+            <td class="fase">Adoption</td>
+            <td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td>
+          </tr></tbody>
+        </table>
+      </div>
+      <div class="frente-head">
+        <span class="farol">🟡</span>
+        <h3>dCom and Social Commerce</h3>
+        <span class="meta">3 no prazo · 5 atenção · 0 crítico · 6 não iniciado · 21%</span>
+      </div>
+      <div class="scroller">
+        <table>
+          <thead><tr>
+            <th>Iniciativa</th><th>Item</th><th>Fase</th>
+            <th class="mkt">BR</th><th class="mkt">MX</th><th class="mkt">AR</th>
+          </tr></thead>
+          <tbody>
+          <tr>
+            <td class="ini">dCom Data Automation</td>
+            <td class="item"></td>
+            <td class="fase">Deployment</td>
+            <td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill na" title="N/A">N/A</span></td><td class="mkt"><span class="pill na" title="N/A">N/A</span></td>
+          </tr>
+          <tr>
+            <td class="ini">dCom Data Automation</td>
+            <td class="item"></td>
+            <td class="fase">Adoption</td>
+            <td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill na" title="N/A">N/A</span></td><td class="mkt"><span class="pill na" title="N/A">N/A</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Perfect Store Online</td>
+            <td class="item"></td>
+            <td class="fase">Deployment</td>
+            <td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill warn" title="At Risk">Atenção</span></td><td class="mkt"><span class="pill warn" title="At Risk">Atenção</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Perfect Store Online</td>
+            <td class="item"></td>
+            <td class="fase">Adoption</td>
+            <td class="mkt"><span class="pill warn" title="At Risk">Atenção</span></td><td class="mkt"><span class="pill warn" title="At Risk">Atenção</span></td><td class="mkt"><span class="pill warn" title="At Risk">Atenção</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Social Commerce</td>
+            <td class="item"></td>
+            <td class="fase">Deployment</td>
+            <td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Social Commerce</td>
+            <td class="item"></td>
+            <td class="fase">Adoption</td>
+            <td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td>
+          </tr></tbody>
+        </table>
+      </div>
+      <div class="frente-head">
+        <span class="farol">🟢</span>
+        <h3>CoPilot and Agentic</h3>
+        <span class="meta">20 no prazo · 0 atenção · 0 crítico · 4 não iniciado · 83%</span>
+      </div>
+      <div class="scroller">
+        <table>
+          <thead><tr>
+            <th>Iniciativa</th><th>Item</th><th>Fase</th>
+            <th class="mkt">BR</th><th class="mkt">MX</th><th class="mkt">AR</th>
+          </tr></thead>
+          <tbody>
+          <tr>
+            <td class="ini">Brands Training</td>
+            <td class="item">Dove</td>
+            <td class="fase">Status</td>
+            <td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Brands Training</td>
+            <td class="item">Clear</td>
+            <td class="fase">Status</td>
+            <td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Brands Training</td>
+            <td class="item">Tresemme</td>
+            <td class="fase">Status</td>
+            <td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Brands Training</td>
+            <td class="item">Seda / Sedal</td>
+            <td class="fase">Status</td>
+            <td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Brands Training</td>
+            <td class="item">Savilé</td>
+            <td class="fase">Status</td>
+            <td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Brands Training</td>
+            <td class="item">Liquid IV</td>
+            <td class="fase">Status</td>
+            <td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Functions Training</td>
+            <td class="item">CMI</td>
+            <td class="fase">Status</td>
+            <td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Agents</td>
+            <td class="item">CMI</td>
+            <td class="fase">Status</td>
+            <td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill na" title="N/A">N/A</span></td><td class="mkt"><span class="pill na" title="N/A">N/A</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Agents</td>
+            <td class="item">Buzz Factory</td>
+            <td class="fase">Status</td>
+            <td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill na" title="N/A">N/A</span></td><td class="mkt"><span class="pill na" title="N/A">N/A</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Winnin Share</td>
+            <td class="item"></td>
+            <td class="fase">Status</td>
+            <td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill na" title="N/A">N/A</span></td><td class="mkt"><span class="pill na" title="N/A">N/A</span></td>
+          </tr></tbody>
+        </table>
+      </div>
+      <div class="frente-head">
+        <span class="farol">🟡</span>
+        <h3>LLM Search / GEO</h3>
+        <span class="meta">6 no prazo · 3 atenção · 0 crítico · 12 não iniciado · 29%</span>
+      </div>
+      <div class="scroller">
+        <table>
+          <thead><tr>
+            <th>Iniciativa</th><th>Item</th><th>Fase</th>
+            <th class="mkt">BR</th><th class="mkt">MX</th><th class="mkt">AR</th>
+          </tr></thead>
+          <tbody>
+          <tr>
+            <td class="ini">Website Optimization</td>
+            <td class="item"></td>
+            <td class="fase">Deployment</td>
+            <td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Website Optimization</td>
+            <td class="item"></td>
+            <td class="fase">Adoption</td>
+            <td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td>
+          </tr>
+          <tr>
+            <td class="ini">R&amp;D Say Agent</td>
+            <td class="item"></td>
+            <td class="fase">Deployment</td>
+            <td class="mkt"><span class="pill warn" title="At Risk">Atenção</span></td><td class="mkt"><span class="pill warn" title="At Risk">Atenção</span></td><td class="mkt"><span class="pill warn" title="At Risk">Atenção</span></td>
+          </tr>
+          <tr>
+            <td class="ini">R&amp;D Say Agent</td>
+            <td class="item"></td>
+            <td class="fase">Adoption</td>
+            <td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Profound Agent</td>
+            <td class="item"></td>
+            <td class="fase">Deployment</td>
+            <td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Profound Agent</td>
+            <td class="item"></td>
+            <td class="fase">Adoption</td>
+            <td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Repeatable Model</td>
+            <td class="item">Framework</td>
+            <td class="fase">Framework</td>
+            <td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td>
+          </tr></tbody>
+        </table>
+      </div>
+      <div class="frente-head">
+        <span class="farol">🟢</span>
+        <h3>Beauty Tech</h3>
+        <span class="meta">3 no prazo · 0 atenção · 0 crítico · 3 não iniciado · 50%</span>
+      </div>
+      <div class="scroller">
+        <table>
+          <thead><tr>
+            <th>Iniciativa</th><th>Item</th><th>Fase</th>
+            <th class="mkt">BR</th><th class="mkt">MX</th><th class="mkt">AR</th>
+          </tr></thead>
+          <tbody>
+          <tr>
+            <td class="ini">Immersive Experiences</td>
+            <td class="item">Unbranded</td>
+            <td class="fase">Status</td>
+            <td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill good" title="On Track">No prazo</span></td>
+          </tr>
+          <tr>
+            <td class="ini">Immersive Experiences</td>
+            <td class="item">Dove</td>
+            <td class="fase">Status</td>
+            <td class="mkt"><span class="pill good" title="On Track">No prazo</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td><td class="mkt"><span class="pill idle" title="Not Started">Não iniciado</span></td>
+          </tr></tbody>
+        </table>
+      </div>
+
+    <div class="legend">
+      <span><span class="pill good">No prazo</span> On Track / dentro do plano</span>
+      <span><span class="pill warn">Atenção</span> risco moderado</span>
+      <span><span class="pill bad">Crítico</span> atrasado ou bloqueado</span>
+      <span><span class="pill idle">Não iniciado</span> ainda não começou</span>
+      <span><span class="pill na">N/A</span> não se aplica ao mercado</span>
+    </div>
+  </section>
+
+  <footer>
+    B&amp;W Marketing Technology 2026 · Consumer BPC (Beauty &amp; Wellbeing + Personal Care) ·
+    mercados: BR (Brasil), MX (México), AR (Argentina).
+  </footer>
+</div>
+</body>
+</html>

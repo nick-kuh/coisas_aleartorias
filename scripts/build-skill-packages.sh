@@ -28,3 +28,4 @@ echo "Pronto. Suba cada .zip em Copilot Studio -> Skills -> Adicionar skill -> C
 echo "Ordem sugerida (ver docs/04-passo-a-passo.md):"
 echo "  1. inicio-de-conversa   2. portfolio-overview   3. project-deep-dive"
 echo "  4. meeting-preparation  5. update-devops        6. notificar-gestor"
+echo "  7. consumer-martech (Consumer BPC / B&W MarTech — mundo Excel, independente)"

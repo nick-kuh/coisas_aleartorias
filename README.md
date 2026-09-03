@@ -93,6 +93,38 @@ O `validate-topics.py` confere que YAML é parseável, que o root é `AdaptiveDi
 
 ---
 
+## 🟠 Consumer BPC — B&W Marketing Technology (fora do DevOps)
+
+O time de **Consumer** (B&W Marketing Technology) **não usa DevOps**. O portfólio
+dele vive num tracker Excel próprio — outro modelo, sem Work Item Id, sem DAX, sem
+budget em €. É um mundo à parte, tratado por uma skill dedicada.
+
+O modelo: **frente → iniciativa → item → fase → farol por mercado**. As seis
+frentes são Insights · Media & Influencer · dCom and Social Commerce · CoPilot and
+Agentic · LLM Search / GEO · Beauty Tech. As fases são Adoption, Deployment,
+Framework, Status. O farol (No prazo · Atenção · Crítico · Não iniciado · N/A)
+é acompanhado por país: **BR, MX, AR**.
+
+| Arquivo | Para quê |
+|---|---|
+| [`data/BW_MarTech_2026_Controle_Projetos.xlsx`](data/BW_MarTech_2026_Controle_Projetos.xlsx) | O tracker — fonte de verdade. Vira a fonte de conhecimento `Consumer MarTech Tracker` no agente |
+| [`consumer-martech.html`](consumer-martech.html) | O dashboard renderizado — farol por mercado, saúde por frente. Regerável do Excel |
+| [`scripts/gerar-consumer-html.py`](scripts/gerar-consumer-html.py) | Gera o HTML a partir do Excel (`python3 scripts/gerar-consumer-html.py`) |
+| [`skills/consumer-martech/SKILL.md`](skills/consumer-martech/SKILL.md) | O esquema no agente — como analisar Consumer e montar o dashboard |
+| [`skills/consumer-martech/references/`](skills/consumer-martech/references/) | Frentes/fases/status · snapshot do tracker · template HTML |
+
+A regra de saúde por frente é a mesma da aba **Painel** do Excel: conta as células
+BR+MX+AR (exclui N/A); farol 🔴 se houver qualquer crítico, 🟢 se ≥ 50% no prazo e
+sem crítico, 🟡 nos demais casos. A skill analisa por quatro lentes — realização de
+valor (Deployment × Adoption), críticos, concentração por mercado e backlog.
+
+> ⚠️ Há **duas** coisas chamadas "Consumer": a **IT Area `Consumer`** do DevOps
+> (com Work Item Id, no Power BI) e este time de **Consumer BPC / B&W MarTech**
+> (só Excel). As instruções do agente (`agent/instructions*.md`) mandam não
+> confundir os dois nem misturar tools de um mundo no outro.
+
+---
+
 ## ⚪ Trilha da experiência nova
 
 Material da tentativa anterior, mantido como referência: [`docs/nova-experiencia/`](docs/nova-experiencia/), [`skills/`](skills/), [`dist/`](dist/). Continua válido se um dia essa trilha voltar a fazer sentido — e o diagnóstico daquele export explica por que ela não funcionou.

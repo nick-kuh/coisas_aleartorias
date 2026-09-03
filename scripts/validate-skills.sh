@@ -25,6 +25,7 @@ TOOLS_OFICIAIS=(
 KNOWLEDGE_OFICIAL=(
   "CDIO_LATAM_Governance_Wiki"
   "Transcription LT Meetings"
+  "Consumer MarTech Tracker"
 )
 
 erros=0
