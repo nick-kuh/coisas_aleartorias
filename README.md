@@ -108,7 +108,7 @@ Framework, Status. O farol (No prazo · Atenção · Crítico · Não iniciado �
 | Arquivo | Para quê |
 |---|---|
 | [`data/BW_MarTech_2026_Controle_Projetos.xlsx`](data/BW_MarTech_2026_Controle_Projetos.xlsx) | O tracker — fonte de verdade. Vira a fonte de conhecimento `Consumer MarTech Tracker` no agente |
-| [`consumer-martech.html`](consumer-martech.html) | O dashboard renderizado — farol por mercado, saúde por frente. Regerável do Excel |
+| [`consumer-martech.html`](consumer-martech.html) | A agenda renderizada — um card por frente, chips de farol por mercado, faixa Marketing Operations. Regerável do Excel |
 | [`scripts/gerar-consumer-html.py`](scripts/gerar-consumer-html.py) | Gera o HTML a partir do Excel (`python3 scripts/gerar-consumer-html.py`) |
 | [`skills/consumer-martech/SKILL.md`](skills/consumer-martech/SKILL.md) | O esquema no agente — como analisar Consumer e montar o dashboard |
 | [`skills/consumer-martech/references/`](skills/consumer-martech/references/) | Frentes/fases/status · snapshot do tracker · template HTML |

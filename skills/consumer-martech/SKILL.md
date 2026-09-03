@@ -112,11 +112,13 @@ Adoption), o farol de cada mercado, o que está em jogo, e a decisão recomendad
 
 ## Passo 5 — Montar o dashboard HTML
 
-Quando pedirem "o HTML", "o dashboard de Consumer" ou "a página do farol", gere
-o HTML completo seguindo `references/html-template.md` — o esqueleto, os tokens
-de cor (claro/escuro), a regra de farol e o mapeamento status → classe da pill
-estão todos lá. Preencha o board de KPIs e a tabela de saúde com os números que
-você contou no Passo 3; monte uma tabela por frente com o farol de cada mercado.
+Quando pedirem "o HTML", "o dashboard de Consumer" ou "a agenda de Consumer",
+gere o HTML completo seguindo `references/html-template.md` — é um board estilo
+**agenda em cards** (um card por frente, fundo lavanda, lockup Unilever·B&W), com
+os status BR/MX/AR como **chips coloridos**. O esqueleto, os tokens de cor
+(claro/escuro), a regra de destaque dos blocos e o mapeamento status → classe do
+chip estão todos lá. Monte um card por frente com um bloco por iniciativa e os
+três chips por mercado; feche com a faixa Marketing Operations e a legenda.
 Entregue **um arquivo HTML só**, sem dependências externas.
 
 > Fora do Copilot Studio, o mesmo HTML sai automático do Excel com

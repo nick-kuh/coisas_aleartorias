@@ -1,149 +1,175 @@
-# Template do dashboard HTML — Consumer MarTech
+# Template do dashboard HTML — Consumer MarTech (agenda em cards)
 
-Esqueleto para o agente montar a página "B&W MarTech 2026" a partir do
-`Consumer MarTech Tracker`. Entregue **um arquivo HTML só**, sem CDN, script
-externo ou fonte remota — tudo inline. Claro e escuro automáticos.
+Esqueleto para o agente montar a página **"B&W Marketing Technology 2026 Agenda"**
+a partir do `Consumer MarTech Tracker`. É um board estilo agenda: um **card por
+frente**, fundo lavanda, e os status BR/MX/AR viram **chips coloridos**. Entregue
+**um arquivo HTML só**, sem CDN, script externo ou fonte remota — tudo inline.
+Claro e escuro automáticos.
 
-O exemplo versionado no repo é `consumer-martech.html` (na raiz). Fora do
-Copilot Studio ele sai pronto com `python3 scripts/gerar-consumer-html.py`.
+O exemplo versionado é `consumer-martech.html` (raiz). Fora do Copilot Studio ele
+sai pronto com `python3 scripts/gerar-consumer-html.py`.
 
-## Como preencher
+## Regras de montagem
 
-1. **Conte os status** por frente e no total (BR+MX+AR, excluindo N/A), como no
-   Passo 3 da skill.
-2. **Board de KPIs** (topo): Iniciativas · Células de status · No prazo (+%) ·
-   Atenção · Crítico · Não iniciado. Classes de cor: `good` / `warn` / `bad` /
-   `idle`.
-3. **Tabela "Saúde por frente"**: uma linha por frente + total, com o emoji de
-   farol pela regra (🔴 qualquer crítico · 🟢 sem crítico e ≥50% · 🟡 resto).
-4. **Uma tabela por frente** (na ordem canônica) com colunas
-   `Iniciativa · Item · Fase · BR · MX · AR`. Cada célula de mercado é uma pill.
-5. **Legenda** ao final.
+1. **Header:** eyebrow "Consumer BPC" + `<h1>` "B&W Marketing Technology 2026
+   Agenda" à esquerda; lockup **Unilever · B&W** à direita.
+2. **Grid de 6 cards**, na ordem canônica das frentes (Insights · Media &
+   Influencer · dCom and Social Commerce · CoPilot and Agentic · LLM Search / GEO
+   · Beauty Tech). Cada card = título da frente centralizado + blocos de iniciativa.
+3. **Bloco de iniciativa:** nome em negrito + uma linha por registro do tracker.
+   - Rótulo da linha = o **Item** se houver (Dove, Clear, CMI…); senão a **Fase**
+     (Deployment / Adoption). Linhas Status/Framework soltas ficam só com os chips.
+   - **Destaque lavanda** (`class="blk hl"`) no bloco quando qualquer célula dele
+     for **Atenção** ou **Crítico**.
+4. **Chips BR/MX/AR** (um por mercado), cor pelo status:
 
-### status → classe da pill
+   | Status | classe | conteúdo do chip |
+   |---|---|---|
+   | No prazo | `chip good` | BR / MX / AR |
+   | Atenção | `chip warn` | BR / MX / AR |
+   | Crítico | `chip bad` | BR / MX / AR |
+   | Não iniciado | `chip idle` | BR / MX / AR |
+   | N/A | `chip na` | `–` |
 
-| Status | classe |
-|---|---|
-| No prazo | `pill good` |
-| Atenção | `pill warn` |
-| Crítico | `pill bad` |
-| Não iniciado | `pill idle` |
-| N/A | `pill na` |
+5. **Faixa "Marketing Operations"** no rodapé (elemento fixo do board, não vem do
+   Excel): Social Media Access Mgmt (linhas Deployment/Adoption) + três contadores
+   (Operational Support, Cyber/AI Assessments, Automation Requests) com BR/MX/AR.
+6. **Legenda** curta + carimbo de origem/data no fim.
 
-Célula vazia → `<td class="mkt"></td>` (sem pill).
+> **Não invente dados.** Os cards saem só do `Consumer MarTech Tracker`. A faixa
+> Marketing Operations é estrutural (mantém os rótulos e zeros do board) — se o
+> tracker não trouxer esses números, deixe-a como está.
 
-## Esqueleto
+## CSS (colar inteiro)
+
+```css
+:root{
+  --grad1:#F7F1FD; --grad2:#EADFF8; --grad3:#DECFF3;
+  --card:#FFFFFF; --card-hl:#EFE8FB;
+  --title:#3C1F73; --eyebrow:#7A5AB5; --frente:#22347A;
+  --ini:#1E2530; --label:#5B6472; --line:rgba(70,45,110,.12);
+  --good:#34B36B; --good-ink:#FFFFFF; --warn:#F3C22C; --warn-ink:#5A4600;
+  --bad:#E23B3B; --bad-ink:#FFFFFF; --idle:#C4C8D2; --idle-ink:#FFFFFF;
+  --na:#E9E6EF; --na-ink:#B0AAC0; --ops:#EFE9FB; --ops-title:#2B4C9B;
+  --serif:"Iowan Old Style",Palatino,Georgia,serif;
+  --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --grad1:#191324; --grad2:#20182F; --grad3:#291E3D; --card:#221B2E; --card-hl:#2C2442;
+  --title:#CBB6F2; --eyebrow:#A98FDA; --frente:#A6B4E9; --ini:#ECE8F3; --label:#A79FB6;
+  --line:rgba(180,160,220,.14); --good:#33B06B; --good-ink:#06210F; --warn:#E9B838; --warn-ink:#3A2B00;
+  --bad:#E4585C; --bad-ink:#2A0C0D; --idle:#4B4660; --idle-ink:#CFC9DC; --na:#2F2942; --na-ink:#7E769A;
+  --ops:#2A2340; --ops-title:#9DB4EE;
+}}
+:root[data-theme="dark"]{
+  --grad1:#191324; --grad2:#20182F; --grad3:#291E3D; --card:#221B2E; --card-hl:#2C2442;
+  --title:#CBB6F2; --eyebrow:#A98FDA; --frente:#A6B4E9; --ini:#ECE8F3; --label:#A79FB6;
+  --line:rgba(180,160,220,.14); --good:#33B06B; --good-ink:#06210F; --warn:#E9B838; --warn-ink:#3A2B00;
+  --bad:#E4585C; --bad-ink:#2A0C0D; --idle:#4B4660; --idle-ink:#CFC9DC; --na:#2F2942; --na-ink:#7E769A;
+  --ops:#2A2340; --ops-title:#9DB4EE;
+}
+*{box-sizing:border-box;}
+body{margin:0;color:var(--ini);font-family:var(--body);line-height:1.45;min-height:100vh;
+  background:linear-gradient(135deg,var(--grad1) 0%,var(--grad2) 52%,var(--grad3) 100%);background-attachment:fixed;}
+.wrap{max-width:1480px;margin:0 auto;padding:34px 30px 40px;}
+header.mast{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:26px;}
+.eyebrow{font-size:15px;font-weight:600;color:var(--eyebrow);margin:0 0 2px;}
+h1{font-family:var(--body);font-weight:800;color:var(--title);margin:0;font-size:clamp(28px,3.4vw,46px);line-height:1.04;letter-spacing:-.02em;}
+.brand{display:flex;align-items:center;gap:12px;padding-top:6px;color:var(--title);}
+.brand .uni{display:flex;flex-direction:column;align-items:center;line-height:1;}
+.brand .uni b{font-family:var(--serif);font-size:30px;font-weight:700;}
+.brand .uni small{font-size:9px;margin-top:2px;opacity:.8;}
+.brand .rule{width:1.5px;height:44px;background:currentColor;opacity:.5;}
+.brand .bw{font-family:var(--serif);font-size:34px;font-weight:700;}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;align-items:start;}
+@media (max-width:1200px){.grid{grid-template-columns:repeat(3,1fr);}}
+@media (max-width:760px){.grid{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:480px){.grid{grid-template-columns:1fr;}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 15px 18px;box-shadow:0 8px 22px -12px rgba(60,30,100,.28);}
+.frente{color:var(--frente);text-align:center;font-weight:700;font-size:15.5px;line-height:1.15;margin:2px 0 14px;min-height:2.4em;display:flex;align-items:center;justify-content:center;}
+.blk{margin-bottom:14px;} .blk:last-child{margin-bottom:2px;}
+.blk.hl{background:var(--card-hl);border-radius:11px;padding:8px 9px;margin-left:-7px;margin-right:-7px;}
+.ini{font-weight:700;font-size:12.5px;color:var(--ini);margin:0 0 6px;}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2.5px 0;font-size:11.5px;color:var(--label);}
+.rl{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.chips{display:inline-flex;gap:5px;flex:none;}
+.chip{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:20px;padding:0 5px;border-radius:6px;font-size:10px;font-weight:700;}
+.chip.good{background:var(--good);color:var(--good-ink);}
+.chip.warn{background:var(--warn);color:var(--warn-ink);}
+.chip.bad{background:var(--bad);color:var(--bad-ink);}
+.chip.idle{background:var(--idle);color:var(--idle-ink);}
+.chip.na{background:var(--na);color:var(--na-ink);}
+.ops{margin-top:20px;background:var(--ops);border:1px solid var(--line);border-radius:16px;padding:18px 22px;display:grid;grid-template-columns:170px 1fr;gap:20px;align-items:center;}
+@media (max-width:760px){.ops{grid-template-columns:1fr;}}
+.ops-title{font-family:var(--body);font-weight:800;color:var(--ops-title);font-size:23px;line-height:1.05;}
+.ops-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;}
+@media (max-width:900px){.ops-grid{grid-template-columns:repeat(2,1fr);}}
+.ops-h{font-weight:700;font-size:12.5px;color:var(--ini);margin:0 0 8px;}
+.cnt-h,.cnt-v{display:grid;grid-template-columns:repeat(3,1fr);text-align:center;}
+.cnt-h span{font-size:12px;font-weight:700;color:var(--good);}
+.cnt-v span{font-family:var(--serif);font-size:26px;font-weight:700;color:var(--ini);}
+.legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-top:20px;font-size:11.5px;color:var(--label);}
+.legend .chip{min-width:24px;height:17px;margin-right:6px;}
+.stamp{margin-top:14px;font-size:11px;color:var(--label);opacity:.85;}
+```
+
+## Esqueleto do corpo
 
 ```html
-<!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>B&amp;W MarTech 2026 — Controle de Projetos</title>
-<style>
-  :root{
-    --ground:#EEF0F3; --surface:#FFFFFF; --surface2:#F6F7F9;
-    --ink:#191C22; --muted:#5D6371; --faint:#868D9B;
-    --line:#D6DAE1; --line-soft:#E5E8ED; --accent:#A85B06;
-    --good:#0B6E5F; --good-bg:#DDEFEA; --warn:#9A6A00; --warn-bg:#FBEFC9;
-    --bad:#A82A2F; --bad-bg:#F8E1E1; --idle:#6A7180; --idle-bg:#E7E9ED;
-    --na:#9AA0AC; --na-bg:#F1F2F4;
-    --display:ui-serif,Georgia,serif;
-    --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    --data:ui-monospace,Menlo,Consolas,monospace;
-  }
-  :root[data-theme="dark"], html:not([data-theme="light"]) :root{}
-  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-    --ground:#121419; --surface:#1A1D24; --surface2:#21252D;
-    --ink:#E7EAEF; --muted:#99A0AE; --faint:#6E7684; --line:#2E333D; --line-soft:#262B33;
-    --accent:#E9A33F; --good:#46C3A8; --good-bg:#12332E; --warn:#E9B84B; --warn-bg:#37300F;
-    --bad:#E8737B; --bad-bg:#38191C; --idle:#9AA2B0; --idle-bg:#262A31; --na:#767D8B; --na-bg:#20242B;
-  }}
-  :root[data-theme="dark"]{
-    --ground:#121419; --surface:#1A1D24; --surface2:#21252D;
-    --ink:#E7EAEF; --muted:#99A0AE; --faint:#6E7684; --line:#2E333D; --line-soft:#262B33;
-    --accent:#E9A33F; --good:#46C3A8; --good-bg:#12332E; --warn:#E9B84B; --warn-bg:#37300F;
-    --bad:#E8737B; --bad-bg:#38191C; --idle:#9AA2B0; --idle-bg:#262A31; --na:#767D8B; --na-bg:#20242B;
-  }
-  *{box-sizing:border-box;}
-  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);line-height:1.6;}
-  .wrap{max-width:1120px;margin:0 auto;padding:0 24px 96px;}
-  header.mast{border-bottom:1px solid var(--line);padding:56px 0 0;margin-bottom:36px;}
-  .eyebrow{font-family:var(--data);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;}
-  h1{font-family:var(--display);font-weight:600;font-size:clamp(30px,5vw,50px);line-height:1.06;margin:0 0 18px;}
-  .lede{font-size:17px;color:var(--muted);max-width:66ch;margin:0 0 28px;}
-  .board{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:3px;overflow:hidden;}
-  .board .cell{background:var(--surface);padding:16px 18px 18px;}
-  .board .k{font-family:var(--data);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin:0 0 9px;}
-  .board .v{font-family:var(--data);font-variant-numeric:tabular-nums;font-size:24px;margin:0;}
-  .v.bad{color:var(--bad);} .v.warn{color:var(--warn);} .v.good{color:var(--good);} .v.idle{color:var(--idle);}
-  .board .note{font-size:12px;color:var(--muted);margin:6px 0 0;}
-  section{padding-top:52px;}
-  h2{font-family:var(--display);font-weight:600;font-size:clamp(22px,2.9vw,29px);margin:0 0 8px;padding-bottom:12px;border-bottom:2px solid var(--ink);display:inline-block;}
-  .sec-note{color:var(--muted);font-size:14px;margin:14px 0 22px;max-width:70ch;}
-  .frente-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:40px 0 12px;}
-  h3{font-family:var(--display);font-weight:600;font-size:20px;margin:0;}
-  .frente-head .meta{font-family:var(--data);font-size:11.5px;color:var(--faint);margin-left:auto;}
-  .scroller{overflow-x:auto;border:1px solid var(--line);border-radius:3px;background:var(--surface);}
-  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:680px;}
-  th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line-soft);}
-  thead th{font-family:var(--data);font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);font-weight:500;background:var(--surface2);position:sticky;top:0;}
-  th.mkt,td.mkt{text-align:center;white-space:nowrap;}
-  td.ini{font-weight:600;} td.item{color:var(--muted);}
-  td.fase{font-family:var(--data);font-size:11px;text-transform:uppercase;color:var(--muted);}
-  .health td.num,.health th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
-  .health tr.total td{font-weight:700;border-top:2px solid var(--line);background:var(--surface2);}
-  .pill{font-family:var(--data);font-size:10px;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:3px;display:inline-block;font-weight:600;}
-  .pill.good{background:var(--good-bg);color:var(--good);}
-  .pill.warn{background:var(--warn-bg);color:var(--warn);}
-  .pill.bad{background:var(--bad-bg);color:var(--bad);}
-  .pill.idle{background:var(--idle-bg);color:var(--idle);}
-  .pill.na{background:var(--na-bg);color:var(--na);}
-  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:22px;}
-</style>
-</head>
-<body>
 <div class="wrap">
   <header class="mast">
-    <p class="eyebrow">Consumer BPC · Farol por mercado</p>
-    <h1>B&amp;W Marketing Technology 2026</h1>
-    <p class="lede">Controle de projetos do time de Consumer, que roda fora do DevOps.
-      Cada iniciativa por frente e fase, com o farol de BR, MX e AR lado a lado.</p>
-    <!-- BOARD: um .cell por KPI (Iniciativas, Células, No prazo good, Atenção warn, Crítico bad, Não iniciado idle) -->
-    <div class="board"> ... </div>
+    <div>
+      <p class="eyebrow">Consumer BPC</p>
+      <h1>B&amp;W Marketing Technology 2026 Agenda</h1>
+    </div>
+    <div class="brand">
+      <span class="uni"><b>U</b><small>Unilever</small></span>
+      <span class="rule"></span><span class="bw">B&amp;W</span>
+    </div>
   </header>
 
-  <section>
-    <h2>Saúde por frente</h2>
-    <div class="scroller"><table class="health">
-      <thead><tr><th>Frente</th><th class="num">No prazo</th><th class="num">Atenção</th><th class="num">Crítico</th><th class="num">Não iniciado</th><th class="num">Ativo</th><th class="num">% No prazo</th></tr></thead>
-      <tbody>
-        <!-- uma <tr> por frente: <td>🟢 Nome</td> + números; última <tr class="total"> -->
-      </tbody>
-    </table></div>
-  </section>
+  <div class="grid">
+    <!-- um card por frente: -->
+    <article class="card">
+      <h3 class="frente">Insights</h3>
+      <!-- um bloco por iniciativa; class="blk hl" se tiver Atenção/Crítico -->
+      <div class="blk hl">
+        <p class="ini">Winnin</p>
+        <div class="row"><span class="rl">Deployment</span><span class="chips">
+          <span class="chip good">BR</span><span class="chip good">MX</span><span class="chip good">AR</span></span></div>
+        <div class="row"><span class="rl">Adoption</span><span class="chips">
+          <span class="chip good">BR</span><span class="chip good">MX</span><span class="chip warn">AR</span></span></div>
+      </div>
+      <!-- ... demais iniciativas ... -->
+    </article>
+    <!-- ... demais frentes ... -->
+  </div>
 
-  <section>
-    <h2>Tracker por frente</h2>
-    <!-- Para cada frente, na ordem canônica: -->
-    <div class="frente-head"><span>🟢</span><h3>Nome da frente</h3><span class="meta">resumo</span></div>
-    <div class="scroller"><table>
-      <thead><tr><th>Iniciativa</th><th>Item</th><th>Fase</th><th class="mkt">BR</th><th class="mkt">MX</th><th class="mkt">AR</th></tr></thead>
-      <tbody>
-        <!-- uma <tr> por linha do tracker; célula de mercado = <td class="mkt"><span class="pill good">No prazo</span></td> -->
-      </tbody>
-    </table></div>
-
-    <div class="legend">
-      <span><span class="pill good">No prazo</span> On Track</span>
-      <span><span class="pill warn">Atenção</span> risco moderado</span>
-      <span><span class="pill bad">Crítico</span> ação</span>
-      <span><span class="pill idle">Não iniciado</span> backlog</span>
-      <span><span class="pill na">N/A</span> não se aplica</span>
+  <section class="ops">
+    <div class="ops-title">Marketing<br>Operations</div>
+    <div class="ops-grid">
+      <div class="ops-col">
+        <p class="ops-h">Social Media Access Mgmt</p>
+        <div class="row"><span class="rl">Deployment</span><span class="chips">
+          <span class="chip idle">BR</span><span class="chip idle">MX</span><span class="chip idle">AR</span></span></div>
+        <div class="row"><span class="rl">Adoption</span><span class="chips">
+          <span class="chip idle">BR</span><span class="chip idle">MX</span><span class="chip idle">AR</span></span></div>
+      </div>
+      <div class="ops-col">
+        <p class="ops-h">Operational Support</p>
+        <div class="cnt-h"><span>BR</span><span>MX</span><span>AR</span></div>
+        <div class="cnt-v"><span>0</span><span>0</span><span>0</span></div>
+      </div>
+      <!-- Cyber/AI Assessments e Automation Requests iguais -->
     </div>
   </section>
+
+  <div class="legend">
+    <span><span class="chip good">BR</span>No prazo</span>
+    <span><span class="chip warn">BR</span>Atenção</span>
+    <span><span class="chip bad">BR</span>Crítico</span>
+    <span><span class="chip idle">BR</span>Não iniciado</span>
+    <span><span class="chip na">–</span>N/A</span>
+  </div>
 </div>
-</body>
-</html>
 ```
