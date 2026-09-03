@@ -1,68 +1,69 @@
 # Power Automate — fluxo "Consumer Board Builder"
 
-`ConsumerBoardBuilder_package.zip` é o fluxo pronto para **importar** no Power
-Automate (formato *Importar Pacote / Legado*). Ele faz:
+O fluxo faz: **agente (Copilot) chama → Executar Office Script (gera o board) →
+Criar `consumer-martech.html` no SharePoint → Responder ao agente com o link.**
 
-```
-Agente (Copilot) chama  →  Executar Office Script (gera o board)  →
-    Criar arquivo consumer-martech.html no SharePoint  →  Responder ao agente com o link
-```
+Há **dois caminhos**. O **A é o garantido** (monta pelo próprio agente, sem
+importar nada). O **B** é o pacote `.zip` — mais rápido se importar, mas o import
+de pacote legado é sensível e pode falhar no seu tenant.
 
-> **Importante — o que o pacote NÃO consegue trazer pronto:** o workbook/script do
-> Excel e o site do SharePoint têm GUIDs do **seu** tenant, e as conexões são
-> escolhidas no assistente. Então o fluxo entra como **esqueleto** e você repõe
-> 4 apontamentos (abaixo). Pré-requisito: o Office Script **Consumer Board Builder**
-> já criado no Excel (ver `docs/standard/10-agente-gera-board.md`, Etapas 1–2).
+Pré-requisito dos dois: o **Office Script `Consumer Board Builder`** já criado no
+Excel (`docs/standard/10-agente-gera-board.md`, Etapas 1–2).
 
-## Importar (5 min)
+---
 
-1. **flow.microsoft.com** → **Meus fluxos** → **Importar** → **Importar Pacote (Legado)**.
-2. Suba `ConsumerBoardBuilder_package.zip`.
-3. Em **Recursos relacionados**, clique em cada conexão e selecione (ou crie):
-   - **Excel Online (Business)**
-   - **SharePoint**
-4. **Importar**. Abra o fluxo em **Editar**.
+## Caminho A — montar pelo agente (garantido, ~8 cliques)
 
-## Repor os 4 apontamentos (5 min)
+Isso cria o fluxo **já com o gatilho do Copilot certo** — sem risco de import.
 
-Na ação **Run Office Script**:
-1. **Arquivo (workbook)** → selecione `BW_MarTech_2026_Controle_Projetos.xlsx`
-   (isto preenche o Drive e o File; substitui os `PLACEHOLDER_...`).
-2. **Script** → escolha **Consumer Board Builder**.
+1. **Copilot Studio** → seu agente → **Ferramentas (Tools)** → **+ Adicionar
+   ferramenta** → **Novo** → **Fluxo (Agent flow / Criar um fluxo)**. Abre o designer
+   com o gatilho **"Quando um agente chama o fluxo"** já pronto.
+2. **+ Nova etapa** → **Excel Online (Business)** → **Executar script**:
+   - Local / Biblioteca: onde está o `BW_MarTech_2026_Controle_Projetos.xlsx`.
+   - Arquivo: o próprio `.xlsx`.
+   - Script: **Consumer Board Builder**.
+3. **+ Nova etapa** → **SharePoint** → **Criar arquivo**:
+   - Endereço do Site: seu site.
+   - Caminho da Pasta: ex. `/Documentos Compartilhados/Consumer`.
+   - Nome do Arquivo: `consumer-martech.html`.
+   - Conteúdo do Arquivo: **conteúdo dinâmico → `result`** (saída do Executar script).
+4. *(opcional)* **+ Nova etapa** → **SharePoint** → **Criar link de compartilhamento**
+   → Identificador do Arquivo: o do "Criar arquivo".
+5. **+ Nova etapa** → **Responder ao agente** (a ação de resposta do Copilot):
+   adicione uma saída de **texto** chamada `board_url` = o **Caminho do link** (do
+   passo 4) ou o **Link para o item** (do "Criar arquivo").
+6. **Salvar**. Nome: **Consumer Board Builder**.
+7. Volte ao agente: a ferramenta já aparece. Cole a **descrição** (abaixo).
+8. Teste: **"monta o board de Consumer"**.
 
-Na ação **Create board html**:
-3. **Site Address** → seu site do SharePoint.
-4. **Folder Path** → a pasta onde o board mora (deixei `/Shared Documents/Consumer`).
-
-Salve. (O nome do arquivo já é `consumer-martech.html` e o conteúdo já é a saída do
-script.)
-
-## Ligar no agente (3 min)
-
-Copilot Studio → **Ferramentas → Adicionar ferramenta → Fluxo** → **Consumer Board
-Builder**. Descrição da ferramenta (cole):
+**Descrição da ferramenta** (cole no campo Descrição da tool — é o que faz o agente
+escolhê-la):
 
 > Builds the OFFICIAL Consumer board (B&W Marketing Technology 2026 Agenda: hero,
 > real Unilever·B&W logo, cards, BR/MX/AR farol) from the Consumer MarTech Tracker
 > Excel and returns its link. Call this whenever the user asks for the Consumer
 > board, dashboard, agenda or HTML. Do NOT hand-write the HTML yourself.
 
-## Teste
-
-No agente: **"monta o board de Consumer"** → ele chama o fluxo e responde com o link
-do `consumer-martech.html`.
+> Referência das 3 ações (nomes e expressões) em `flow-definition.json`.
 
 ---
 
-### Se o seu tenant bloquear a importação legada
+## Caminho B — importar o pacote `.zip` (opcional)
 
-Use `flow-definition.json` (mesma pasta): crie um fluxo em branco com o gatilho
-**"Quando um agente chama o fluxo"**, e monte as 3 ações na mão conforme o JSON —
-ou siga o passo a passo do `docs/standard/10-agente-gera-board.md` (Etapa 3). O
-resultado é idêntico.
+`ConsumerBoardBuilder_package.zip` — **flow.microsoft.com → Meus fluxos → Importar →
+Importar Pacote (Legado)** → suba o zip → escolha as conexões **Excel Online
+(Business)** e **SharePoint** → Importar → Editar → repõe workbook, script, site e
+pasta (têm GUIDs do seu tenant).
 
-### Atualização automática (opcional)
+**Se der `MissingPackageManifest` ou outro erro de import:** o importador legado
+rejeita o zip em muitos tenants (recurso em depreciação). **Não insista** — vá pelo
+**Caminho A**, que dá exatamente o mesmo fluxo e nunca falha por formato de pacote.
+
+---
+
+## Atualização automática (opcional)
 
 Para o board se regerar sozinho quando o tracker muda, duplique o fluxo trocando o
 gatilho por **"Quando um arquivo é modificado (SharePoint)"** apontando para o
-`.xlsx`, mantendo as ações Run Script → Create file.
+`.xlsx`, mantendo Executar script → Criar arquivo.
