@@ -115,20 +115,19 @@ Adoption), o farol de cada mercado, o que está em jogo, e a decisão recomendad
 
 ## Passo 5 — Montar o dashboard HTML
 
-Quando pedirem "o HTML", "o dashboard de Consumer" ou "a agenda de Consumer",
-gere o HTML completo seguindo `references/html-template.md` — visual "marketing":
-**hero roxo** com o logo oficial Unilever · Beauty & Wellbeing (o vetor real em
-`assets/logo-bw.svg`, inline e branco), régua de stats, **corpo branco** e um
-**card por frente** com os status BR/MX/AR como **chips coloridos**. O esqueleto,
-os tokens de cor (claro/escuro), a regra do farol dot, o destaque dos blocos e o
-mapeamento status → chip estão todos lá. Monte um card por frente com um bloco por
-iniciativa e os três chips por mercado; feche com a faixa Marketing Operations.
-**Use o logo real, nunca redesenhe.** Entregue **um arquivo HTML só**, sem
-dependências externas.
+Quando pedirem "o HTML", "o dashboard" ou "a agenda de Consumer", gere a **versão
+leve** de `references/html-template.md` — mesma família visual do board aprovado:
+**hero roxo**, régua de stats, **card por frente** com farol dot e os status
+BR/MX/AR como **chips coloridos**, tom claro, fonte Poppins via link do Google
+Fonts. Monte um card por frente com um bloco por iniciativa e os três chips por
+mercado. **Não faça tabela genérica** e não invente dados. Entregue **um HTML só**.
 
-> Fora do Copilot Studio, o mesmo HTML sai automático do Excel com
-> `python3 scripts/gerar-consumer-html.py` — útil para o time regerar a página
-> quando o tracker muda.
+> ⚠️ **O board oficial** — com o **logo real** Unilever · Beauty & Wellbeing e a
+> fonte Poppins **embutidos** — não é gerado por você: ele exige embutir ~48 KB de
+> logo + ~43 KB de fonte em base64, byte a byte, e um modelo não reproduz isso.
+> Esse board sai do **gerador** (`scripts/gerar-consumer-html.py`) ou de um **Office
+> Script + Power Automate**. Se pedirem "o board oficial/bonito com o logo", explique
+> que ele vem do gerador/Power Automate e ofereça a análise + este preview leve.
 
 ## ⛔ Regras (não negociáveis)
 
