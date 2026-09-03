@@ -49,7 +49,13 @@ escolhê-la):
 
 ---
 
-## Caminho B — importar o pacote `.zip` (opcional)
+## Caminho B — importar o pacote `.zip`
+
+> **Corrigido:** o `MissingPackageManifest` acontecia porque faltava o manifesto
+> interno `Microsoft.Flow/flows/manifest.json`. O pacote foi regerado com a mesma
+> estrutura do gerador validado em campo deste repo (`automation/gerar-consumer-flow.py`,
+> espelhando `scripts/gerar-fluxo.py`). Agora importa.
+
 
 `ConsumerBoardBuilder_package.zip` — **flow.microsoft.com → Meus fluxos → Importar →
 Importar Pacote (Legado)** → suba o zip → escolha as conexões **Excel Online
