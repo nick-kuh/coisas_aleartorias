@@ -92,6 +92,19 @@ Valores reais do fluxo montado pela UI (para referência):
   do Create file (`@outputs('Create_file')?['body/{Link}']`), para o agente
   responder com o link.
 
+## O fluxo não aparece na lista de ferramentas do agente?
+
+O agente só lista, em **Ferramentas → Fluxos de trabalho**, os fluxos que estão na
+**mesma solução (Solution)** dele. Na lista de fluxos, os que estão em solução têm
+um **losango 💎** ao lado do nome; um fluxo criado solto em "Meus fluxos" **não
+aparece** no agente — mesmo no ambiente certo e com o gatilho do Copilot.
+
+**Correção:** make.powerapps.com → **Soluções** → abra a solução do agente →
+**+ Adicionar existente → Automação → Fluxo de nuvem** → selecione o fluxo →
+volte ao Copilot Studio → Ferramentas → Adicionar → Fluxos de trabalho → agora ele
+aparece → **Publique** o agente. (Se pedir para converter conexões em "referências
+de conexão", aceite.)
+
 ## Etapa 5 — Testar
 
 Peça ao agente: **"monta o board de Consumer"**. Ele deve **chamar o fluxo** e
