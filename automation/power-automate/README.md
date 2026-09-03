@@ -49,24 +49,22 @@ escolhê-la):
 
 ---
 
-## Caminho B — importar o pacote `.zip`
+## Caminho B — importar o pacote `.zip` (para TESTAR o pipeline)
 
-> **Corrigido:** o `MissingPackageManifest` acontecia porque faltava o manifesto
-> interno `Microsoft.Flow/flows/manifest.json`. O pacote foi regerado com a mesma
-> estrutura do gerador validado em campo deste repo (`automation/gerar-consumer-flow.py`,
-> espelhando `scripts/gerar-fluxo.py`). Agora importa.
-
+> **Nota de compatibilidade:** o gatilho do Copilot e a ação "Responder ao agente"
+> **não importam** por pacote (dão `MalformedFlowAssetFlowDefinition`) — só o Copilot
+> Studio cria esse gatilho. Por isso o pacote traz um gatilho de **botão "Executar"**:
+> serve para você **importar e testar** o pipeline Excel→SharePoint na hora. O gatilho
+> do agente é adicionado pelo **Caminho A** (é o único jeito que funciona).
 
 `ConsumerBoardBuilder_package.zip` — **flow.microsoft.com → Meus fluxos → Importar →
 Importar Pacote (Legado)** → suba o zip → escolha as conexões **Excel Online
-(Business)** e **SharePoint** → Importar → Editar → repõe workbook, script, site e
-pasta (têm GUIDs do seu tenant).
+(Business)** e **SharePoint** → **Importar → Editar** → reponha workbook, script, site
+e pasta (GUIDs do seu tenant) → **Salvar** → **Executar** para gerar o
+`consumer-martech.html` e conferir o board.
 
-**Se der `MissingPackageManifest` ou outro erro de import:** o importador legado
-rejeita o zip em muitos tenants (recurso em depreciação). **Não insista** — vá pelo
-**Caminho A**, que dá exatamente o mesmo fluxo e nunca falha por formato de pacote.
-
----
+Depois que o pipeline estiver funcionando aqui, use o **Caminho A** para ter o mesmo
+fluxo disparado pelo agente (lá o gatilho do Copilot nasce certo).
 
 ## Atualização automática (opcional)
 

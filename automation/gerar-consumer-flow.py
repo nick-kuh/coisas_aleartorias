@@ -67,25 +67,17 @@ def definicao():
         "parameters": {"$connections": {"defaultValue": {}, "type": "Object"},
                        "$authentication": {"defaultValue": {}, "type": "SecureObject"}},
         "triggers": {
-            "When_an_agent_calls_the_flow": {
-                "type": "Request", "kind": "PowerVirtualAgents",
+            # Gatilho de BOTÃO ("Executar") — desserializa no importador legado.
+            # O gatilho do Copilot (PowerVirtualAgents) NÃO importa por pacote; ele é
+            # adicionado depois pelo Copilot Studio (Caminho A do README).
+            "manually_triggered": {
+                "type": "Request", "kind": "Button",
                 "inputs": {"schema": {"type": "object", "properties": {}, "required": []}},
             }
         },
         "actions": {
             "Run_Office_Script": excel_action({}),
             "Create_board_html": sp_create({"Run_Office_Script": ["Succeeded"]}),
-            "Respond_to_the_agent": {
-                "runAfter": {"Create_board_html": ["Succeeded"]},
-                "type": "Response", "kind": "PowerVirtualAgents",
-                "inputs": {
-                    "statusCode": 200,
-                    "body": {"board_url": "@{outputs('Create_board_html')?['body/{Link}']}"},
-                    "schema": {"type": "object", "properties": {
-                        "board_url": {"type": "string", "title": "board_url",
-                                      "x-ms-content-hint": "TEXT"}}},
-                },
-            },
         },
         "outputs": {},
     }
