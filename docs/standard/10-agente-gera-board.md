@@ -1,0 +1,99 @@
+# 10. O agente gera o board EXATO quando o usuário pede
+
+Objetivo: o usuário pede "monta o board de Consumer" na conversa e recebe o
+**modelo aprovado** (hero roxo, logo real Unilever·B&W, Poppins, cards, chips,
+tom claro) — não uma tabela genérica.
+
+**Por que não é o agente que desenha:** o board exige o logo real (~48 KB) e a
+fonte (~43 KB) reproduzidos byte a byte. Um modelo de linguagem não faz isso — ele
+improvisa. A solução é o agente **chamar uma ferramenta** (um fluxo do Power
+Automate) que roda um **Office Script** determinístico e devolve o HTML/link exato.
+
+```
+Usuário: "monta o board de Consumer"
+   → Agente reconhece (skill consumer-martech) e chama a TOOL "Consumer Board Builder"
+      → Power Automate: Executar Office Script (lê o Tracker, gera o HTML EXATO)
+      → salva consumer-martech.html no SharePoint  → devolve o link
+   → Agente responde com o link do board
+```
+
+O Office Script está em `automation/consumer-board-office-script.ts` (validado: gera
+os mesmos números do Painel — 103 células, 47% no prazo, 2 críticos).
+
+---
+
+## Etapa 1 — Hospedar o logo branco (2 min)
+
+1. Suba **`assets/logo-bw-white.svg`** (logo em branco, para o hero roxo) numa
+   biblioteca do SharePoint que o time acessa.
+2. Copie a URL direta do arquivo.
+
+## Etapa 2 — Criar o Office Script (3 min)
+
+1. Abra o **`BW_MarTech_2026_Controle_Projetos.xlsx`** no **Excel na web**.
+2. **Automatizar → Novo Script**, apague o exemplo e cole todo o conteúdo de
+   `automation/consumer-board-office-script.ts`.
+3. No topo do script, preencha `LOGO_URL` com a URL da Etapa 1 (entre aspas).
+   Se deixar vazio, o logo cai para um lockup de texto (ainda funciona).
+4. **Salvar** com o nome **`Consumer Board Builder`**.
+
+> O script lê a aba **Tracker** e devolve o HTML como texto (valor de retorno).
+
+## Etapa 3 — Fluxo no Power Automate (10 min)
+
+Crie um fluxo (**flow.microsoft.com → Criar → Fluxo de nuvem instantâneo**):
+
+1. **Gatilho:** "Executar um fluxo a partir do Copilot" (ou "Power Apps / Botão") —
+   é o que permite o agente chamar. (Para atualização automática semanal, use
+   também um segundo fluxo com gatilho **"Quando um arquivo é modificado (SharePoint)"**
+   apontando para o `.xlsx`.)
+2. **Ação — Excel Online (Business) → Executar script:**
+   - Localização/Biblioteca/Arquivo: o `BW_MarTech_2026_Controle_Projetos.xlsx`.
+   - Script: **Consumer Board Builder**.
+   - A saída `result` é o HTML.
+3. **Ação — SharePoint → Criar arquivo:**
+   - Pasta: onde o board deve morar.
+   - Nome: `consumer-martech.html`.
+   - Conteúdo: `result` (a saída do script).
+   *(Se já existir, use "Atualizar arquivo" ou substitua.)*
+4. **Ação — SharePoint → Criar link de compartilhamento** (opcional) para ter uma
+   URL pronta.
+5. **Ação — Responder ao Copilot** (quando o gatilho é do Copilot): devolva a URL do
+   arquivo/link como saída de texto `board_url`.
+
+## Etapa 4 — Ligar o fluxo como ferramenta do agente (3 min)
+
+1. No Copilot Studio → **Ferramentas (Tools) → Adicionar ferramenta → Fluxo** →
+   escolha o fluxo **Consumer Board Builder**.
+2. **Descrição da ferramenta** (é o que faz o agente escolhê-la) — cole:
+
+   > Builds the OFFICIAL Consumer board (the approved B&W Marketing Technology 2026
+   > Agenda: hero, real Unilever·B&W logo, cards, BR/MX/AR farol) from the Consumer
+   > MarTech Tracker Excel and returns its link. Call this whenever the user asks for
+   > the Consumer board, dashboard, agenda or HTML. Do NOT hand-write the HTML yourself.
+
+3. Uma linha nas **instruções** (dentro do `# 0.`, trocando a parte do HTML):
+
+   > To build the Consumer board/dashboard/HTML, call the **Consumer Board Builder**
+   > flow and return its link — never hand-write that HTML yourself.
+
+## Etapa 5 — Testar
+
+Peça ao agente: **"monta o board de Consumer"**. Ele deve **chamar o fluxo** e
+responder com o link do `consumer-martech.html` — abrindo o board no modelo exato,
+com o logo real. Sem tabela genérica, sem inventar dado.
+
+---
+
+## Resumo
+
+| Peça | Papel |
+|---|---|
+| `automation/consumer-board-office-script.ts` | Gera o HTML exato dentro do Excel (determinístico) |
+| `assets/logo-bw-white.svg` | Logo branco para o hero (hospedado no SharePoint) |
+| Fluxo **Consumer Board Builder** | Roda o script, salva o HTML, devolve o link |
+| Ferramenta no agente | Deixa o agente disparar o fluxo quando o usuário pede |
+
+Assim o agente é o gatilho (on-demand) **e** o resultado é sempre o nosso modelo —
+os dois objetivos ao mesmo tempo. Quando o tracker muda, o board sai atualizado
+(na próxima chamada, ou automático pelo fluxo de "arquivo modificado").

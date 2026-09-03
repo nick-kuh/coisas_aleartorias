@@ -114,6 +114,8 @@ Framework, Status. O farol (No prazo · Atenção · Crítico · Não iniciado �
 | [`skills/consumer-martech/SKILL.md`](skills/consumer-martech/SKILL.md) | O esquema no agente — como analisar Consumer e montar o dashboard |
 | [`skills/consumer-martech/references/`](skills/consumer-martech/references/) | Frentes/fases/status · snapshot do tracker · template HTML |
 | [`docs/standard/09-consumer-martech.md`](docs/standard/09-consumer-martech.md) | **Como conectar ao agente** (knowledge + instruções + skill) e como o HTML é gerado (pelo agente ou automático) |
+| [`docs/standard/10-agente-gera-board.md`](docs/standard/10-agente-gera-board.md) | **O agente gera o board EXATO on-demand** — Office Script + Power Automate como ferramenta do agente |
+| [`automation/consumer-board-office-script.ts`](automation/consumer-board-office-script.ts) | Office Script (TypeScript) que monta o board exato dentro do Excel Online |
 
 A regra de saúde por frente é a mesma da aba **Painel** do Excel: conta as células
 BR+MX+AR (exclui N/A); farol 🔴 se houver qualquer crítico, 🟢 se ≥ 50% no prazo e
