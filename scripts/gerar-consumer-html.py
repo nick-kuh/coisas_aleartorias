@@ -22,6 +22,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 XLSX_PADRAO = RAIZ / "data" / "BW_MarTech_2026_Controle_Projetos.xlsx"
 SAIDA_PADRAO = RAIZ / "consumer-martech.html"
 LOGO_SVG = RAIZ / "assets" / "logo-bw.svg"
+FONT_CSS = RAIZ / "assets" / "poppins-inline.css"
 
 FRENTES = [
     "Insights",
@@ -160,37 +161,18 @@ def render_ops():
 
 
 CSS = """
+  /* tom claro fixo — roxo + branco (sem dark mode, a pedido) */
   :root{
-    --page1:#FFFFFF; --page2:#F5EFFC;
-    --purple:#5B2A9D; --purple-2:#7C3AED; --purple-3:#A855F7; --purple-deep:#3B1470;
-    --card:#FFFFFF; --card-hl:#F4EEFC; --card-line:#ECE4F7;
-    --ink:#1E1730; --frente:#5B2A9D; --label:#6A6280; --faint:#9A93AC;
+    color-scheme:light;
+    --page1:#FFFFFF; --page2:#F3ECFC;
+    --purple:#6D28D9; --purple-2:#8B5CF6; --purple-3:#A78BFA; --purple-deep:#5B21B6;
+    --card:#FFFFFF; --card-hl:#F5EFFD; --card-line:#EDE4F9;
+    --ink:#241C36; --frente:#6D28D9; --label:#6B6480; --faint:#9E97B0;
     --good:#22B26B; --good-ink:#FFFFFF; --warn:#F4B72E; --warn-ink:#5A4200;
     --bad:#E5484D; --bad-ink:#FFFFFF; --idle:#CBD0DB; --idle-ink:#FFFFFF;
-    --na:#EDE9F4; --na-ink:#B4ADC2; --ops:#F4EEFC; --ops-line:#E7DDF6;
-    --shadow:0 12px 34px -18px rgba(70,25,140,.35);
-    --serif:"Iowan Old Style",Palatino,Georgia,serif;
-    --body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
-  }
-  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-    --page1:#140E22; --page2:#0E0919;
-    --purple:#7C3AED; --purple-2:#8B44F0; --purple-3:#A855F7; --purple-deep:#241040;
-    --card:#1D1630; --card-hl:#271B42; --card-line:#2E2447;
-    --ink:#ECE6F6; --frente:#C6ADF4; --label:#A79FBB; --faint:#7C7594;
-    --good:#2FB971; --good-ink:#04210F; --warn:#EBBB40; --warn-ink:#3A2A00;
-    --bad:#EA5A5E; --bad-ink:#280708; --idle:#4A4560; --idle-ink:#D3CDE2;
-    --na:#2C2542; --na-ink:#847BA0; --ops:#1B1430; --ops-line:#2C2247;
-    --shadow:0 14px 40px -20px rgba(0,0,0,.7);
-  }}
-  :root[data-theme="dark"]{
-    --page1:#140E22; --page2:#0E0919;
-    --purple:#7C3AED; --purple-2:#8B44F0; --purple-3:#A855F7; --purple-deep:#241040;
-    --card:#1D1630; --card-hl:#271B42; --card-line:#2E2447;
-    --ink:#ECE6F6; --frente:#C6ADF4; --label:#A79FBB; --faint:#7C7594;
-    --good:#2FB971; --good-ink:#04210F; --warn:#EBBB40; --warn-ink:#3A2A00;
-    --bad:#EA5A5E; --bad-ink:#280708; --idle:#4A4560; --idle-ink:#D3CDE2;
-    --na:#2C2542; --na-ink:#847BA0; --ops:#1B1430; --ops-line:#2C2247;
-    --shadow:0 14px 40px -20px rgba(0,0,0,.7);
+    --na:#EFEAF7; --na-ink:#B4ADC2; --ops:#F4EDFD; --ops-line:#E8DCF8;
+    --shadow:0 14px 36px -20px rgba(90,40,160,.30);
+    --body:'Poppins',system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
   }
   *{box-sizing:border-box;}
   body{margin:0;color:var(--ink);font-family:var(--body);line-height:1.45;min-height:100vh;
@@ -199,24 +181,25 @@ CSS = """
   .wrap{max-width:1500px;margin:0 auto;padding:26px 28px 44px;}
 
   /* ---------- hero ---------- */
-  .hero{position:relative;overflow:hidden;border-radius:26px;padding:34px 40px 32px;
-    color:#fff;box-shadow:0 20px 50px -24px rgba(70,25,140,.6);
+  .hero{position:relative;overflow:hidden;border-radius:28px;padding:36px 44px 34px;
+    color:#fff;box-shadow:0 22px 54px -26px rgba(109,40,217,.55);
     background:
-      radial-gradient(120% 140% at 88% -30%, rgba(255,255,255,.28), transparent 46%),
-      radial-gradient(90% 120% at 8% 130%, rgba(255,255,255,.14), transparent 50%),
-      linear-gradient(115deg, var(--purple-deep) 0%, var(--purple) 46%, var(--purple-2) 78%, var(--purple-3) 100%);}
-  .hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:28px;flex-wrap:wrap;}
-  .eyebrow{font-size:12px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
-    color:rgba(255,255,255,.82);margin:0 0 10px;}
-  h1{font-family:var(--body);font-weight:800;margin:0;color:#fff;
-    font-size:clamp(28px,3.5vw,48px);line-height:1.02;letter-spacing:-.022em;}
+      radial-gradient(130% 150% at 90% -35%, rgba(255,255,255,.40), transparent 48%),
+      radial-gradient(90% 120% at 6% 130%, rgba(255,255,255,.16), transparent 52%),
+      linear-gradient(115deg, var(--purple-deep) 0%, var(--purple) 40%, var(--purple-2) 74%, var(--purple-3) 100%);}
+  .hero-top{display:flex;align-items:center;justify-content:space-between;gap:32px;flex-wrap:wrap;}
+  .eyebrow{font-size:12px;font-weight:600;letter-spacing:.24em;text-transform:uppercase;
+    color:rgba(255,255,255,.85);margin:0 0 10px;}
+  h1{font-weight:800;margin:0;color:#fff;
+    font-size:clamp(30px,3.6vw,50px);line-height:1.0;letter-spacing:-.03em;}
   .logo-wrap{color:#fff;flex:none;}
-  .logo-bw{width:clamp(180px,17vw,236px);height:auto;display:block;}
-  .stats{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px;}
-  .stat{display:flex;align-items:baseline;gap:8px;padding:9px 16px;border-radius:999px;
-    background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.24);backdrop-filter:blur(2px);}
-  .stat b{font-size:19px;font-weight:800;letter-spacing:-.02em;}
-  .stat span{font-size:12px;color:rgba(255,255,255,.82);font-weight:600;}
+  .logo-bw{width:clamp(250px,26vw,360px);height:auto;display:block;
+    filter:drop-shadow(0 4px 14px rgba(0,0,0,.18));}
+  .stats{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px;}
+  .stat{display:flex;align-items:baseline;gap:8px;padding:10px 18px;border-radius:999px;
+    background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.30);backdrop-filter:blur(3px);}
+  .stat b{font-size:20px;font-weight:700;letter-spacing:-.02em;}
+  .stat span{font-size:12px;color:rgba(255,255,255,.86);font-weight:500;}
 
   /* ---------- section head ---------- */
   .sec-head{display:flex;align-items:center;justify-content:space-between;gap:18px;
@@ -279,6 +262,7 @@ CSS = """
 
 def build_html(linhas, xlsx_name):
     logo = LOGO_SVG.read_text(encoding="utf-8") if LOGO_SVG.exists() else ""
+    font_css = FONT_CSS.read_text(encoding="utf-8") if FONT_CSS.exists() else ""
     cards = "".join(render_card(f, linhas) for f in FRENTES if any(l["frente"] == f for l in linhas))
     c, total, pct = contar(linhas)
     n_ini = len({(l["frente"], l["iniciativa"]) for l in linhas})
@@ -302,8 +286,10 @@ def build_html(linhas, xlsx_name):
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
 <title>B&amp;W Marketing Technology 2026 Agenda</title>
-<style>{CSS}</style>
+<style>{font_css}
+{CSS}</style>
 </head>
 <body>
 <div class="wrap">
