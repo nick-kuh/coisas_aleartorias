@@ -29,6 +29,26 @@ O agente precisa **ler o Excel**. Coloque-o onde ele lê as outras fontes.
 > Dica: mantenha a planilha com as abas **Tracker**, **Painel** e **Legenda** como
 > estão. A skill conta o farol pela mesma regra do Painel.
 
+**Descrição sugerida** (cole no campo "Descrição" do conhecimento — é o que ajuda o
+agente a saber quando puxar dessa fonte):
+
+> Tracker de projetos do time de Consumer BPC (B&W Marketing Technology) — o
+> portfólio que roda fora do DevOps. Traz as iniciativas organizadas por frente
+> (Insights, Media & Influencer, dCom and Social Commerce, CoPilot and Agentic,
+> LLM Search / GEO, Beauty Tech), a fase de cada uma (Adoption, Deployment,
+> Framework, Status) e o farol de status por mercado — BR (Brasil), MX (México),
+> AR (Argentina): No prazo, Atenção, Crítico, Não iniciado, N/A. Abas: Tracker
+> (linha a linha), Painel (saúde por frente) e Legenda. Fonte única para qualquer
+> pergunta sobre Consumer/MarTech, as frentes, o farol por país, uma iniciativa do
+> tracker ou o dashboard de Consumer. Não usar para o portfólio DevOps/Power BI.
+
+Versão curta, se o campo for pequeno:
+
+> Portfólio do time de Consumer BPC (B&W Marketing Technology), fora do DevOps:
+> iniciativas por frente, fase (Adoption/Deployment/Framework/Status) e farol de
+> status por mercado (BR/MX/AR). Fonte única para perguntas de Consumer/MarTech e
+> o dashboard de Consumer.
+
 ✅ **Teste de aceite:** pergunte ao agente "quais frentes existem no Consumer?".
 Ele deve listar as seis (Insights, Media & Influencer, dCom and Social Commerce,
 CoPilot and Agentic, LLM Search / GEO, Beauty Tech) **a partir do tracker**.
