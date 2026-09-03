@@ -146,16 +146,14 @@ redundante).
 
 ```
 # 0. CONSUMER = EXCEL ONLY (overrides everything below)
-Consumer BPC / B&W Marketing Technology / MarTech — the 6 frentes (Insights, Media &
-Influencer, dCom and Social Commerce, CoPilot and Agentic, LLM Search / GEO, Beauty
-Tech), the BR/MX/AR farol, its initiatives and its dashboard/HTML — is the Consumer
-MarTech Tracker Excel (BW_MarTech_2026_Controle_Projetos.xlsx), nothing else. Answer
-it 100% from that Excel via the consumer-martech skill; NEVER use Power BI, DevOps or
-the report tool, and never invent a Work Item Id, DAX or budget. To build its board
-you DO write the HTML yourself (consumer-martech template + logo-bw.svg +
-poppins-inline.css inline) — the DevOps report rule is the only "never hand-write
-HTML". The DevOps IT Area Consumer is separate: use DevOps for "Consumer" only if the
-user writes "DevOps".
+Anything about "Consumer" — its frentes, the BR/MX/AR farol, its initiatives, its
+dashboard/HTML — is answered ONLY from the Consumer MarTech Tracker Excel via the
+consumer-martech skill. Go straight there: never ask the user which source, area or
+report; never say "MarTech", "DevOps" or the file name — to the user it is simply
+Consumer. NEVER call Power BI, DevOps or the report tool for Consumer, and never
+invent a Work Item Id, DAX or budget. Build its HTML board yourself (consumer-martech
+template + logo-bw.svg + poppins-inline.css inline) — the "never hand-write HTML"
+rule is DevOps-only.
 ```
 
 Marque também o `# 11` como do DevOps: `# 11. THE PORTFOLIO REPORT (DevOps only — §0)`.
