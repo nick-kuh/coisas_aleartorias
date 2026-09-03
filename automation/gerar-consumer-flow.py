@@ -27,7 +27,7 @@ def excel_action(run_after):
         "inputs": {
             "host": {"apiId": "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness",
                      "connectionName": "shared_excelonlinebusiness",
-                     "operationId": "RunScriptProV2"},
+                     "operationId": "RunScriptProd"},
             "parameters": {
                 "source": "me",
                 "drive": "PLACEHOLDER_DRIVE_ID",
@@ -50,8 +50,8 @@ def sp_create(run_after):
             "parameters": {
                 "dataset": "https://PLACEHOLDER_TENANT.sharepoint.com/sites/PLACEHOLDER_SITE",
                 "folderPath": "/Shared Documents/Consumer",
-                "name": "consumer-martech.html",
-                "body": "@body('Run_Office_Script')?['result']",
+                "name": "@concat('consumer-', formatDateTime(addHours(utcNow(),-3),'yyyy-MM-dd-HHmm'), '.html')",
+                "body": "@outputs('Run_Office_Script')?['body/result']",
             },
             "authentication": "@parameters('$authentication')",
         },
@@ -71,7 +71,7 @@ def definicao():
             # O gatilho do Copilot (PowerVirtualAgents) NÃO importa por pacote; ele é
             # adicionado depois pelo Copilot Studio (Caminho A do README).
             "manually_triggered": {
-                "type": "Request", "kind": "Button",
+                "type": "Request", "kind": "Skills",
                 "inputs": {"schema": {"type": "object", "properties": {}, "required": []}},
             }
         },

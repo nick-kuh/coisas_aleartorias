@@ -77,6 +77,21 @@ Crie um fluxo (**flow.microsoft.com → Criar → Fluxo de nuvem instantâneo**)
    > To build the Consumer board/dashboard/HTML, call the **Consumer Board Builder**
    > flow and return its link — never hand-write that HTML yourself.
 
+## Melhorias confirmadas em campo
+
+Valores reais do fluxo montado pela UI (para referência):
+
+- **Gatilho do Copilot:** `manual` / `kind: Skills`.
+- **Run script:** `operationId RunScriptProd`; a saída do board vem em
+  `@outputs('Run_script')?['body/result']`.
+- **Create file → Nome (com data, para histórico):**
+  `@concat('consumer-', formatDateTime(addHours(utcNow(),-3),'yyyy-MM-dd-HHmm'), '.html')`
+  → gera `consumer-2026-09-03-2107.html` (UTC−3). **Sempre com `.html`**, senão não
+  abre como página.
+- **Respond to the agent:** devolva uma saída de texto `board_url` = *Link to item*
+  do Create file (`@outputs('Create_file')?['body/{Link}']`), para o agente
+  responder com o link.
+
 ## Etapa 5 — Testar
 
 Peça ao agente: **"monta o board de Consumer"**. Ele deve **chamar o fluxo** e
