@@ -113,13 +113,15 @@ Adoption), o farol de cada mercado, o que está em jogo, e a decisão recomendad
 ## Passo 5 — Montar o dashboard HTML
 
 Quando pedirem "o HTML", "o dashboard de Consumer" ou "a agenda de Consumer",
-gere o HTML completo seguindo `references/html-template.md` — é um board estilo
-**agenda em cards** (um card por frente, fundo lavanda, lockup Unilever·B&W), com
-os status BR/MX/AR como **chips coloridos**. O esqueleto, os tokens de cor
-(claro/escuro), a regra de destaque dos blocos e o mapeamento status → classe do
-chip estão todos lá. Monte um card por frente com um bloco por iniciativa e os
-três chips por mercado; feche com a faixa Marketing Operations e a legenda.
-Entregue **um arquivo HTML só**, sem dependências externas.
+gere o HTML completo seguindo `references/html-template.md` — visual "marketing":
+**hero roxo** com o logo oficial Unilever · Beauty & Wellbeing (o vetor real em
+`assets/logo-bw.svg`, inline e branco), régua de stats, **corpo branco** e um
+**card por frente** com os status BR/MX/AR como **chips coloridos**. O esqueleto,
+os tokens de cor (claro/escuro), a regra do farol dot, o destaque dos blocos e o
+mapeamento status → chip estão todos lá. Monte um card por frente com um bloco por
+iniciativa e os três chips por mercado; feche com a faixa Marketing Operations.
+**Use o logo real, nunca redesenhe.** Entregue **um arquivo HTML só**, sem
+dependências externas.
 
 > Fora do Copilot Studio, o mesmo HTML sai automático do Excel com
 > `python3 scripts/gerar-consumer-html.py` — útil para o time regerar a página
