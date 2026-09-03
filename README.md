@@ -113,6 +113,7 @@ Framework, Status. O farol (No prazo · Atenção · Crítico · Não iniciado �
 | [`scripts/gerar-consumer-html.py`](scripts/gerar-consumer-html.py) | Gera o HTML a partir do Excel (`python3 scripts/gerar-consumer-html.py`) |
 | [`skills/consumer-martech/SKILL.md`](skills/consumer-martech/SKILL.md) | O esquema no agente — como analisar Consumer e montar o dashboard |
 | [`skills/consumer-martech/references/`](skills/consumer-martech/references/) | Frentes/fases/status · snapshot do tracker · template HTML |
+| [`docs/standard/09-consumer-martech.md`](docs/standard/09-consumer-martech.md) | **Como conectar ao agente** (knowledge + instruções + skill) e como o HTML é gerado (pelo agente ou automático) |
 
 A regra de saúde por frente é a mesma da aba **Painel** do Excel: conta as células
 BR+MX+AR (exclui N/A); farol 🔴 se houver qualquer crítico, 🟢 se ≥ 50% no prazo e
