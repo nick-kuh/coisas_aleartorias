@@ -49,22 +49,18 @@ escolhê-la):
 
 ---
 
-## Caminho B — importar o pacote `.zip` (para TESTAR o pipeline)
+## Caminho B — importar o pacote `.zip` (NÃO recomendado)
 
-> **Nota de compatibilidade:** o gatilho do Copilot e a ação "Responder ao agente"
-> **não importam** por pacote (dão `MalformedFlowAssetFlowDefinition`) — só o Copilot
-> Studio cria esse gatilho. Por isso o pacote traz um gatilho de **botão "Executar"**:
-> serve para você **importar e testar** o pipeline Excel→SharePoint na hora. O gatilho
-> do agente é adicionado pelo **Caminho A** (é o único jeito que funciona).
-
-`ConsumerBoardBuilder_package.zip` — **flow.microsoft.com → Meus fluxos → Importar →
-Importar Pacote (Legado)** → suba o zip → escolha as conexões **Excel Online
-(Business)** e **SharePoint** → **Importar → Editar** → reponha workbook, script, site
-e pasta (GUIDs do seu tenant) → **Salvar** → **Executar** para gerar o
-`consumer-martech.html` e conferir o board.
-
-Depois que o pipeline estiver funcionando aqui, use o **Caminho A** para ter o mesmo
-fluxo disparado pelo agente (lá o gatilho do Copilot nasce certo).
+> **Conclusão após testar:** o import de pacote **não** consegue carregar duas peças
+> deste fluxo, e isso é limite da plataforma, não do pacote:
+> 1. o **gatilho do Copilot** (`PowerVirtualAgents`) → `MalformedFlowAssetFlowDefinition`;
+> 2. a ação **Executar script** → `WorkflowOperationInputsApiOperationNotFound`
+>    (`RunScriptProV2 not found`): o operationId do "Run script" varia por tenant e
+>    não dá para fixar no pacote.
+>
+> A tela do Power Automate insere o operationId certo sozinha quando você adiciona a
+> ação. **Use o Caminho A** — é o único caminho confiável. O `.zip` fica só como
+> referência da estrutura.
 
 ## Atualização automática (opcional)
 
