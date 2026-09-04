@@ -114,8 +114,11 @@ diz que não achou o board — mesmo com o arquivo criado.
 
 **Correção (no fluxo):** abra o fluxo → última ação **Respond to the agent** →
 **Adicionar uma saída** → **Texto** → nome **exatamente `board_url`** → valor =
-conteúdo dinâmico **"Link to item"** do **Create file** (`@outputs('Create_file')?['body/{Link}']`)
-→ Salvar. Conectar o agente à pasta é desnecessário; o link vem do fluxo.
+uma expressão que monta a URL a partir do caminho do Create file:
+`concat('https://<tenant>.sharepoint.com', replace(outputs('Create_file')?['body/Path'], ' ', '%20'))`
+→ Salvar. (A lista do Create file não traz "Link to item"; o campo é `body/Path`.
+Se o link abrir "não encontrado", adicione uma ação **Create sharing link** com
+`body/ItemId` e devolva o WebUrl dela.) Conectar o agente à pasta é desnecessário; o link vem do fluxo.
 
 ## Etapa 5 — Testar
 
