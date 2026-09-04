@@ -120,6 +120,30 @@ uma expressão que monta a URL a partir do caminho do Create file:
 Se o link abrir "não encontrado", adicione **Create sharing link** (com `body/ItemId`)
 e devolva o campo **"Sharing Link"** dela — é a URL clicável.) Conectar o agente à pasta é desnecessário; o link vem do fluxo.
 
+## O agente insiste em chamar o fluxo "antigo" (não atualiza)?
+
+Duas causas de plataforma, ambas reais:
+
+1. **Fluxo dentro de um solution GERENCIADO (managed).** Solution managed é
+   congelado/somente-leitura — editar o fluxo por fora **não gruda**, e o agente
+   segue rodando a versão congelada. (No caso real, o ConsumerReport estava dentro
+   do `CDIORelatorioArea` managed, ainda usando `body/{Link}` e sem o Create
+   sharing link.)
+2. **Snapshot do contrato da tool.** O Copilot Studio guarda as entradas/saídas do
+   fluxo no momento em que a tool é adicionada; mudar o fluxo não atualiza o
+   snapshot sozinho.
+
+**Correção:**
+- **Power Automate → abra o fluxo → "Salvar como"** → cópia **não-gerenciada**
+  (flowId novo, editável). Ajuste as ações nela.
+- **Copilot Studio → Ferramentas → REMOVA a tool do fluxo → ADICIONE o novo fluxo**
+  (re-mapeia `board_url`) → **Publique**. Isso troca o flowId e o contrato.
+
+**Permissões como o CDIO:** deixe a tool em `mode: Invoker` (padrão de agent flow) e
+o fluxo usando **connection references** (Excel + SharePoint) — as mesmas do CDIO,
+se quiser idêntico. Fora de um solution editável, connection reference não se
+configura; por isso o fluxo precisa estar não-gerenciado.
+
 ## Etapa 5 — Testar
 
 Peça ao agente: **"monta o board de Consumer"**. Ele deve **chamar o fluxo** e
