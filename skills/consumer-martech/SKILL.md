@@ -65,25 +65,33 @@ estão no verde. Trate as duas juntas.
 
 Mercados: **BR** = Brasil · **MX** = México · **AR** = Argentina.
 
-## Passo 3 — Como você analisa (as quatro lentes de Consumer)
+## Passo 3 — Como você analisa (sempre POR FRENTE / pilar)
 
-Não devolva uma planilha reescrita. Devolva um **juízo**. Toda análise cruza
-quatro ângulos — o equivalente, neste mundo, às quatro lentes do portfólio:
+Não devolva uma planilha reescrita. Devolva um **juízo**, e **organize a análise
+por frente (pilar)** — Insights, Media & Influencer, dCom and Social Commerce,
+CoPilot and Agentic, LLM Search / GEO, Beauty Tech. **A frente é a unidade da
+análise, não o país.** Só quebre por mercado (BR/MX/AR) se o usuário pedir
+explicitamente "por país / por mercado".
+
+Dentro de cada frente, cruze estas lentes:
 
 1. **Realização de valor (Deployment × Adoption).** A lente principal. Uma
    iniciativa com `Deployment = No prazo` mas `Adoption = Não iniciado` foi
    entregue e **não está gerando valor** — é o "watermelon" de Consumer.
    Priorize destravar adoção, não celebrar a entrega.
-2. **Críticos primeiro.** Todo `Crítico` é ação imediata, com mercado e frente
-   nomeados. Ex.: `Insights / 5Vs Dashboard / Adoption / BR` e
-   `Insights / FIBRA / Adoption / BR` — dois críticos, mesma frente, mesmo
-   mercado, mesma fase (adoção no Brasil). Isso é concentração, reporte como tal.
-3. **Concentração por mercado.** Compare BR × MX × AR. Onde o risco se acumula?
-   Um mercado muito mais atrás que os outros na mesma frente é um problema de
-   execução local, não de produto.
+2. **Saúde da frente (farol).** Como a frente está no todo (regra do Painel abaixo):
+   quantas iniciativas no verde, em atenção, críticas, não iniciadas. Nomeie a
+   frente e o veredito, não os países um a um.
+3. **Críticos primeiro.** Todo `Crítico` é ação imediata, nomeando **frente /
+   iniciativa / fase** (o mercado entra como detalhe, não como o eixo). Ex.:
+   `Insights / 5Vs Dashboard / Adoption` e `Insights / FIBRA / Adoption`.
 4. **Backlog (Não iniciado).** Muitos `Não iniciado` numa frente = escopo grande
-   parado. Diga quanto do ativo ainda não começou e o que destrava mais valor
-   com menos esforço (assimetria).
+   parado. Diga quanto do ativo da frente ainda não começou e o que destrava mais
+   valor com menos esforço (assimetria).
+
+> **Só quando o usuário pedir "por país / por mercado":** aí sim compare
+> BR × MX × AR e aponte onde o risco se acumula por mercado. Fora isso, fale de
+> frentes.
 
 **Saúde por frente (farol) — a MESMA regra do Painel do Excel:**
 
@@ -100,15 +108,22 @@ Mais de uma frente ou visão geral → **dashboard conciso**:
 | Frente | No prazo | Atenção | Crítico | Não iniciado | % No prazo | Farol |
 (as seis frentes + total)
 
+**🧭 LEITURA POR FRENTE**
+Uma linha por frente: o veredito da frente (o que vai bem, o que trava),
+puxando a realização de valor (Deployment × Adoption). Fale de frentes, não de países.
+
 **🔴 CRÍTICOS**
-Frente / Iniciativa / Fase / Mercado — o que está bloqueado. Um por linha.
+Frente / Iniciativa / Fase — o que está bloqueado. Um por linha.
 
 **🟠 ENTREGUE MAS SEM ADOÇÃO**
 Iniciativas com Deployment no verde e Adoption parado — valor não realizado.
 
 **🎯 DIRETRIZ DOS PRÓXIMOS 30 DIAS**
-Um veredito e a ação que a liderança cobra, com frente, mercado e responsável.
+Um veredito e a ação que a liderança cobra, por frente, com responsável.
 ```
+
+> Quebra por país (BR/MX/AR) só se pedirem. Aí vira uma seção extra
+> **"POR MERCADO"** comparando os três; senão, a análise é toda por frente.
 
 Uma frente ou uma iniciativa → **deep dive**: as linhas dela (Deployment e
 Adoption), o farol de cada mercado, o que está em jogo, e a decisão recomendada.
