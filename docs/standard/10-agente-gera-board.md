@@ -144,6 +144,20 @@ o fluxo usando **connection references** (Excel + SharePoint) — as mesmas do C
 se quiser idêntico. Fora de um solution editável, connection reference não se
 configura; por isso o fluxo precisa estar não-gerenciado.
 
+## Procedimento LIMPO (quando o fluxo estava preso no managed)
+
+1. **Power Automate → "Salvar como"** o fluxo → cópia não-gerenciada. Renomeie
+   (`Consumer Report v2`).
+2. **Religue as conexões** (Save As derruba): Run script (workbook + script),
+   Create file (site + pasta + Nome dated .html + Conteúdo=result), Create sharing
+   link (Id=`body/ItemId`, View, Organização), Respond (`board_url` = **Sharing Link**).
+3. **Salvar → Testar (▶)**: run verde, arquivo criado, o link do Sharing Link abre
+   o board.
+4. **Copilot Studio → Ferramentas → Adicionar → Fluxos de trabalho** → a cópia nova
+   → Descrição → confirmar saída `board_url` → **Publicar**.
+5. Permissões como CDIO: tool em **Invoker** (padrão) → pede consentimento na 1ª vez.
+6. **Desative** (Turn off) o fluxo antigo do managed, para não existir dois.
+
 ## Etapa 5 — Testar
 
 Peça ao agente: **"monta o board de Consumer"**. Ele deve **chamar o fluxo** e
