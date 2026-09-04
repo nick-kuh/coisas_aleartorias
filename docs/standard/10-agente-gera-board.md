@@ -115,7 +115,7 @@ diz que não achou o board — mesmo com o arquivo criado.
 **Correção (no fluxo):** abra o fluxo → última ação **Respond to the agent** →
 **Adicionar uma saída** → **Texto** → nome **exatamente `board_url`** → valor =
 uma expressão que monta a URL a partir do caminho do Create file:
-`concat('https://<tenant>.sharepoint.com', replace(outputs('Create_file')?['body/Path'], ' ', '%20'))`
+`concat('https://<tenant>.sharepoint.com/sites/<Site>', replace(outputs('Create_file')?['body/Path'], ' ', '%20'))`  ← inclua o `/sites/<Site>`; o `body/Path` é relativo ao SITE. Nem toda versão do Create file traz `{Link}`.
 → Salvar. (A lista do Create file não traz "Link to item"; o campo é `body/Path`.
 Se o link abrir "não encontrado", adicione **Create sharing link** (com `body/ItemId`)
 e devolva o campo **"Sharing Link"** dela — é a URL clicável.) Conectar o agente à pasta é desnecessário; o link vem do fluxo.
@@ -173,6 +173,20 @@ dinâmico, mas na expressão funciona. É o mesmo que o fluxo do CDIO usa.)
 > Se ao abrir o link o navegador **baixar** o `.html` em vez de mostrar: é a config
 > "Browser File Handling" do site (Strict). Um admin muda para Permissive, ou abra
 > com `?web=1` no fim da URL.
+
+## URL vazia e "solicitar acesso" (site privado + sharing desativado)
+
+**URL vazia:** algumas versões do Create file **não** têm `{Link}`, e o `body/Path`
+é relativo ao **site** (não ao domínio). `board_url` (expressão):
+`concat('https://<tenant>.sharepoint.com/sites/<Site>', replace(outputs('Create_file')?['body/Path'], ' ', '%20'))`.
+Ex.: site `ITBWLatam` + Path `/Shared Documents/CDIO LATAM/Agent Report/x.html`.
+
+**"Solicitar acesso":** o site é grupo privado e o sharing por link está desativado
+(`sharingDisabled`), então não há "público via link". Dê acesso **no local**:
+- (A) SharePoint → pasta do board → **Gerenciar acesso** → adicionar o grupo do
+  público (ou "Todos, exceto usuários externos") como **Pode exibir**; ou
+- (B) gravar o board numa biblioteca de um site que o público **já** acessa
+  (aponte o Create file para lá).
 
 ## Etapa 5 — Testar
 
