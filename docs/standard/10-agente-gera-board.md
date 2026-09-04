@@ -105,6 +105,18 @@ volte ao Copilot Studio → Ferramentas → Adicionar → Fluxos de trabalho →
 aparece → **Publique** o agente. (Se pedir para converter conexões em "referências
 de conexão", aceite.)
 
+## O fluxo roda e cria o arquivo, mas o agente "não acha" o board?
+
+O agente **não lê a pasta** do SharePoint — ele mostra o valor de `board_url` que o
+**fluxo devolve**. Se a ação **"Respond to the agent" / "Return value(s) to Copilot"**
+estiver com o corpo vazio (só `statusCode: 200`), `board_url` vem vazio e o agente
+diz que não achou o board — mesmo com o arquivo criado.
+
+**Correção (no fluxo):** abra o fluxo → última ação **Respond to the agent** →
+**Adicionar uma saída** → **Texto** → nome **exatamente `board_url`** → valor =
+conteúdo dinâmico **"Link to item"** do **Create file** (`@outputs('Create_file')?['body/{Link}']`)
+→ Salvar. Conectar o agente à pasta é desnecessário; o link vem do fluxo.
+
 ## Etapa 5 — Testar
 
 Peça ao agente: **"monta o board de Consumer"**. Ele deve **chamar o fluxo** e
