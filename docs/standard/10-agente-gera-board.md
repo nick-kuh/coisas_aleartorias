@@ -158,6 +158,22 @@ configura; por isso o fluxo precisa estar não-gerenciado.
 5. Permissões como CDIO: tool em **Invoker** (padrão) → pede consentimento na 1ª vez.
 6. **Desative** (Turn off) o fluxo antigo do managed, para não existir dois.
 
+## Erro `sharingDisabled` no Create sharing link
+
+`{"error":{"code":"notAllowed","innerError":{"code":"sharingDisabled"}...}` = o site
+tem **compartilhamento por link desativado** (política do tenant). A ação **Create
+sharing link não funciona** nesse site — **remova-a**.
+
+**Use o link direto do arquivo** (não precisa de compartilhamento): em
+**Respond to the agent → `board_url`**, expressão:
+`outputs('Create_file')?['body/{Link}']`
+(É o `{Link}` = "Link to item" do Create file — não aparece na lista de conteúdo
+dinâmico, mas na expressão funciona. É o mesmo que o fluxo do CDIO usa.)
+
+> Se ao abrir o link o navegador **baixar** o `.html` em vez de mostrar: é a config
+> "Browser File Handling" do site (Strict). Um admin muda para Permissive, ou abra
+> com `?web=1` no fim da URL.
+
 ## Etapa 5 — Testar
 
 Peça ao agente: **"monta o board de Consumer"**. Ele deve **chamar o fluxo** e
