@@ -188,6 +188,14 @@ Ex.: site `ITBWLatam` + Path `/Shared Documents/CDIO LATAM/Agent Report/x.html`.
 - (B) gravar o board numa biblioteca de um site que o público **já** acessa
   (aponte o Create file para lá).
 
+## Fazer o link BAIXAR o arquivo (em vez de abrir no SharePoint)
+
+Acrescente `?download=1` no fim da URL: o SharePoint entrega o `.html` como
+**download** e o usuário abre localmente (o board renderiza no navegador dele),
+contornando o bloqueio de exibir HTML no site. No `board_url`:
+`concat('https://<tenant>.sharepoint.com/sites/<Site>', replace(outputs('Create_file')?['body/Path'], ' ', '%20'), '?download=1')`
+(Ainda precisa de acesso de leitura ao arquivo — ver seção de acesso acima.)
+
 ## Etapa 5 — Testar
 
 Peça ao agente: **"monta o board de Consumer"**. Ele deve **chamar o fluxo** e
