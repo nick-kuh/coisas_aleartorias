@@ -167,14 +167,16 @@ inputs:
     value: Power Virtual Agents     # = "Microsoft Copilot Studio agent" ✅
   - kind: ManualTaskInput
     propertyName: location
-    value: powerva                  # = "Chat with agent" ✅
+    value: powerva                  # 🔴 ERRADO — ver correção abaixo
   - kind: ManualTaskInput
     propertyName: body.bot          # ← declarado e SEM value
 ```
 
 `body.bot` é obrigatório (`isRequired: true`) e está vazio. E `body.recipient` e `body.messageBody`, também obrigatórios, não foram declarados de forma alguma.
 
-As duas primeiras escolhas estão **certas** — `poster` e `location` são exatamente o par que a Microsoft documenta para mensagem proativa. O que falta é o agente, o destinatário e o texto. O porquê do dropdown vazio e como resolver estão em [`03-teams-conversa-com-gestor.md`](03-teams-conversa-com-gestor.md).
+O `poster: Power Virtual Agents` está certo (= *Microsoft Copilot Studio agent*). Mas `location: powerva` está **errado**, e foi corrigido em 08/09 — ver a nota no topo de [`03-teams-conversa-com-gestor.md`](03-teams-conversa-com-gestor.md). O que falta completar é o agente, o destinatário e o texto.
+
+> 🔴 **Correção 08/09/2026 — `powerva` no `location` devolve HTTP 400.** O próprio `descriptionForModel` do conector (export `botContent_20260908`) é explícito: o `location` aceita **exatamente** `"Group chat"`, `"Channel"` ou `"Chat with Flow bot"`, e cita `"powerva"` como exemplo de valor que **falha com 400** — ele é a identidade do `poster`, não um `location`. Quando `poster = Power Virtual Agents`, o `location` tem que ser **`Chat with Flow bot`**. A afirmação anterior de que `powerva` = "Chat with agent" estava incorreta.
 
 ## 1.5 🟠 Descrições que se perderam
 

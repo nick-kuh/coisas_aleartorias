@@ -115,7 +115,9 @@ O seu AURA Agent foi criado em **13/08/2026** e nunca foi publicado no Teams. Po
 
 **Não é bug. É ordem de operações.** Você precisa publicar antes de conseguir selecionar.
 
-E confirmando o que está no arquivo: `poster: Power Virtual Agents` e `location: powerva` são **exatamente** o par certo — correspondem a *Post as = Microsoft Copilot Studio agent* e *Post in = Chat with agent*, que é o que a Microsoft documenta para mensagem proativa. Você acertou essa parte.
+> 🔴 **Correção 08/09/2026.** Eu afirmava aqui que `location: powerva` era o par certo de `poster: Power Virtual Agents`. **Estava errado.** O export `botContent_20260908` mostra o `descriptionForModel` do próprio conector dizendo, sem ambiguidade: o `location` aceita **exatamente** `"Group chat"`, `"Channel"` ou `"Chat with Flow bot"`; `"powerva"` é citado como exemplo de valor que **devolve HTTP 400** (é identidade de `poster`, não de `location`); e *"use `Chat with Flow bot` quando `poster` for `Flow bot` **ou** `Power Virtual Agents`"*. Ou seja: no modo publicado (poster = agente), o `location` certo é **`Chat with Flow bot`**, não `powerva`.
+
+O `poster: Power Virtual Agents` (= *Microsoft Copilot Studio agent*) continua certo. Só o `location` muda.
 
 ---
 
@@ -148,7 +150,7 @@ A mensagem proativa **só pode ir para o chat pessoal do gestor com o agente** �
               ▼
    Teams · Post message
    poster    = Microsoft Copilot Studio agent
-   location  = Chat with agent
+   location  = Chat with Flow bot      ← NÃO "powerva" (dá 400)
    bot       = AURA Agent
    recipient = gestor@unilever.com
               │
@@ -220,7 +222,7 @@ Gatilho de recorrência (segunda, 8h)
    └─> Power BI · executar DAX  → lista de projetos atrasados
    └─> Aplicar a cada           → para cada projeto
          └─> Teams · Post message (poster = Copilot Studio agent,
-                                   location = Chat with agent,
+                                   location = Chat with Flow bot,
                                    bot = AURA Agent,
                                    recipient = gestor)
 ```

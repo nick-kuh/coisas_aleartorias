@@ -255,10 +255,9 @@ Mensagem sai do **Flow bot**, no chat 1:1 do gestor com o Flow bot. Não depende
 >
 > | O que você escolheu | O que o export gravou |
 > |---|---|
-> | "Chat with agent" | `powerva` — **não** o rótulo |
 > | "Group chat" | `Group chat` — literal |
 >
-> Não dá para saber qual literal o "Chat with Flow bot" grava, e chutar quebra a tool. Escolher na lista resolve sozinho.
+> 🔴 **Correção 08/09:** eu listava aqui "Chat with agent → `powerva`" como se fosse válido. **Não é.** O `descriptionForModel` do conector (export `botContent_20260908`) cita `"powerva"` como exemplo de `location` que **devolve HTTP 400** — é identidade de `poster`, não de `location`. O `location` só aceita `"Group chat"`, `"Channel"` ou `"Chat with Flow bot"`, e **este último é o certo tanto para `poster: Flow bot` quanto para `poster: Power Virtual Agents`**. Sempre escolha na lista; nunca digite `powerva`.
 >
 > Já os dois `AutomaticTaskInput` são texto livre — descrição pode ser editada à vontade.
 
@@ -291,9 +290,9 @@ Mensagem sai como o AURA Agent, no chat 1:1 do gestor com o agente. Fecha o cicl
 
 | Entrada | Preencher usando | Valor |
 |---|---|---|
-| `poster` | Valor personalizado | `Microsoft Copilot Studio agent` *(trocar de "User")* |
-| `location` | Valor personalizado | `Chat with agent` *(trocar de "Group chat")* |
-| **`body.bot`** (Agent) | Valor personalizado | selecionar **AURA Agent** — dropdown fica populado depois de publicar |
+| `poster` | Escolher na lista | `Microsoft Copilot Studio agent` *(trocar de "User")* |
+| `location` | Escolher na lista | **`Chat with Flow bot`** 🔴 *(NÃO "powerva" — dá 400. Ver correção 08/09)* |
+| **`body.bot`** (Agent) | Escolher na lista | selecionar **AURA Agent** — dropdown fica populado depois de publicar |
 | `body.recipient` | Dinamicamente com IA | idem |
 | `body.messageBody` | Dinamicamente com IA | idem |
 
