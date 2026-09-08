@@ -277,16 +277,13 @@ Mensagem sai do **Flow bot**, no chat 1:1 do gestor com o Flow bot. Não depende
 >
 > **Se não aparecer**, o Flow bot está bloqueado por política e o único caminho é publicar o agente — vá para o **5B**. O Flow bot é first-party e existe onde há Power Automate, mas alguns tenants bloqueiam o app. Não tenho como verificar isso daqui.
 
-**Descrição da tool** (trocar a "Posta uma mensagem em um chat ou canal"):  `379/1024`
+**Descrição da tool** (trocar a "Posta uma mensagem em um chat ou canal"):  `586/1024`
 
 ```
-Sends a Microsoft Teams message to a Project IT Manager, delivered by the Flow
-bot into the manager's 1:1 chat. The message must say who is asking, because it
-arrives from a bot and not from the requesting user. Use ONLY after the user has
-reviewed and explicitly approved the draft. Typical use: asking a manager for a
-new Go-Live date on a delayed project. NEVER call this tool to answer a question
-or to display information to the current user.
+Sends a Microsoft Teams message to a Project IT Manager, delivered by the Flow bot into the manager's 1:1 chat. Resolve the recipient YOURSELF from the project data ([Project IT Manager], falling back to Assigned To) — never ask the user who to send to. The message must say who is asking, because it arrives from a bot, not from the requesting user. Use ONLY after the user has reviewed and explicitly approved the draft. Typical use: asking a manager for a new Go-Live date on a delayed project. NEVER call this tool to answer a question or to display information to the current user.
 ```
+
+> 🎯 **A frase `Resolve the recipient YOURSELF … never ask the user who to send to` é a que você pediu:** o agente pega o `[Project IT Manager]` sozinho e não pergunta "para quem envio". A trava `Use ONLY after … approved the draft` fica — a aprovação do rascunho continua obrigatória.
 
 ### 5B — Modo PUBLICADO (quando o publish sair)
 
@@ -312,13 +309,13 @@ information to the current user.
 
 ### Descrições das duas entradas dinâmicas (valem nos dois modos)
 
-**Descrição da entrada `body.recipient`**  `212/1024`
+**Descrição da entrada `body.recipient`**  `330/1024`
 
 ```
-The email address of the Project IT Manager who must receive the message. Take
-it from [Project IT Manager] in Power BI or from Assigned To in Azure DevOps.
-NEVER guess or construct an email address.
+Email of the Project IT Manager who must receive the message. Resolve it YOURSELF: call Power BI Master DB Search or DevOps Work Item Details and read [Project IT Manager], falling back to Assigned To. NEVER ask the user who to send to. NEVER guess or construct an address — if the field is empty in both sources, say so and stop.
 ```
+
+> Esta entrada é `AutomaticTaskInput` (dinâmica) — a descrição é lida pelo modelo. É aqui que o "pegar o IT Manager sozinho, sem perguntar" realmente pega. O `NEVER guess … if the field is empty, say so and stop` é o guardrail: sem e-mail no sistema, ele para em vez de inventar.
 
 **Descrição da entrada `body.messageBody`**  `297/1024`
 
