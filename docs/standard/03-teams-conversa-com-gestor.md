@@ -233,6 +233,8 @@ O fluxo precisa estar **no mesmo ambiente** do agente. E atenção aos limites d
 
 | Sintoma | Causa | Solução |
 |---|---|---|
+| `400 · Label for notification value needs to be Yes or No` | `body.attribution` gravado como **texto** contra um input tipado `Boolean` — o runtime descarta o campo e o conector exige | [`09-erro-400-label-as-notification.md`](09-erro-400-label-as-notification.md) |
+| Agente diz **✅ enviada** mas o gestor não recebeu | `installedError = Succeed with status code` + gestor sem o app instalado | Ponha `Fail` para depurar; §3.4 |
 | Dropdown **Agent** vazio | Agente não publicado no Teams | §3.2, os 4 passos |
 | `We couldn't find your bot` | Agente e fluxo/tool em ambientes diferentes, ou agente despublicado | Confirme o ambiente; republique |
 | Ação falha para um gestor específico | Ele não tem o agente instalado | Peça instalação, ou use `installedError = Succeed with status code` |

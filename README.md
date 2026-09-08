@@ -36,6 +36,7 @@ O checklist linear — o que fazer, em que ordem, o que depende de terceiros e o
 | [`01-diagnostico-aura-agent.md`](docs/standard/01-diagnostico-aura-agent.md) | Auditoria tool a tool, com a evidência tirada do seu próprio log de conversa |
 | [`02-correcao-das-tools.md`](docs/standard/02-correcao-das-tools.md) | O que abrir e o que colar, com teste de aceite por tool |
 | [`03-teams-conversa-com-gestor.md`](docs/standard/03-teams-conversa-com-gestor.md) | Por que o dropdown **Agent** está vazio, e como o agente conversa com o gestor |
+| [`09-erro-400-label-as-notification.md`](docs/standard/09-erro-400-label-as-notification.md) | **O 400 do Teams** — causa-raiz provada no log, a correção de 1 campo e a auditoria da tool |
 | [`04-work-iq.md`](docs/standard/04-work-iq.md) | O que é, quanto custa, e por que ele **não** resolve a cobrança do gestor |
 | [`05-arquitetura-3-camadas.md`](docs/standard/05-arquitetura-3-camadas.md) | Por que os tópicos saíram, as três camadas e o checklist de cobertura |
 | [`06-fluxo-transcricoes.md`](docs/standard/06-fluxo-transcricoes.md) | Fluxo do Power Automate para levar a transcrição da LT ao SharePoint — duas rotas |
