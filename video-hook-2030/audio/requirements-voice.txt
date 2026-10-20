@@ -1,0 +1,14 @@
+# Voice-over (audio/narration.py). Python 3.10+.
+onnxruntime>=1.20
+misaki>=0.7.4
+spacy>=3.8
+phonemizer-fork>=3.3.2
+espeakng-loader>=0.2.4
+num2words>=0.5.14
+numpy
+# Optional: aligns the on-screen beats to the real word timings.
+faster-whisper>=1.1
+# misaki also needs spaCy's English model. Its wheel is on Hugging Face:
+#   curl -L -o en_core_web_sm-3.7.1-py3-none-any.whl \
+#     https://huggingface.co/spacy/en_core_web_sm/resolve/main/en_core_web_sm-any-py3-none-any.whl
+#   pip install --no-deps en_core_web_sm-3.7.1-py3-none-any.whl

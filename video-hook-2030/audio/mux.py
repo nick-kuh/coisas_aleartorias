@@ -27,8 +27,8 @@ def graph(music, voice=None):
     if not voice:
         return f'{music}anull[pre]'
     return (f'{voice}aformat=channel_layouts=stereo,asplit=2[v][sc];'
-            f'{music}[sc]sidechaincompress=threshold=0.05:ratio=4:attack=20:release=350[duck];'
-            '[duck]volume=0.55[m];[m][v]amix=inputs=2:weights=1 1.6:normalize=0[pre]')
+            f'{music}[sc]sidechaincompress=threshold=0.05:ratio=4:attack=20:release=600[duck];'
+            '[duck]volume=0.5[m];[m][v]amix=inputs=2:weights=1 1.6:normalize=0[pre]')
 
 
 audio_in = ['-i', args.music] + (['-i', args.voice] if args.voice else [])

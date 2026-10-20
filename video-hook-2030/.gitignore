@@ -1,5 +1,8 @@
 node_modules
 out/still-*.png
-# intermediates: render.mjs -> out/video.mp4, audio/soundtrack.py -> out/soundtrack.wav
+# intermediates: render.mjs -> out/video.mp4, audio/*.py -> out/*.wav
 out/video.mp4
 out/*.wav
+# Kokoro model cache (downloaded by audio/narration.py)
+audio/.models/
+__pycache__/

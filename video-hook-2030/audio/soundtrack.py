@@ -30,8 +30,15 @@ def load_timeline():
     return json.loads(txt[txt.index('{'): txt.rindex('}') + 1])
 
 
-T = load_timeline()
+TL = load_timeline()
+T = TL.get('scenes', TL)
+BEATS = TL.get('beats', {})
 DUR = T['out'] + 0.8                     # matches the rendered video length
+
+
+def B(name, offset):
+    """Beat time from the voice-over timeline, else a fixed offset into its scene (as index.html)."""
+    return BEATS.get(name, T[name.split('.')[0]] + offset)
 N = int(DUR * SR)
 
 
@@ -359,15 +366,17 @@ transition(T['s3'])
 section(T['s3'], T['s4'], ['D', 'Bm', 'G', 'A'], pad_lvl=.45, bright=2000, arp_mode='16', arp_lvl=.15,
         arp_bright=5000, drum_mode='soft', bass_mode='pulse', bass_lvl=.32)
 for k, off in enumerate([2.1, 4.1, 9.4, 10.9]):
-    bells.add(bell([86, 88, 90, 93][k], dur=1.5, decay=0.6), T['s3'] + off + 0.4, 0.09, pan=0.3 + 0.13 * k)
+    bells.add(bell([86, 88, 90, 93][k], dur=1.5, decay=0.6), B(f's3.col{k + 1}', off) + 0.45, 0.09, pan=0.3 + 0.13 * k)
 
 # --- S4 · the shift: strip back, then build into the drop
 transition(T['s4'], 'big')
 section(T['s4'], T['s5'], ['Bm', 'G', 'A'], pad_lvl=.5, bright=800, bright_to=3500, arp_mode='16', arp_lvl=.2,
-        arp_bright=5000, arp_from=T['s4'] + 3.8, bass_mode='long', bass_lvl=.42)
-fx.add(riser(T['s5'] - (T['s4'] + 3.6), 250, 9000), T['s4'] + 3.6, 0.55)
+        arp_bright=5000, arp_from=B('s4.accel', 4.5) - 0.3, bass_mode='long', bass_lvl=.42)
+rise_at = B('s4.b', 3.8) - 0.2
+fx.add(riser(T['s5'] - rise_at, 250, 9000), rise_at, 0.55)
 for i in range(6):   # speed-line swishes
-    fx.add(whoosh(0.6), T['s4'] + 4.0 + i * 0.55, 0.08)
+    if B('s4.accel', 4.5) - 0.3 + i * 0.55 < T['s5'] - 0.4:
+        fx.add(whoosh(0.6), B('s4.accel', 4.5) - 0.3 + i * 0.55, 0.08)
 
 # --- S5 · where we must accelerate: the drop
 hit(T['s5'], 'D', 1.0)
@@ -375,17 +384,18 @@ transition(T['s5'], 'big')
 section(T['s5'], T['s6'], ['D', 'A', 'Bm', 'G'], pad_lvl=.42, bright=2800, arp_mode='16', arp_lvl=.22,
         arp_bright=6500, drum_mode='drive', bass_mode='pulse', bass_lvl=.42)
 for k, off in enumerate([0.9, 6.6, 9.6]):
-    fx.add(whoosh(0.7), T['s5'] + off - 0.2, 0.1)
+    fx.add(whoosh(0.7), B(f's5.card{k + 1}', off) - 0.15, 0.1)
 
 # --- S6 · AI-First: airy breakdown, sparkle on the dot wave, hit on "AI-First"
 transition(T['s6'], 'big')
 section(T['s6'], T['s7'], ['G', 'Bm', 'A', 'A'], pad_lvl=.5, bright=2400, bass_mode='long', bass_lvl=.35)
 penta = [74, 76, 78, 81, 83, 86, 88, 90, 93]
-for i in range(18):
+ai_at = B('s6.ai', 5.8)
+for i in range(int((ai_at - T['s6'] - 0.8) / 0.27)):
     bells.add(bell(penta[rng.integers(len(penta))], dur=1.8, decay=0.7), T['s6'] + 0.6 + i * 0.27, 0.05,
               pan=float(rng.uniform(0.2, 0.8)))
-fx.add(riser(1.6, 600, 9000), T['s6'] + 5.8 - 1.6, 0.3)
-hit(T['s6'] + 5.8, 'A', 0.8)
+fx.add(riser(1.6, 600, 9000), ai_at - 1.6, 0.3)
+hit(ai_at, 'A', 0.8)
 
 # --- S7 · strategy: groove returns, steady build
 transition(T['s7'])
@@ -398,7 +408,7 @@ hit(T['s8'], 'D', 1.0)
 transition(T['s8'], 'big')
 section(T['s8'], T['end'], ['D', 'A', 'G', 'A'], pad_lvl=.46, bright=3400, arp_mode='16', arp_lvl=.24,
         arp_bright=7000, drum_mode='drive', bass_mode='pulse', bass_lvl=.44)
-fx.add(impact(), T['s8'] + 1.4, 0.45)
+fx.add(impact(), B('s8.roll', 0.8) + 0.6, 0.45)   # odometer lands on 2027
 
 # --- End card: resolve on D and let it ring
 transition(T['end'], 'big')
