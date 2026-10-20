@@ -32,6 +32,9 @@ def graph(music, voice=None):
 
 
 audio_in = ['-i', args.music] + (['-i', args.voice] if args.voice else [])
+tl = (ROOT / 'timeline.js').read_text()
+tl = json.loads(tl[tl.index('{'): tl.rindex('}') + 1])
+length = str(tl.get('out') or tl['scenes']['out'] + 0.8)     # cut exactly at the end of the timeline
 
 # pass 1: measure loudness of the final mix
 g = graph('[0:a]', '[1:a]' if args.voice else None)
@@ -47,5 +50,5 @@ g = graph('[1:a]', '[2:a]' if args.voice else None)
 subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', args.video, *audio_in,
                 '-filter_complex', g + f';[pre]{norm},aresample=48000[a]',
                 '-map', '0:v', '-map', '[a]', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '256k',
-                '-shortest', '-movflags', '+faststart', args.out], check=True)
+                '-t', length, '-movflags', '+faststart', args.out], check=True)
 print(args.out, f"(mix measured {m['input_i']} LUFS, normalised to -16 LUFS)")

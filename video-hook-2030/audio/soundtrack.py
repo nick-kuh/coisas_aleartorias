@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Original soundtrack for the "Race to 2030" hook.
+"""Original soundtrack for the "Race to 2030" promo.
 
 Everything is synthesized here from scratch (numpy only), so there is no
-third-party music and no licensing to clear. The arrangement is cut to the
-scene timeline in ../timeline.js: each scene starts on a downbeat, and the hits
-line up with the on-screen beats in ../index.html (odometer landing on 2030,
-the drop on "accelerate", AI-First, 2027).
+third-party music and no licensing to clear. It runs at 120 BPM on the same
+grid as the voice-over and follows ../timeline.js: hits land on the cuts and
+words that matter (2030 landing, the drop on "Accelerate", AI-First, the three
+strategy verbs, 2027, the euros, "The race is on").
 
     python3 audio/soundtrack.py            -> out/soundtrack.wav (48 kHz stereo)
 """
@@ -17,7 +17,7 @@ import sys
 import numpy as np
 
 SR = 48000
-BPM = 100
+BPM = 120
 BEAT = 60 / BPM
 BAR = 4 * BEAT
 HERE = pathlib.Path(__file__).resolve().parent
@@ -31,15 +31,15 @@ def load_timeline():
 
 
 TL = load_timeline()
-T = TL.get('scenes', TL)
-BEATS = TL.get('beats', {})
-DUR = T['out'] + 0.8                     # matches the rendered video length
-
-
-def B(name, offset):
-    """Beat time from the voice-over timeline, else a fixed offset into its scene (as index.html)."""
-    return BEATS.get(name, T[name.split('.')[0]] + offset)
+SH, MK, CU = TL['shots'], TL['marks'], TL['cues']
+DUR = TL['out']                          # matches the rendered video length
 N = int(DUR * SR)
+
+
+def W(cue, word):
+    """When `word` is spoken in line `cue` (keys as in narration.py)."""
+    k = ''.join(ch for ch in word.split('-')[0].lower() if ch.isalnum())
+    return CU[cue]['w'].get(k, CU[cue]['s'])
 
 
 def hz(m):
@@ -327,12 +327,6 @@ def section(start, end, chords, *, pad_lvl=.5, bright=1400, bright_to=None, arp_
         k += 1
 
 
-def transition(at, size='small'):
-    fx.add(whoosh(1.1 if size == 'small' else 1.5), at - 0.55, 0.22 if size == 'small' else 0.32)
-    if size != 'small':
-        fx.add(reverse_swell([62, 66, 69, 74], 1.1, IR), at - 1.1, 0.5)
-
-
 def hit(at, chord='D', level=1.0):
     fx.add(impact(), at, 0.9 * level)
     fx.add(hat(open_=True) * 1.4, at, 0.35 * level, pan=0.4)
@@ -340,84 +334,87 @@ def hit(at, chord='D', level=1.0):
         pad.add(pad_note(m + 12, 1.2, 4200, attack=0.005, release=2.4, level=0.12 * level), at)
 
 
-# --- S1 · hook: tension, odometer ticks, impact on "2030"
-land = T['s1'] + 2.98
+LAND, DROP = MK['land'], MK['drop']
+
+# --- hook: a clock ticking faster, odometer steps, impact as it lands on 2030
 for m in (26, 33, 38, 45):
-    pad.add(pad_note(m, land - 0.3, np.linspace(250, 1400, 64), attack=1.8, release=0.6, level=.16), 0.0)
-bass.add(sub_note(38, land - 0.2) * (tvec(land - 0.12) / land) ** 1.5, 0.0, 0.35)
-for i, s in enumerate([0.62, 1.30, 1.78, 2.18, 2.52]):
-    bells.add(bell([69, 71, 73, 74, 76][i], dur=1.2, decay=0.5), T['s1'] + s, 0.16, pan=0.5 + 0.1 * (i - 2))
-    drums.add(kick(punch=0.3), T['s1'] + s, 0.45 + 0.08 * i)
-fx.add(riser(land - 0.9, 300, 8000), 0.9, 0.5)
-fx.add(reverse_swell([62, 66, 69, 76], 1.2, IR), land - 1.2, 0.55)
-hit(land, 'D', 1.1)
-for m in CHORDS['D']['pad']:
-    pad.add(pad_note(m, T['s2'] - land, 2600, attack=0.03, release=1.8, level=.5 / 5), land)
-bass.add(sub_note(38, T['s2'] - land) * np.exp(-tvec(T['s2'] - land + .08) * 0.4), land, .45)
-for i, m in enumerate([74, 78, 81, 88, 86, 81]):
-    bells.add(bell(m, dur=2.0, decay=0.9), land + 0.35 + i * 0.22, 0.07, pan=0.3 + 0.08 * i)
+    pad.add(pad_note(m, LAND - 0.2, np.linspace(250, 1600, 64), attack=1.2, release=0.5, level=.16), 0.0)
+bass.add(sub_note(38, LAND - 0.1) * (tvec(LAND - 0.02) / LAND) ** 1.5, 0.0, 0.35)
+for q in np.arange(0.0, LAND - 0.05, BEAT / 4):
+    drums.add(hat(), q, 0.12 + 0.4 * q / LAND, pan=0.58)
+for i, s in enumerate([0.55, 0.95, 1.3, 1.62]):
+    bells.add(bell([69, 71, 73, 74][i], dur=1.0, decay=0.45), s, 0.16, pan=0.4 + 0.07 * i)
+    drums.add(kick(punch=0.3), s, 0.5 + 0.1 * i)
+fx.add(riser(LAND - 0.3, 300, 8000), 0.3, 0.5)
+fx.add(reverse_swell([62, 66, 69, 76], 1.0, IR), LAND - 1.0, 0.55)
+hit(LAND, 'D', 1.1)
 
-# --- S2 · statement
-transition(T['s2'])
-section(T['s2'], T['s3'], ['G', 'A'], pad_lvl=.45, bright=1700, arp_mode='8', arp_lvl=.16, arp_bright=4200)
+# --- "underway" / "now": the groove starts
+section(LAND, SH['strT'], ['D', 'Bm', 'G'], pad_lvl=.42, bright=2200, arp_mode='16', arp_lvl=.15,
+        arp_bright=4500, drum_mode='soft', bass_mode='pulse', bass_lvl=.34)
 
-# --- S3 · proven strengths (+ a soft ping on each check mark)
-transition(T['s3'])
-section(T['s3'], T['s4'], ['D', 'Bm', 'G', 'A'], pad_lvl=.45, bright=2000, arp_mode='16', arp_lvl=.15,
-        arp_bright=5000, drum_mode='soft', bass_mode='pulse', bass_lvl=.32)
-for k, off in enumerate([2.1, 4.1, 9.4, 10.9]):
-    bells.add(bell([86, 88, 90, 93][k], dur=1.5, decay=0.6), B(f's3.col{k + 1}', off) + 0.45, 0.09, pan=0.3 + 0.13 * k)
+# --- proven strengths: four on the floor, a ping on each check
+section(SH['strT'], SH['piv1'], ['D', 'A', 'Bm', 'G'], pad_lvl=.42, bright=2600, arp_mode='16', arp_lvl=.2,
+        arp_bright=6000, drum_mode='drive', bass_mode='pulse', bass_lvl=.4)
+for k, at in enumerate([W('str.t', 'strengths'), SH['str1'], SH['str2'], SH['str3'], W('str.4', 'factory')]):
+    bells.add(bell([84, 86, 88, 90, 93][k], dur=1.4, decay=0.5), at + 0.2, 0.08, pan=0.3 + 0.1 * k)
 
-# --- S4 · the shift: strip back, then build into the drop
-transition(T['s4'], 'big')
-section(T['s4'], T['s5'], ['Bm', 'G', 'A'], pad_lvl=.5, bright=800, bright_to=3500, arp_mode='16', arp_lvl=.2,
-        arp_bright=5000, arp_from=B('s4.accel', 4.5) - 0.3, bass_mode='long', bass_lvl=.42)
-rise_at = B('s4.b', 3.8) - 0.2
-fx.add(riser(T['s5'] - rise_at, 250, 9000), rise_at, 0.55)
-for i in range(6):   # speed-line swishes
-    if B('s4.accel', 4.5) - 0.3 + i * 0.55 < T['s5'] - 0.4:
-        fx.add(whoosh(0.6), B('s4.accel', 4.5) - 0.3 + i * 0.55, 0.08)
+# --- the stop: the beat drops out under "more than operational excellence", then builds into the drop
+section(SH['piv1'], DROP, ['Bm', 'G', 'A'], pad_lvl=.24, bright=600, bright_to=3200, bass_mode='long', bass_lvl=.2)
+b0, t = SH['piv2'], SH['piv2']
+while t < DROP - 0.2:                         # snare roll: 8ths, 16ths, 32nds
+    left = DROP - t
+    drums.add(clap(), t, 0.22 + 0.5 * (t - b0) / (DROP - b0), pan=0.5)
+    t += BEAT / 2 if left > 1.2 else BEAT / 4 if left > 0.6 else BEAT / 8
+fx.add(riser(DROP - b0, 250, 9500), b0, 0.6)
 
-# --- S5 · where we must accelerate: the drop
-hit(T['s5'], 'D', 1.0)
-transition(T['s5'], 'big')
-section(T['s5'], T['s6'], ['D', 'A', 'Bm', 'G'], pad_lvl=.42, bright=2800, arp_mode='16', arp_lvl=.22,
-        arp_bright=6500, drum_mode='drive', bass_mode='pulse', bass_lvl=.42)
-for k, off in enumerate([0.9, 6.6, 9.6]):
-    fx.add(whoosh(0.7), B(f's5.card{k + 1}', off) - 0.15, 0.1)
+# --- DROP: "Accelerate"
+hit(DROP, 'D', 1.2)
+section(DROP, SH['ai'], ['D', 'A', 'Bm', 'G'], pad_lvl=.44, bright=3200, arp_mode='16', arp_lvl=.24,
+        arp_bright=7000, drum_mode='drive', bass_mode='pulse', bass_lvl=.46)
+for k, w in enumerate(['discover', 'engage', 'buy']):
+    bells.add(bell([86, 90, 93][k], dur=1.2, decay=0.5), W('acc.3', w), 0.1, pan=0.35 + 0.15 * k)
 
-# --- S6 · AI-First: airy breakdown, sparkle on the dot wave, hit on "AI-First"
-transition(T['s6'], 'big')
-section(T['s6'], T['s7'], ['G', 'Bm', 'A', 'A'], pad_lvl=.5, bright=2400, bass_mode='long', bass_lvl=.35)
+# --- AI-First: open up, sparkle, hit on the word
+AI = W('ai.a', 'ai')
+section(SH['ai'], SH['stgT'], ['G', 'A'], pad_lvl=.5, bright=2600, bass_mode='long', bass_lvl=.36)
 penta = [74, 76, 78, 81, 83, 86, 88, 90, 93]
-ai_at = B('s6.ai', 5.8)
-for i in range(int((ai_at - T['s6'] - 0.8) / 0.27)):
-    bells.add(bell(penta[rng.integers(len(penta))], dur=1.8, decay=0.7), T['s6'] + 0.6 + i * 0.27, 0.05,
+for i in range(int((SH['stgT'] - SH['ai']) / 0.2)):
+    bells.add(bell(penta[rng.integers(len(penta))], dur=1.6, decay=0.6), SH['ai'] + i * 0.2, 0.05,
               pan=float(rng.uniform(0.2, 0.8)))
-fx.add(riser(1.6, 600, 9000), ai_at - 1.6, 0.3)
-hit(ai_at, 'A', 0.8)
+fx.add(riser(AI - SH['ai'], 600, 9000), SH['ai'], 0.35)
+hit(AI, 'A', 0.9)
 
-# --- S7 · strategy: groove returns, steady build
-transition(T['s7'])
-section(T['s7'], T['s8'], ['Bm', 'G', 'D', 'A'], pad_lvl=.42, bright=2500, arp_mode='16', arp_lvl=.2,
-        arp_bright=5500, drum_mode='build', bass_mode='pulse', bass_lvl=.4)
-fx.add(riser(2.4, 300, 9000), T['s8'] - 2.4, 0.4)
+# --- strategy: beat back in, a hit on each verb
+section(SH['stgT'], SH['bet1'], ['Bm', 'G', 'D'], pad_lvl=.42, bright=2600, arp_mode='16', arp_lvl=.18,
+        arp_bright=6000, drum_mode='build', bass_mode='pulse', bass_lvl=.42)
+for k, ch in enumerate(['Bm', 'G', 'D']):
+    hit(CU[f'stg.{k + 1}']['s'], ch, 0.55 + 0.15 * k)
+fx.add(riser(SH['bet1'] - CU['stg.3']['e'] + 0.3, 400, 9000), CU['stg.3']['e'] - 0.3, 0.4)
 
-# --- S8 · 2027 Big Bets: peak, hit when the odometer lands on 2027
-hit(T['s8'], 'D', 1.0)
-transition(T['s8'], 'big')
-section(T['s8'], T['end'], ['D', 'A', 'G', 'A'], pad_lvl=.46, bright=3400, arp_mode='16', arp_lvl=.24,
-        arp_bright=7000, drum_mode='drive', bass_mode='pulse', bass_lvl=.44)
-fx.add(impact(), B('s8.roll', 0.8) + 0.6, 0.45)   # odometer lands on 2027
+# --- 2027 Big Bets: the peak; hits on 2027, the numbers and the euros
+hit(SH['bet1'], 'D', 1.2)
+section(SH['bet1'], SH['end'], ['D', 'A', 'G', 'A'], pad_lvl=.46, bright=3600, arp_mode='16', arp_lvl=.26,
+        arp_bright=7500, drum_mode='drive', bass_mode='pulse', bass_lvl=.46)
+fx.add(impact(), W('bet.a', 'big') - 0.05, 0.4)
+for k, w in enumerate(['three', 'five', '26']):
+    bells.add(bell([86, 90, 93][k], dur=1.2, decay=0.5), W('bet.b', w), 0.12, pan=0.3 + 0.2 * k)
+fx.add(impact(), W('bet.c', '160') - 0.1, 0.5)
 
-# --- End card: resolve on D and let it ring
-transition(T['end'], 'big')
-hit(T['end'], 'D', 0.8)
+# --- "The race is on." final hit, then ring out over the logo
+ON = W('end.a', 'on')
+fx.add(riser(ON - SH['end'] + 0.2, 400, 9000), SH['end'] - 0.2, 0.4)
+hit(ON, 'D', 1.3)
 for m in CHORDS['D']['pad'] + [69]:
-    pad.add(pad_note(m, DUR - T['end'], 3000, attack=0.05, release=2.0, level=.55 / 5), T['end'])
-bass.add(sub_note(38, 2.5) * np.exp(-tvec(2.58) * 1.2), T['end'], .5)
+    pad.add(pad_note(m, DUR - ON, 3200, attack=0.02, release=1.5, level=.55 / 5), ON)
+bass.add(sub_note(38, 2.0) * np.exp(-tvec(2.08) * 1.2), ON, .5)
 for i, m in enumerate([74, 78, 81, 86]):
-    bells.add(bell(m, dur=4.0, decay=1.6), T['end'] + 0.25 + i * 0.18, 0.08, pan=0.35 + 0.1 * i)
+    bells.add(bell(m, dur=3.0, decay=1.4), SH['logo'] + 0.1 + i * 0.16, 0.08, pan=0.35 + 0.1 * i)
+
+# whooshes on the cuts that have no hit of their own
+for name, at in SH.items():
+    if name not in ('hook', 'piv1', 'drop', 'ai', 'stg1', 'stg2', 'stg3', 'bet1', 'end'):
+        fx.add(whoosh(0.7), at - 0.35, 0.13)
 
 # ---------------------------------------------------------------- mix
 # sidechain pump from the kicks on pad / bass / arp
@@ -452,7 +449,12 @@ gain_db = (-4 / (1 + (F / 60) ** 2) + 5 * (F / 5000) ** 2 / (1 + (F / 5000) ** 2
 eq = 10 ** (gain_db / 20) / np.sqrt(1 + (32 / np.maximum(F, 1e-3)) ** 4)
 mix = np.fft.irfft(np.fft.rfft(mix, axis=-1) * eq, N, axis=-1)
 
-# fade out at the very end, gentle glue, peak-normalise
+# a breath of silence right before the drop, fade out at the very end, gentle glue, peak-normalise
+gate = np.ones(N)
+g0, g1, r = int((DROP - 0.2) * SR), int(DROP * SR), int(0.01 * SR)
+gate[g0:g1] = 0
+gate[g0 - r:g0] = np.linspace(1, 0, r)
+mix *= gate
 fade = np.ones(N)
 fo = int(1.6 * SR)
 fade[-fo:] = np.linspace(1, 0, fo) ** 1.5

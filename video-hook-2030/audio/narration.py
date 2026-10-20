@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
-"""AI voice-over for the "Race to 2030" hook, and the timeline that follows it.
+"""AI voice-over for the "Race to 2030" promo, and the timeline the cuts follow.
 
-Each line of the script is synthesised with Kokoro-82M (Apache-2.0, official
-ONNX export from Hugging Face, voice af_heart) and then laid out back to back.
-Scene start times and every on-screen beat (columns, cards, highlights) are
-derived from where the words actually fall, and written to ../timeline.js so
-the animation (index.html) and the music (soundtrack.py) follow the voice.
+Each line is synthesised with Kokoro-82M (Apache-2.0, official ONNX export from
+Hugging Face, voice af_heart). Lines are laid out on a 120 BPM grid (sections
+start on a beat) and every shot cut and word slam is taken from where the words
+actually fall (faster-whisper word timestamps when installed). The result is
+written to ../timeline.js, which index.html (picture) and soundtrack.py (music)
+both read.
 
     pip install -r audio/requirements-voice.txt     (see ROTEIRO.md)
     python audio/narration.py                       -> out/narration.wav + timeline.js
 """
 import json
+import math
 import os
 import pathlib
 import subprocess
@@ -24,45 +26,43 @@ ROOT = HERE.parent
 MODELS = HERE / '.models'
 HF = 'https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/'
 VOICE = 'af_heart'
-SPEED = 0.94          # a touch slower than default: executive pace
+SPEED = 1.14          # promo pace
 SR = 24000            # Kokoro output rate
+BPM = 120
+BEAT = 60 / BPM
+LAND = 4 * BEAT       # the hook's odometer lands on 2030 on the downbeat of bar 2
 
-# The script. Pronunciations Kokoro would get wrong are pinned as [word](/phonemes/).
-CUES = [
-    ('s1.a', 'The race to 2030,'),
-    ('s1.b', 'is already underway.'),
-    ('s2.a', 'The decisions we make now will determine whether we lead tomorrow.'),
-    ('s3.title', 'We have proven strengths:'),
-    ('s3.c1', 'best-in-class execution in stores,'),
-    ('s3.c2', 'strong operational performance across Logistics and S and O P,'),
-    ('s3.c3', 'and critical progress in strategic priorities, such as Tax Reform Compliance,'),
-    ('s3.c4', 'and Factory Transformation.'),
-    ('s4.a', 'But future leadership requires more than operational excellence.'),
-    ('s4.b', 'It requires accelerating where the market is evolving fastest.'),
-    ('s5.c1', 'Our Data Agenda gap remains one of our most important opportunities to create competitive advantage.'),
-    ('s5.c2', 'Our TPM Journey needs stronger momentum.'),
-    ('s5.c3', 'And as Social Commerce reshapes how consumers discover, engage, and buy,'),
-    ('s5.c4', 'we must move faster to unlock its full potential.'),
-    ('s6.a', "These priorities become even more critical as we advance toward [Unilever's](/jˈunɪlˌivəɹz/) "
-             'ambition of becoming an AI-First company by 2030.'),
-    ('s7.title', 'Our strategy is therefore clear:'),
-    ('s7.c1', 'reinforce what already makes us strong,'),
-    ('s7.c2', 'accelerate the capabilities that will define future competitiveness,'),
-    ('s7.c3', 'and concentrate investment on the few bets that can create disproportionate impact for [LATAM](/lˈɑtˌæm/).'),
-    ('s8.a', 'Our 2027 Big Bets turn that strategy into action,'),
-    ('s8.b', "strengthening today's core,"),
-    ('s8.c', "while building tomorrow's competitive advantage."),
+# The script, grouped in sections; each section starts on a beat.
+# Pronunciations Kokoro would get wrong are pinned as [word](/phonemes/).
+SECTIONS = [
+    ('now', [('now.a', 'The decisions we make now'),
+             ('now.b', 'determine whether we lead tomorrow.')]),
+    ('str', [('str.t', 'We have proven strengths:'),
+             ('str.1', 'best-in-class execution in stores,'),
+             ('str.2', 'strong Logistics and S and O P,'),
+             ('str.3', 'progress on Tax Reform Compliance'),
+             ('str.4', 'and Factory Transformation.')]),
+    ('piv', [('piv.a', 'But leadership requires more than operational excellence.'),
+             ('piv.b', 'It requires acceleration.')]),
+    ('acc', [('acc.1', 'Our Data Agenda gap is a big opportunity.'),
+             ('acc.2', 'Our TPM Journey needs stronger momentum.'),
+             ('acc.3', 'Social Commerce is reshaping how consumers discover, engage, and buy.'),
+             ('acc.4', 'We must move faster.')]),
+    ('ai',  [('ai.a', 'On the way to an AI-First [Unilever](/jˈunɪlˌivəɹ/) by 2030.')]),
+    ('stg', [('stg.t', 'Our strategy is clear:'),
+             ('stg.1', 'Reinforce.'), ('stg.2', 'Accelerate.'), ('stg.3', 'Concentrate.')]),
+    ('bet', [('bet.a', 'Our 2027 Big Bets:'),
+             ('bet.b', 'three strategies, five pillars, twenty-six initiatives,'),
+             ('bet.c', 'more than 160 million euros in benefit.'),
+             ('bet.d', "Strengthening today's core, building tomorrow's advantage.")]),
+    ('end', [('end.a', 'The race is on.')]),
 ]
+HOOK = [('hook.a', 'The race to 2030,'), ('hook.b', 'is already underway.')]
 
-# Words whose timing drives an on-screen beat: cue -> words to locate.
-MARKS = {
-    's2.a': ['now', 'lead'], 's3.title': ['proven'], 's3.c3': ['Tax'],
-    's4.a': ['operational'], 's4.b': ['accelerating', 'fastest'], 's5.c2': ['stronger'],
-    's5.c3': ['discover', 'engage', 'buy'], 's6.a': ['AI-First', 'company'], 's7.title': ['therefore'],
-    's8.a': ['Big', 'turn'],
-}
 
-LAND = 2.98           # the hook's odometer lands on 2030 here (index.html)
+def key(w):
+    """Normalised word key: 'AI-First,' -> 'ai', "today's" -> 'todays'."""
+    return ''.join(ch for ch in w.split('-')[0].lower() if ch.isalnum())
 
 
 def fetch(name):
@@ -72,27 +72,6 @@ def fetch(name):
         print('downloading', name)
         urllib.request.urlretrieve(HF + name, dst)
     return dst
-
-
-def align(clips):
-    """Swap the estimated word times for real ones when faster-whisper is installed."""
-    try:
-        from faster_whisper import WhisperModel
-    except ImportError:
-        print('(faster-whisper not installed: using estimated word times)')
-        return
-    model = WhisperModel('small.en', device='cpu', compute_type='int8')
-    key = lambda w: ''.join(ch for ch in w.split('-')[0].lower() if ch.isalnum())
-    for cid, c in clips.items():
-        if not c['marks']:
-            continue
-        audio16 = np.interp(np.arange(0, len(c['wav']), SR / 16000), np.arange(len(c['wav'])), c['wav'])
-        segs, _ = model.transcribe(audio16.astype(np.float32), word_timestamps=True, beam_size=5)
-        words = [(key(w.word), w.start) for s in segs for w in s.words]
-        for w in c['marks']:
-            hit = next((t for k, t in words if k.startswith(key(w))), None)
-            if hit is not None:
-                c['marks'][w] = hit
 
 
 def make_g2p():
@@ -107,6 +86,24 @@ def make_g2p():
     return en.G2P(trf=False, british=False, fallback=espeak.EspeakFallback(british=False))
 
 
+def align(clips):
+    """Real word start times per line, when faster-whisper is installed."""
+    try:
+        from faster_whisper import WhisperModel
+    except ImportError:
+        print('(faster-whisper not installed: using estimated word times)')
+        return
+    model = WhisperModel('small.en', device='cpu', compute_type='int8')
+    for c in clips.values():
+        audio16 = np.interp(np.arange(0, len(c['wav']), SR / 16000), np.arange(len(c['wav'])), c['wav'])
+        segs, _ = model.transcribe(audio16.astype(np.float32), word_timestamps=True, beam_size=5)
+        words = {}
+        for s in segs:
+            for w in s.words:
+                words.setdefault(key(w.word), round(w.start, 3))
+        c['words'].update(words)
+
+
 def main():
     import onnxruntime as ort
     sess = ort.InferenceSession(str(fetch('onnx/model.onnx')), providers=['CPUExecutionProvider'])
@@ -114,11 +111,8 @@ def main():
     voice = np.fromfile(fetch(f'voices/{VOICE}.bin'), dtype=np.float32).reshape(-1, 1, 256)
     g2p = make_g2p()
 
-    def phon(text):
-        return g2p(text)[0]
-
     def speak(text):
-        ps = phon(text)
+        ps = g2p(text)[0]
         ids = [vocab[c] for c in ps if c in vocab][:510]
         wav = sess.run(None, {'input_ids': np.array([[0, *ids, 0]], dtype=np.int64),
                               'style': voice[len(ids)], 'speed': np.array([SPEED], dtype=np.float32)})[0][0]
@@ -134,83 +128,82 @@ def main():
         wav *= 10 ** (-18 / 20) / np.sqrt(np.mean(wav ** 2))      # even level line to line
         return wav, ps
 
-    def word_time(text, ps, dur, word):
-        """Where `word` starts, by its share of the phoneme string (good to ~0.15 s)."""
-        head = text[:text.index(word)].rstrip()
-        k = len(phon(head)) if head else 0
-        return dur * min(k / max(len(ps), 1), 1)
+    def estimate_words(text, ps, dur):
+        """Word starts by their share of the phoneme string (fallback, good to ~0.2 s)."""
+        out, toks = {}, text.split()
+        for i, tok in enumerate(toks):
+            head = ' '.join(toks[:i])
+            k = len(g2p(head)[0]) if head else 0
+            out.setdefault(key(tok.split('](')[0].strip('[')), round(dur * min(k / max(len(ps), 1), 1), 3))
+        return out
 
+    lines = HOOK + [c for _, cues in SECTIONS for c in cues]
     clips = {}
-    for cid, text in CUES:
+    for cid, text in lines:
         wav, ps = speak(text)
         dur = len(wav) / SR
-        marks = {w: word_time(text, ps, dur, w) for w in MARKS.get(cid, [])}
-        clips[cid] = dict(text=text, wav=wav, dur=dur, marks=marks)
-        print(f'{cid:9s} {dur:5.2f}s  {text[:70]}')
+        clips[cid] = dict(text=text, wav=wav, dur=dur, words=estimate_words(text, ps, dur))
+        print(f'{cid:6s} {dur:5.2f}s  {text[:72]}')
     align(clips)
 
-    # ---- lay the lines out scene by scene
-    lead = {'s2': 0.55, 's3': 0.45, 's4': 0.45, 's5': 0.95, 's6': 0.5, 's7': 0.45, 's8': 0.35}
-    hold = {'s1': 0.7, 's2': 0.7, 's3': 0.7, 's4': 0.6, 's5': 0.7, 's6': 1.1, 's7': 0.7, 's8': 1.0}
-    min_len = {'s1': 6.0, 's2': 4.6}
+    # ---- lay the lines out: sections start on a beat, lines inside follow the punctuation
+    def q(t):
+        return math.ceil(t / BEAT - 1e-6) * BEAT
 
     def gap(text):
-        return {',': 0.14, ':': 0.28, '.': 0.5}.get(text.rstrip()[-1], 0.2)
+        return {',': 0.08, ':': 0.18, '.': 0.3}.get(text.rstrip()[-1], 0.1)
 
-    scenes, at = {'s1': 0.0}, {}
-    # hook: "...2030," finishes just as the odometer lands, "is already underway." follows the impact
-    at['s1.a'] = LAND - 0.05 - clips['s1.a']['dur']
-    at['s1.b'] = LAND + 0.42
-    for sc in ['s2', 's3', 's4', 's5', 's6', 's7', 's8']:
-        prev = [c for c in at if c.startswith(f's{int(sc[1]) - 1}.')]
-        prev_sc = f's{int(sc[1]) - 1}'
-        end_prev = max(at[c] + clips[c]['dur'] for c in prev)
-        scenes[sc] = max(end_prev + hold[prev_sc], scenes[prev_sc] + min_len.get(prev_sc, 0))
-        t = scenes[sc] + lead[sc]
-        for cid, text in CUES:
-            if cid.startswith(sc + '.'):
-                at[cid] = t
-                t += clips[cid]['dur'] + gap(text)
-    last = max(at[c] + clips[c]['dur'] for c in at if c.startswith('s8.'))
-    scenes['end'] = last + hold['s8']
-    scenes['out'] = scenes['end'] + 4.6
+    at = {'hook.a': LAND - 0.06 - clips['hook.a']['dur'], 'hook.b': LAND + 0.3}
+    cur = at['hook.b'] + clips['hook.b']['dur']
+    marks = {'land': LAND}
+    for name, cues in SECTIONS:
+        t = q(cur + (0.35 if name in ('piv', 'stg', 'bet', 'end') else 0.2))
+        if name == 'acc':                       # the drop: two beats of "ACCELERATE" before the first line
+            marks['drop'] = t
+            t += 2 * BEAT
+        marks[name] = t
+        for cid, text in cues:
+            if cid in ('stg.1', 'stg.2', 'stg.3'):   # the three verbs land on the half-beat grid, 0.75 s apart at least
+                t = max(math.ceil(t / (BEAT / 2) - 1e-6) * BEAT / 2, at.get(prev, 0) + 0.75)
+            at[cid] = t
+            t += clips[cid]['dur'] + gap(text)
+            prev = cid
+        cur = t - gap(cues[-1][1])
 
-    def start(c):
+    def s(c):
         return at[c]
 
-    def end(c):
-        return at[c] + clips[c]['dur']
+    def w(c, word):
+        return at[c] + clips[c]['words'][word]
 
-    def mark(c, w):
-        return at[c] + clips[c]['marks'][w]
-
-    beats = {
-        's1.underway': start('s1.b') - 0.15, 's1.underwayMark': start('s1.b') + 0.5 * clips['s1.b']['dur'],
-        's2.now': mark('s2.a', 'now'), 's2.lead': mark('s2.a', 'lead'),
-        's3.titleMark': mark('s3.title', 'proven'),
-        's3.col1': start('s3.c1') - 0.1, 's3.col2': start('s3.c2') - 0.1,
-        's3.col3': mark('s3.c3', 'Tax') - 0.2, 's3.col4': start('s3.c4') - 0.1,
-        's4.aMark': mark('s4.a', 'operational'), 's4.dim': start('s4.b') - 0.35, 's4.b': start('s4.b') - 0.15,
-        's4.accel': mark('s4.b', 'accelerating'), 's4.fastest': mark('s4.b', 'fastest'),
-        's5.card1': start('s5.c1') - 0.3, 's5.card2': start('s5.c2') - 0.3, 's5.chev': mark('s5.c2', 'stronger'),
-        's5.card3': start('s5.c3') - 0.3, 's5.discover': mark('s5.c3', 'discover'),
-        's5.engage': mark('s5.c3', 'engage'), 's5.buy': mark('s5.c3', 'buy'), 's5.must': start('s5.c4') - 0.1,
-        's6.lift': mark('s6.a', 'AI-First') - 0.75, 's6.ai': mark('s6.a', 'AI-First') - 0.2,
-        's6.by': mark('s6.a', 'company') - 0.1,
-        's7.titleMark': mark('s7.title', 'therefore'),
-        's7.col1': start('s7.c1') - 0.1, 's7.col2': start('s7.c2') - 0.1, 's7.col3': start('s7.c3') - 0.1,
-        's8.our': start('s8.a') - 0.15, 's8.roll': mark('s8.a', 'Big') - 0.65, 's8.bets': mark('s8.a', 'Big') - 0.05,
-        's8.action': mark('s8.a', 'turn') - 0.1, 's8.tile1': start('s8.b') - 0.15,
-        's8.arrow': start('s8.c') - 0.45, 's8.tile2': start('s8.c') - 0.1, 's8.glow': end('s8.c') - 0.3,
+    shots = {
+        'hook': 0.0, 'now': s('now.a') - 0.05, 'now2': s('now.b') - 0.05,
+        'strT': s('str.t') - 0.05, 'str1': s('str.1') - 0.05, 'str2': s('str.2') - 0.05, 'str3': s('str.3') - 0.05,
+        'piv1': s('piv.a') - 0.05, 'piv2': s('piv.b') - 0.05, 'drop': marks['drop'],
+        'acc1': s('acc.1') - 0.05, 'acc2': s('acc.2') - 0.05, 'acc3': s('acc.3') - 0.05, 'acc4': s('acc.4') - 0.05,
+        'ai': s('ai.a') - 0.05, 'stgT': s('stg.t') - 0.05,
+        'stg1': s('stg.1') - 0.05, 'stg2': s('stg.2') - 0.05, 'stg3': s('stg.3') - 0.05,
+        'bet1': s('bet.a') - 0.05, 'bet2': s('bet.b') - 0.05, 'bet3': s('bet.c') - 0.05, 'bet4': s('bet.d') - 0.05,
+        'end': s('end.a') - 0.05,
     }
-    r = lambda d: {k: round(v, 3) for k, v in d.items()}
+    shots['logo'] = q(at['end.a'] + clips['end.a']['dur'] + 0.35)
+    out_t = shots['logo'] + 2.5
+
+    r3 = lambda v: round(v, 3)
+    timeline = {
+        'bpm': BPM, 'out': r3(out_t),
+        'shots': {k: r3(v) for k, v in shots.items()},
+        'marks': {k: r3(v) for k, v in marks.items()},
+        'cues': {c: {'s': r3(at[c]), 'e': r3(at[c] + clips[c]['dur']),
+                     'w': {k: r3(at[c] + v) for k, v in clips[c]['words'].items()}} for c in at},
+    }
     (ROOT / 'timeline.js').write_text(
-        '// Generated by audio/narration.py from the voice-over: scene start times and the\n'
-        '// moments each on-screen beat fires (seconds). index.html and audio/soundtrack.py read it.\n'
-        f'window.TIMELINE = {json.dumps({"scenes": r(scenes), "beats": r(beats)}, indent=1)};\n')
+        '// Generated by audio/narration.py from the voice-over: shot cuts, music marks and the\n'
+        '// time every spoken word lands (seconds). index.html and audio/soundtrack.py read it.\n'
+        f'window.TIMELINE = {json.dumps(timeline, indent=1)};\n')
 
     # ---- the narration track, on the video's clock (48 kHz for the mix)
-    total = scenes['out'] + 0.8
+    total = out_t + 0.6
     track = np.zeros(int(total * SR))
     for cid, c in clips.items():
         i0 = int(at[cid] * SR)
@@ -220,7 +213,7 @@ def main():
     pcm = (np.clip(track, -1, 1) * 32767).astype('<i2')
     subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 's16le', '-ar', str(SR), '-ac', '1', '-i', '-',
                     '-af', 'highpass=f=70,aresample=48000:resampler=soxr', str(out)], input=pcm.tobytes(), check=True)
-    print('\n'.join(f'  {k:4s} {v:6.2f}s' for k, v in scenes.items()))
+    print('\n'.join(f'  {k:5s} {v:6.2f}s' for k, v in shots.items()))
     print(out, f'{total:.1f}s')
 
 
