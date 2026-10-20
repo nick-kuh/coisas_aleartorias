@@ -187,15 +187,8 @@
     <div class="t split" id="now-a" style="top:280px;font-size:124px">The decisions we make</div>
     <div class="t x" id="now-b" style="top:400px;font-size:480px">now.</div>
     <div class="bar" id="now-bar" style="left:130px;top:880px;width:1040px"></div>
-  </div></section>
-
-  <!-- determine whether we lead tomorrow -->
-  <section class="shot dark p2" id="now2"><div class="in">
-    <div class="glow" style="--gx:20%;--gy:90%"></div>
-    <div class="eyebrow">The moment</div><div class="rule"></div>
-    <div class="t split dim" id="now2-a" style="top:300px;font-size:104px">determine whether we</div>
-    <div class="t bold sheen" id="now2-b" style="top:440px;font-size:250px">lead</div>
-    <div class="t bold sheen" id="now2-c" style="top:660px;font-size:250px">tomorrow.</div>
+    <div class="t split" id="now-c" style="top:600px;font-size:96px;color:var(--ink-2)">determine whether we</div>
+    <div class="t bold sheen" id="now-d" style="top:720px;font-size:200px;--hi:#7FA0FF">lead tomorrow.</div>
   </div></section>
 
   <!-- We have proven strengths -->
@@ -383,6 +376,7 @@
     </div>
     <div class="t x gt" id="bet1-b" style="top:400px;left:900px;font-size:250px">Big Bets</div>
     <div class="bar" id="bet1-bar" style="left:126px;top:720px;width:1670px;height:16px"></div>
+    <div class="t split dim" id="bet1-c" style="top:790px;font-size:76px">turn that strategy into action</div>
   </div></section>
 
   <!-- three strategies, five pillars, twenty-six initiatives -->
@@ -564,9 +558,9 @@ function shake(t, a = 16) {
 function flash(t, o = 0.85) { tl.fromTo('#flash', { opacity: o * 0.55 }, { opacity: 0, duration: 0.8, ease: 'power2.out', immediateRender: false }, t); }
 
 /* ---------- shots & transitions ---------- */
-const ORDER = ['hook', 'now', 'now2', 'strT', 'str1', 'str2', 'str3', 'piv1', 'piv2', 'drop', 'acc1', 'acc2', 'acc3', 'acc4',
+const ORDER = ['hook', 'now', 'strT', 'str1', 'str2', 'str3', 'piv1', 'piv2', 'drop', 'acc1', 'acc2', 'acc3', 'acc4',
   'ai', 'stgT', 'stg1', 'stg2', 'stg3', 'bet1', 'bet2', 'bet3', 'bet4', 'end', 'logo'];
-const IN = { now: 'stripe', now2: 'push', strT: 'rise', str1: 'push', str2: 'push', str3: 'stripe', piv1: 'fade', piv2: 'fade',
+const IN = { now: 'stripe', strT: 'rise', str1: 'push', str2: 'push', str3: 'stripe', piv1: 'fade', piv2: 'fade',
   drop: 'zoom', acc1: 'push', acc2: 'stripe', acc3: 'push', acc4: 'rise', ai: 'zoom', stgT: 'rise', stg1: 'push', stg2: 'push',
   stg3: 'push', bet1: 'zoom', bet2: 'stripe', bet3: 'rise', bet4: 'push', end: 'fade', logo: 'stripe' };
 const DARK = new Set($$('.shot.dark').map(e => e.id));
@@ -638,10 +632,15 @@ tl.set('#brand', { opacity: 0 }, S.logo);
 say('#now-a', 'now.a');
 slam('#now-b', W('now.a', 'now') - 0.04, 1.6);
 grow('#now-bar', W('now.a', 'now') + 0.1);
-say('#now2-a', 'now.b');
-slam('#now2-b', W('now.b', 'lead') - 0.04);
-slam('#now2-c', W('now.b', 'tomorrow') - 0.04);
-sheen('#now2-b', W('now.b', 'tomorrow') + 0.2); sheen('#now2-c', W('now.b', 'tomorrow') + 0.35);
+{ // "now." steps up and the sentence carries on underneath, no cut
+  const m = W('now.b', 'determine') - 0.25;
+  tl.to('#now-a', { y: -70, opacity: 0.4, duration: 0.8, ease: 'power3.inOut' }, m);
+  tl.to('#now-b', { scale: 0.42, y: -95, transformOrigin: '0% 0%', duration: 0.8, ease: 'power3.inOut' }, m);
+  tl.to('#now-bar', { y: -330, scaleX: 0.45, duration: 0.8, ease: 'power3.inOut' }, m);
+  say('#now-c', 'now.b');
+  slam('#now-d', W('now.b', 'lead') - 0.04);
+  sheen('#now-d', W('now.b', 'tomorrow') + 0.3);
+}
 
 /* ---------- STRENGTHS ---------- */
 say('#strT-a', 'str.t');
@@ -742,6 +741,7 @@ tl.fromTo('#y8', { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.5 }, S.b
 tl.to('#y8d', { yPercent: -50, duration: 0.45, ease: 'power3.inOut' }, W('bet.a', '2027') + 0.15);
 slam('#bet1-b', W('bet.a', 'big') - 0.05, 1.5);
 grow('#bet1-bar', W('bet.a', 'big') + 0.1, 0.7);
+say('#bet1-c', 'bet.a');
 
 [['three', 3], ['five', 5], ['26', 26]].forEach(([w, n], k) => {
   const col = $(`#bet2-${k + 1}`), t = W('bet.b', w in C['bet.b'].w || w !== '26' ? w : 'twenty');
