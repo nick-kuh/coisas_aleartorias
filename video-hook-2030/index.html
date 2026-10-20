@@ -595,7 +595,7 @@ ORDER.forEach((id, k) => {
   }
   if (type === 'zoom') {
     tl.to(prev, { scale: 1.2, opacity: 0, duration: 0.5, ease: 'power2.in' }, t - lead);
-    tl.fromTo(el, { scale: 0.92, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.85, ease: 'power3.out' }, t - lead + 0.25);
+    tl.fromTo(el, { scale: 1.08, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.85, ease: 'power3.out' }, t - lead + 0.25);   // always fills the frame
   }
   if (type === 'stripe') tl.fromTo('#stripe', { x: -3000 }, { x: 2300, duration: 1.0, ease: 'power2.inOut', immediateRender: false }, t - 0.5);
 });
