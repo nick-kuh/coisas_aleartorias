@@ -388,8 +388,8 @@ hit(AI, 'A', 0.9)
 # --- strategy: beat back in, a hit on each verb
 section(SH['stgT'], SH['bet1'], ['Bm', 'G', 'D'], pad_lvl=.42, bright=2600, arp_mode='16', arp_lvl=.18,
         arp_bright=6000, drum_mode='build', bass_mode='pulse', bass_lvl=.42)
-for k, ch in enumerate(['Bm', 'G', 'D']):
-    hit(CU[f'stg.{k + 1}']['s'], ch, 0.55 + 0.15 * k)
+for k, (ch, verb) in enumerate([('Bm', 'reinforce'), ('G', 'accelerate'), ('D', 'concentrate')]):
+    hit(W(f'stg.{k + 1}', verb), ch, 0.55 + 0.15 * k)
 fx.add(riser(SH['bet1'] - CU['stg.3']['e'] + 0.3, 400, 9000), CU['stg.3']['e'] - 0.3, 0.4)
 
 # --- 2027 Big Bets: the peak; hits on 2027, the numbers and the euros

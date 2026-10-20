@@ -204,10 +204,9 @@ def main():
 
     # the picture leads the voice slightly ("now" carries on into "lead tomorrow" inside one shot)
     shots = {'hook': 0.0, 'now': s('now.a') - 0.15}
-    for name, c in [('strT', 'str.t'), ('str2', 'str.2'), ('str3', 'str.3'), ('piv1', 'piv.a'), ('piv2', 'piv.b')]:
+    for name, c in [('strT', 'str.t'), ('str1', 'str.1'), ('str2', 'str.2'), ('str3', 'str.3'),
+                    ('piv1', 'piv.a'), ('piv2', 'piv.b')]:
         shots[name] = s(c) - 0.15
-    shots['str1'] = s('str.1') + 0.2               # a beat longer on "proven strengths"
-    shots = dict(sorted(shots.items(), key=lambda kv: kv[1]))
     shots['drop'] = marks['drop']
     for name, c in [('acc1', 'acc.1'), ('acc2', 'acc.2'), ('acc3', 'acc.3'), ('acc4', 'acc.4'), ('ai', 'ai.a'),
                     ('stgT', 'stg.t'), ('stg1', 'stg.1'), ('stg2', 'stg.2'), ('stg3', 'stg.3'),
