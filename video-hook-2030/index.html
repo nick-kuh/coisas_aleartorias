@@ -415,14 +415,12 @@
 </div>
 
 <script src="assets/gsap.min.js"></script>
+<script src="timeline.js"></script>
 <script>
 const RENDER = new URLSearchParams(location.search).has('render');
 if (RENDER) document.documentElement.classList.add('render');
 
-/* Scene start times in seconds — paced for an executive narration (~145 wpm).
-   Shift these if the voice-over runs faster or slower; every beat inside a
-   scene is relative to its start. */
-const T = { s1: 0, s2: 6.2, s3: 11.4, s4: 24.6, s5: 32.2, s6: 50.0, s7: 58.6, s8: 72.8, end: 81.4, out: 86.0 };
+const T = window.TIMELINE;
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];

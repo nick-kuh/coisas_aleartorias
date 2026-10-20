@@ -1,7 +1,7 @@
 // Renders index.html frame by frame (deterministic GSAP seek) and pipes the
 // frames into ffmpeg.
 //
-//   node render.mjs                      -> out/race-to-2030-hook.mp4
+//   node render.mjs                      -> out/video.mp4 (silent; audio/mux.py adds sound)
 //   node render.mjs --stills 3,9,20      -> out/still-3.0s.png, ...
 //
 // Env: CHROMIUM (browser path), FPS (default 30).
@@ -16,7 +16,7 @@ const FPS = Number(process.env.FPS || 30);
 const executablePath = process.env.CHROMIUM || '/opt/pw-browsers/chromium';
 const args = process.argv.slice(2);
 const stillsArg = args.includes('--stills') ? args[args.indexOf('--stills') + 1] : null;
-const out = path.resolve(here, args.find(a => a.endsWith('.mp4')) || 'out/race-to-2030-hook.mp4');
+const out = path.resolve(here, args.find(a => a.endsWith('.mp4')) || 'out/video.mp4');
 mkdirSync(path.join(here, 'out'), { recursive: true });
 
 const browser = await chromium.launch({ executablePath, args: ['--force-color-profile=srgb', '--hide-scrollbars'] });

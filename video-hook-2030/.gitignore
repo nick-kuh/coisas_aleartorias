@@ -1,2 +1,5 @@
 node_modules
 out/still-*.png
+# intermediates: render.mjs -> out/video.mp4, audio/soundtrack.py -> out/soundtrack.wav
+out/video.mp4
+out/*.wav

@@ -4,8 +4,9 @@ Video de abertura (~87 s, 1920×1080, 30 fps) para o resumo executivo aos VPs.
 Visual baseado no **GDT Template.pptx**: paleta *Unilever Desire 2025*, fundos "aurora",
 lockup **Unilever | Global Digital & Technology** e os layouts *Stat*, *Big Statement* e *Key Points*.
 
-- Vídeo final: `out/race-to-2030-hook.mp4` (sem áudio, para gravar a narração por cima)
+- Vídeo final: `out/race-to-2030-hook.mp4`, com trilha sonora original sincronizada às cenas (-16 LUFS)
 - Fonte da animação: `index.html` (abra no navegador para pré-visualizar, com barra de rolagem e Espaço para pausar)
+- Trilha: `audio/soundtrack.py` (sintetizada do zero, sem música de terceiros e sem direitos a liberar)
 
 ## Roteiro de narração com tempos
 
@@ -29,21 +30,42 @@ As frases **em negrito** são as frases-chave que aparecem destacadas na tela.
 - he market → **the market** · strenthening → **strengthening**
 - "Such as Social Commerce reshapes…" → "**And as** Social Commerce reshapes…" (concordância)
 
+## Trilha sonora
+
+Corporativa/tech em Ré maior, 100 BPM, cortada no tempo de cada cena:
+
+| Momento | O que a música faz |
+|---|---|
+| 0:00–0:03 | Tensão: drone grave, "ticks" subindo a cada virada do contador, riser |
+| 0:03 | **Impacto** quando o contador crava 2030 |
+| 0:06–0:25 | Pads e arpejo suaves; batida leve e um "ping" em cada check das forças |
+| 0:25–0:32 | A virada: a música esvazia e vai crescendo até… |
+| 0:32 | **Drop** em "Where we must accelerate": batida completa |
+| 0:50 | Respiro etéreo, brilhos acompanhando a onda de pontos, impacto no "AI-First" |
+| 0:59–1:13 | Batida volta, construindo |
+| 1:13 | Pico em "2027 Big Bets", impacto quando o contador crava 2027 |
+| 1:21 | Acorde final resolvendo, com fade |
+
+Com narração, `audio/mux.py --voice` abaixa a música automaticamente sempre que a voz fala (ducking).
+
 ## Como ajustar e renderizar de novo
 
-Os tempos de cada cena ficam no topo do `<script>` em `index.html`:
+Os tempos de cada cena ficam em `timeline.js`, usado pelo vídeo e pela trilha:
 
 ```js
-const T = { s1: 0, s2: 6.2, s3: 11.4, s4: 24.6, s5: 32.2, s6: 50.0, s7: 58.6, s8: 72.8, end: 81.4, out: 86.0 };
+window.TIMELINE = {"s1": 0, "s2": 6.2, "s3": 11.4, "s4": 24.6, "s5": 32.2, "s6": 50.0, "s7": 58.6, "s8": 72.8, "end": 81.4, "out": 86.0};
 ```
 
-Se a narração gravada ficar mais rápida ou mais lenta, mude esses números. Todas as animações
-de cada cena acompanham o início dela. Para gerar o MP4 de novo:
+Se a narração ficar mais rápida ou mais lenta, mude esses números. Animações e música acompanham.
+Para gerar tudo de novo:
 
 ```bash
-npm install          # playwright-core (usa o Chromium já instalado)
-node render.mjs      # -> out/race-to-2030-hook.mp4
-node render.mjs --stills 3,20,55   # quadros soltos para conferir
+npm install                      # playwright-core (usa o Chromium já instalado)
+node render.mjs                  # -> out/video.mp4 (imagem, sem som)
+python3 audio/soundtrack.py      # -> out/soundtrack.wav (só precisa de numpy + ffmpeg)
+python3 audio/mux.py             # -> out/race-to-2030-hook.mp4 (imagem + trilha)
+python3 audio/mux.py --voice narracao.wav   # com narração, música abaixa sob a voz
+node render.mjs --stills 3,20,55 # quadros soltos para conferir
 ```
 
 `CHROMIUM=/caminho/do/chrome` define outro navegador.
