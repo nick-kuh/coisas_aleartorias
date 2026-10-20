@@ -568,7 +568,7 @@ const ORDER = ['hook', 'now', 'now2', 'strT', 'str1', 'str2', 'str3', 'piv1', 'p
 const IN = { now: 'stripe', now2: 'whip', strT: 'rise', str1: 'zoom', str2: 'whip', str3: 'stripe', piv1: 'cut', piv2: 'punch',
   drop: 'zoom', acc1: 'whip', acc2: 'stripe', acc3: 'whip', acc4: 'zoom', ai: 'punch', stgT: 'rise', stg1: 'punch', stg2: 'punch',
   stg3: 'punch', bet1: 'zoom', bet2: 'stripe', bet3: 'rise', bet4: 'whip', end: 'zoom', logo: 'stripe' };
-const DARK = new Set([...$$('.shot.dark').map(e => e.id), 'str3', 'bet4']);   // split shots: the logo sits on the dark half
+const DARK = new Set($$('.shot.dark').map(e => e.id));
 const INK = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
 
 ORDER.forEach((id, k) => {
@@ -659,6 +659,7 @@ pop('#str3-l .badge', S.str3 + 0.1);
 rise(['#str3-a', '#str3-b'], W('str.3', 'tax') - 0.1, 60, 0.1);
 pop('#str3-l .mk', W('str.3', 'compliance'));
 tl.to('#str3-r', { clipPath: 'inset(0 0 0 0%)', duration: 0.45, ease: 'expo.out' }, W('str.4', 'factory') - 0.18);
+tl.set('#brand', { color: '#fff' }, W('str.4', 'factory') - 0.05);      // the logo now sits on the dark half
 pop('#str3-r .badge', W('str.4', 'factory'));
 rise(['#str3-c', '#str3-d'], W('str.4', 'factory') - 0.05, 60, 0.1);
 pop($$('#str3-r .mk'), W('str.4', 'transformation') + 0.2);
@@ -759,6 +760,7 @@ tl.fromTo('#bet3-ai .shine', { left: '-30%' }, { left: '120%', duration: 0.9, ea
 gsap.set('#bet4-r', { clipPath: 'inset(0 0 0 100%)' });
 rise($$('#bet4-l .t'), S.bet4 + 0.02, 50, 0.08);
 tl.to('#bet4-r', { clipPath: 'inset(0 0 0 0%)', duration: 0.5 }, W('bet.d', 'building') - 0.2);
+tl.set('#brand', { color: '#fff' }, W('bet.d', 'building') - 0.05);
 rise($$('#bet4-r .t'), W('bet.d', 'building') - 0.1, 50, 0.08);
 pop('#bet4-arrow', W('bet.d', 'building') - 0.1);
 
