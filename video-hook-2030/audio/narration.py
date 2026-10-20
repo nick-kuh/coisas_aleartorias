@@ -26,11 +26,11 @@ ROOT = HERE.parent
 MODELS = HERE / '.models'
 HF = 'https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/'
 VOICE = 'af_heart'
-SPEED = 1.14          # promo pace
+SPEED = 1.06          # promo pace, still easy to follow
 SR = 24000            # Kokoro output rate
-BPM = 120
+BPM = 110
 BEAT = 60 / BPM
-LAND = 4 * BEAT       # the hook's odometer lands on 2030 on the downbeat of bar 2
+LAND = 6 * BEAT       # the hook's odometer lands on 2030 on beat 3 of bar 2
 
 # The script, grouped in sections; each section starts on a beat.
 # Pronunciations Kokoro would get wrong are pinned as [word](/phonemes/).
@@ -150,25 +150,32 @@ def main():
     def q(t):
         return math.ceil(t / BEAT - 1e-6) * BEAT
 
-    def gap(text):
-        return {',': 0.08, ':': 0.18, '.': 0.3}.get(text.rstrip()[-1], 0.1)
+    MIN_SHOT = 2.2                 # no shot is shorter than this
+    SAME_SHOT = {'str.4'}          # lines that carry on in the shot before (no cut)
 
-    at = {'hook.a': LAND - 0.06 - clips['hook.a']['dur'], 'hook.b': LAND + 0.3}
-    cur = at['hook.b'] + clips['hook.b']['dur']
+    def hold(text):
+        """Pause after a line before the next one: time to read the shot before the cut."""
+        return {'.': 0.65, ':': 0.45, ',': 0.35}.get(text.rstrip()[-1], 0.3)
+
+    at = {'hook.a': LAND - 0.06 - clips['hook.a']['dur'], 'hook.b': LAND + 0.35}
+    cur, shot = at['hook.b'] + clips['hook.b']['dur'], 0.0
     marks = {'land': LAND}
     for name, cues in SECTIONS:
-        t = q(cur + (0.35 if name in ('piv', 'stg', 'bet', 'end') else 0.2))
-        if name == 'acc':                       # the drop: two beats of "ACCELERATE" before the first line
+        t = q(max(cur + 0.8, shot + MIN_SHOT))
+        if name == 'acc':                       # the drop: one bar of "Accelerate" before the first line
             marks['drop'] = t
-            t += 2 * BEAT
+            t += 4 * BEAT
         marks[name] = t
-        for cid, text in cues:
-            if cid in ('stg.1', 'stg.2', 'stg.3'):   # the three verbs land on the half-beat grid, 0.75 s apart at least
-                t = max(math.ceil(t / (BEAT / 2) - 1e-6) * BEAT / 2, at.get(prev, 0) + 0.75)
+        for i, (cid, text) in enumerate(cues):
+            if i:
+                prev_text = cues[i - 1][1]
+                t = cur + (0.15 if cid in SAME_SHOT else hold(prev_text))
+                if cid not in SAME_SHOT:
+                    t = max(t, shot + MIN_SHOT)
+            if cid not in SAME_SHOT:
+                shot = t
             at[cid] = t
-            t += clips[cid]['dur'] + gap(text)
-            prev = cid
-        cur = t - gap(cues[-1][1])
+            cur = t + clips[cid]['dur']
 
     def s(c):
         return at[c]
@@ -186,8 +193,8 @@ def main():
         'bet1': s('bet.a') - 0.05, 'bet2': s('bet.b') - 0.05, 'bet3': s('bet.c') - 0.05, 'bet4': s('bet.d') - 0.05,
         'end': s('end.a') - 0.05,
     }
-    shots['logo'] = q(at['end.a'] + clips['end.a']['dur'] + 0.35)
-    out_t = shots['logo'] + 2.5
+    shots['logo'] = q(at['end.a'] + clips['end.a']['dur'] + 0.9)
+    out_t = shots['logo'] + 3.1
 
     r3 = lambda v: round(v, 3)
     timeline = {

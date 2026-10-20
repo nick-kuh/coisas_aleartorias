@@ -2,7 +2,7 @@
 """Original soundtrack for the "Race to 2030" promo.
 
 Everything is synthesized here from scratch (numpy only), so there is no
-third-party music and no licensing to clear. It runs at 120 BPM on the same
+third-party music and no licensing to clear. It runs at 110 BPM on the same
 grid as the voice-over and follows ../timeline.js: hits land on the cuts and
 words that matter (2030 landing, the drop on "Accelerate", AI-First, the three
 strategy verbs, 2027, the euros, "The race is on").
@@ -17,7 +17,7 @@ import sys
 import numpy as np
 
 SR = 48000
-BPM = 120
+BPM = 110
 BEAT = 60 / BPM
 BAR = 4 * BEAT
 HERE = pathlib.Path(__file__).resolve().parent
@@ -342,7 +342,7 @@ for m in (26, 33, 38, 45):
 bass.add(sub_note(38, LAND - 0.1) * (tvec(LAND - 0.02) / LAND) ** 1.5, 0.0, 0.35)
 for q in np.arange(0.0, LAND - 0.05, BEAT / 4):
     drums.add(hat(), q, 0.12 + 0.4 * q / LAND, pan=0.58)
-for i, s in enumerate([0.55, 0.95, 1.3, 1.62]):
+for i, s in enumerate([0.55 * LAND / 2, 0.95 * LAND / 2, 1.3 * LAND / 2, 1.62 * LAND / 2]):   # odometer steps
     bells.add(bell([69, 71, 73, 74][i], dur=1.0, decay=0.45), s, 0.16, pan=0.4 + 0.07 * i)
     drums.add(kick(punch=0.3), s, 0.5 + 0.1 * i)
 fx.add(riser(LAND - 0.3, 300, 8000), 0.3, 0.5)

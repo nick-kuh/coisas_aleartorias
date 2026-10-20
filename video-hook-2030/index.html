@@ -518,27 +518,27 @@ gsap.set('#stripe', { x: -3000, skewX: -14 });
 const tl = gsap.timeline({ paused: true, defaults: { ease: 'expo.out' } });
 
 /* ---------- motion vocabulary ---------- */
-function say(el, cue, dur = 0.5) {          // each word rises in as it is spoken
+function say(el, cue, dur = 0.8) {          // each word rises in as it is spoken
   let last = C[cue].s - 0.12;
   $$('.wi', typeof el === 'string' ? $(el) : el).forEach(wi => {
     let t = C[cue].w[key(wi.textContent)];
     if (t === undefined || t < last) t = last + 0.12;
     last = t;
-    tl.fromTo(wi, { yPercent: 110, opacity: 0 }, { yPercent: 0, opacity: 1, duration: dur }, t - 0.05);
+    tl.fromTo(wi, { yPercent: 100, opacity: 0 }, { yPercent: 0, opacity: 1, duration: dur }, t - 0.08);
   });
 }
-function slam(el, t, from = 1.35) {
-  tl.fromTo(el, { scale: from, opacity: 0, filter: 'blur(14px)' },
-    { scale: 1, opacity: 1, filter: 'blur(0px)', duration: 0.45, transformOrigin: '0% 60%' }, t);
+function slam(el, t, from = 1.35) {           // a soft push-in, not a hard hit
+  tl.fromTo(el, { scale: 1 + (from - 1) * 0.3, opacity: 0, filter: 'blur(6px)' },
+    { scale: 1, opacity: 1, filter: 'blur(0px)', duration: 0.9, transformOrigin: '0% 60%' }, t - 0.05);
 }
 function rise(el, t, y = 70, stagger = 0.06) {
-  tl.fromTo(el, { y, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger }, t);
+  tl.fromTo(el, { y, opacity: 0 }, { y: 0, opacity: 1, duration: 0.95, stagger: stagger * 1.5 }, t);
 }
 function grow(el, t, d = 0.7, axis = 'scaleX') {
   tl.fromTo(el, { [axis]: 0 }, { [axis]: 1, duration: d, ease: 'power3.out' }, t);
 }
 function pop(el, t, stagger = 0.07) {
-  tl.fromTo(el, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: 'back.out(2.2)', stagger }, t);
+  tl.fromTo(el, { scale: 0.4, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.8, ease: 'back.out(1.5)', stagger: stagger * 1.4 }, t);
 }
 function sheen(el, t, d = 0.9) {
   tl.fromTo(el, { backgroundPosition: '100% 0' }, { backgroundPosition: '0% 0', duration: d, ease: 'power2.inOut' }, t);
@@ -549,8 +549,8 @@ function count(el, to, t, d, fmt) {
 }
 function streaks(box, t, n = 3) {
   $$('i', box).forEach((ln, k) => tl.fromTo(ln, { x: -1000, opacity: 0 },
-    { x: 2300, opacity: 0.9, duration: 0.55 + (k % 4) * 0.12, ease: 'power1.in', repeat: n, repeatDelay: 0.15 + (k % 3) * 0.12 },
-    t + (k * 0.07) % 0.6));
+    { x: 2300, opacity: 0.7, duration: 1.0 + (k % 4) * 0.2, ease: 'sine.inOut', repeat: n, repeatDelay: 0.3 + (k % 3) * 0.2 },
+    t + (k * 0.11) % 0.9));
 }
 function flow(scope, t, d) {
   $$('.flow', scope).forEach((f, j) => $$('i', f).forEach((dot, k) => tl.fromTo(dot,
@@ -558,16 +558,17 @@ function flow(scope, t, d) {
     t + (k * 0.37 + j * 0.13))));
 }
 function shake(t, a = 16) {
-  tl.to('#cam', { keyframes: { x: [0, -a, a * .8, -a * .5, a * .3, 0], y: [0, a * .6, -a * .7, a * .4, -a * .2, 0] }, duration: 0.42, ease: 'none' }, t);
+  a *= 0.45;
+  tl.to('#cam', { keyframes: { x: [0, -a, a * .8, -a * .5, a * .3, 0], y: [0, a * .6, -a * .7, a * .4, -a * .2, 0] }, duration: 0.6, ease: 'none' }, t);
 }
-function flash(t, o = 0.85) { tl.fromTo('#flash', { opacity: o }, { opacity: 0, duration: 0.45, ease: 'power2.out', immediateRender: false }, t); }
+function flash(t, o = 0.85) { tl.fromTo('#flash', { opacity: o * 0.55 }, { opacity: 0, duration: 0.8, ease: 'power2.out', immediateRender: false }, t); }
 
 /* ---------- shots & transitions ---------- */
 const ORDER = ['hook', 'now', 'now2', 'strT', 'str1', 'str2', 'str3', 'piv1', 'piv2', 'drop', 'acc1', 'acc2', 'acc3', 'acc4',
   'ai', 'stgT', 'stg1', 'stg2', 'stg3', 'bet1', 'bet2', 'bet3', 'bet4', 'end', 'logo'];
-const IN = { now: 'stripe', now2: 'whip', strT: 'rise', str1: 'zoom', str2: 'whip', str3: 'stripe', piv1: 'cut', piv2: 'punch',
-  drop: 'zoom', acc1: 'whip', acc2: 'stripe', acc3: 'whip', acc4: 'zoom', ai: 'punch', stgT: 'rise', stg1: 'punch', stg2: 'punch',
-  stg3: 'punch', bet1: 'zoom', bet2: 'stripe', bet3: 'rise', bet4: 'whip', end: 'zoom', logo: 'stripe' };
+const IN = { now: 'stripe', now2: 'push', strT: 'rise', str1: 'push', str2: 'push', str3: 'stripe', piv1: 'fade', piv2: 'fade',
+  drop: 'zoom', acc1: 'push', acc2: 'stripe', acc3: 'push', acc4: 'rise', ai: 'zoom', stgT: 'rise', stg1: 'push', stg2: 'push',
+  stg3: 'push', bet1: 'zoom', bet2: 'stripe', bet3: 'rise', bet4: 'push', end: 'fade', logo: 'stripe' };
 const DARK = new Set($$('.shot.dark').map(e => e.id));
 const INK = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
 
@@ -575,27 +576,30 @@ ORDER.forEach((id, k) => {
   const el = $('#' + id), prev = k ? $('#' + ORDER[k - 1]) : null, t = S[id];
   const next = ORDER[k + 1], tNext = next ? S[next] : OUT;
   const type = IN[id] || 'fade';
-  const lead = { whip: 0.14, rise: 0.12, zoom: 0.1 }[type] ?? 0;
-  tl.set(el, { visibility: 'visible' }, t - lead);
-  if (next) tl.set(el, { visibility: 'hidden' }, tNext + 0.7);
-  tl.fromTo($('.in', el), { scale: 1 }, { scale: 1.045, duration: tNext - t + 0.8, ease: 'none' }, t);
+  const lead = { push: 0.45, rise: 0.4, zoom: 0.35, fade: 0.4 }[type] ?? 0;
+  if (k) tl.set(el, { visibility: 'visible' }, t - lead);
+  if (next) tl.set(el, { visibility: 'hidden' }, tNext + 1.2);
+  tl.fromTo($('.in', el), { scale: 1 }, { scale: 1.06, duration: tNext - t + 1.2, ease: 'none' }, Math.max(0, t - lead));
   tl.set('#brand', { color: DARK.has(id) ? '#fff' : INK }, t);
 
-  if (type === 'fade') tl.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 0.6, ease: 'power2.out' }, t);
-  if (type === 'punch') tl.fromTo(el, { scale: 1.14 }, { scale: 1, duration: 0.55, immediateRender: false }, t);
-  if (type === 'whip') {
-    tl.fromTo(el, { xPercent: 100, filter: 'blur(28px)' }, { xPercent: 0, filter: 'blur(0px)', duration: 0.45, immediateRender: false }, t - lead);
-    tl.to(prev, { xPercent: -40, filter: 'blur(22px)', duration: 0.45 }, t - lead);
+  if (!k) { tl.set(el, { visibility: 'visible' }, 0); tl.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 0.8, ease: 'power2.out' }, 0); }
+  if (k && type === 'fade') {    // old text clears first, then the new shot fades up: no overlapping words
+    tl.to($('.in', prev), { opacity: 0, duration: 0.4, ease: 'power1.in' }, t - lead);
+    tl.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 0.65, ease: 'power2.out', immediateRender: false }, t - lead + 0.3);
+  }
+  if (type === 'push') {        // the new shot pushes the old one out, no blur
+    tl.fromTo(el, { xPercent: 100 }, { xPercent: 0, duration: 0.9, ease: 'power3.inOut', immediateRender: false }, t - lead);
+    tl.to(prev, { xPercent: -35, opacity: 0.4, duration: 0.9, ease: 'power3.inOut' }, t - lead);
   }
   if (type === 'rise') {
-    tl.fromTo(el, { yPercent: 100 }, { yPercent: 0, duration: 0.55, immediateRender: false }, t - lead);
-    tl.to(prev, { yPercent: -16, duration: 0.55 }, t - lead);
+    tl.fromTo(el, { yPercent: 100 }, { yPercent: 0, duration: 0.9, ease: 'power3.inOut', immediateRender: false }, t - lead);
+    tl.to(prev, { yPercent: -20, opacity: 0.5, duration: 0.9, ease: 'power3.inOut' }, t - lead);
   }
   if (type === 'zoom') {
-    tl.to(prev, { scale: 2.1, opacity: 0, duration: 0.3, ease: 'power2.in' }, t - 0.26);
-    tl.fromTo(el, { scale: 0.72, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.55, immediateRender: false }, t - lead);
+    tl.to(prev, { scale: 1.2, opacity: 0, duration: 0.5, ease: 'power2.in' }, t - lead);
+    tl.fromTo(el, { scale: 0.92, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.85, ease: 'power3.out', immediateRender: false }, t - lead + 0.25);
   }
-  if (type === 'stripe') tl.fromTo('#stripe', { x: -3000 }, { x: 2300, duration: 0.62, ease: 'power3.inOut', immediateRender: false }, t - 0.31);
+  if (type === 'stripe') tl.fromTo('#stripe', { x: -3000 }, { x: 2300, duration: 1.0, ease: 'power2.inOut', immediateRender: false }, t - 0.5);
 });
 tl.fromTo('#progress', { scaleX: 0 }, { scaleX: 1, duration: OUT, ease: 'none' }, 0);
 tl.set('#brand', { opacity: 0 }, S.logo);
@@ -608,7 +612,8 @@ tl.set('#brand', { opacity: 0 }, S.logo);
   grow('#jr .jr-rail', 0.2, 0.8);
   rise($$('#jr .jr-n'), 0.3, 20, 0.08);
   pop('#jr .jr-run', 0.45);
-  const steps = [[0.55, 0.38], [0.95, 0.33], [1.3, 0.3], [1.62, 0.36]];
+  const f = M.land / 2;            // roll steps scale with the landing time
+  const steps = [[0.55, 0.38], [0.95, 0.33], [1.3, 0.3], [1.62, 0.36]].map(([a, d]) => [a * f, d * f]);
   steps.forEach(([at, d], k) => {
     tl.to('#y1d', { yPercent: -20 * (k + 1), duration: d, ease: 'power2.inOut' }, at);
     tl.to('#jr .jr-run', { left: 25 * (k + 1) + '%', duration: d, ease: 'power2.inOut' }, at);
@@ -617,7 +622,7 @@ tl.set('#brand', { opacity: 0 }, S.logo);
     tl.to($$('b, span', n), { color: '#fff', duration: 0.2, ease: 'none' }, at + d * 0.7);
     tl.to($('i', n), { backgroundColor: COLS[[1, 2, 3, 5][k]], borderColor: '#fff', duration: 0.2, ease: 'none' }, at + d * 0.7);
   });
-  tl.to('#y1c', { yPercent: -50, duration: 0.36, ease: 'power2.inOut' }, 1.62);
+  tl.to('#y1c', { yPercent: -50, duration: 0.36 * f, ease: 'power2.inOut' }, 1.62 * f);
   const land = M.land;
   flash(land, 0.7); shake(land, 18);
   tl.fromTo('#y1 .halo', { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.5 }, land);
@@ -714,7 +719,6 @@ rise('#acc4-c', W('acc.4', 'faster') + 0.35, 20);
   flow('#ai', S.ai, S.stgT - S.ai + 0.6);
   pop('#ai-core', S.ai + 0.1);
   tl.fromTo('#ai-core svg', { rotate: -90 }, { rotate: 90, duration: S.stgT - S.ai + 0.6, ease: 'none' }, S.ai);
-  flash(ai, 0.55); shake(ai, 12);
   slam('#ai-b', ai - 0.05, 1.5);
   sheen('#ai-b', ai + 0.5, 1.0);
   say('#ai-c', 'ai.a');
@@ -742,16 +746,16 @@ grow('#bet1-bar', W('bet.a', 'big') + 0.1, 0.7);
 [['three', 3], ['five', 5], ['26', 26]].forEach(([w, n], k) => {
   const col = $(`#bet2-${k + 1}`), t = W('bet.b', w in C['bet.b'].w || w !== '26' ? w : 'twenty');
   rise(col, t - 0.12, 60);
-  count($('.num', col), n, t - 0.05, 0.5, v => String(Math.round(v)));
+  count($('.num', col), n, t - 0.05, 0.9, v => String(Math.round(v)));
 });
 
 rise($$('#bet3 .lane'), S.bet3 + 0.02, 40, 0.08);
 $$('#bet3 .lane').forEach((ln, k) => {
   grow($('.lanebar', ln), S.bet3 + 0.05 + k * 0.08, 0.5);
   const b = $('.ben b', ln);
-  count(b, +b.dataset.v, S.bet3 + 0.2 + k * 0.08, 1.2, v => `€${v.toFixed(1)}M`);
+  count(b, +b.dataset.v, S.bet3 + 0.3 + k * 0.12, 1.8, v => `€${v.toFixed(1)}M`);
 });
-count($('#bet3-n'), 161.9, W('bet.c', '160') - 0.1, 1.6, v => `€${v.toFixed(1)}M`);
+count($('#bet3-n'), 161.9, W('bet.c', '160') - 0.1, 2.4, v => `€${v.toFixed(1)}M`);
 slam('#bet3-n', W('bet.c', '160') - 0.12, 1.2);
 rise('#bet3-l', W('bet.c', 'benefit') - 0.2, 20);
 rise('#bet3-ai', W('bet.c', 'benefit') + 0.05, 40);
@@ -767,7 +771,6 @@ pop('#bet4-arrow', W('bet.d', 'building') - 0.1);
 /* ---------- END ---------- */
 say('#end-a', 'end.a');
 slam('#end-b', W('end.a', 'on') - 0.06, 1.6);
-flash(W('end.a', 'on'), 0.6); shake(W('end.a', 'on'), 14);
 grow('#jr2 .jr-rail', S.end, 0.4);
 tl.fromTo('#jr2 .jr-run', { left: '0%' }, { left: '100%', duration: 1.1, ease: 'power2.inOut' }, S.end + 0.1);
 tl.fromTo('#jr2 .jr-fill', { scaleX: 0 }, { scaleX: 1, duration: 1.1, ease: 'power2.inOut' }, S.end + 0.1);
