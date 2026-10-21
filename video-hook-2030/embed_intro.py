@@ -24,6 +24,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 
 CSS = """
 /* ===== INTRO VIDEO (v15) · native player, the MP4 is embedded in this file ===== */
+.intro{--vw:max(320px,min(90vw,calc((100vh - 150px)*16/9),1600px))}  /* until fit() runs, or if scripts are blocked */
 .intro-frame video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;cursor:pointer}
 .intro-play{position:absolute;inset:0;z-index:3;display:grid;place-items:center;text-align:left;background:radial-gradient(60% 60% at 50% 50%,rgba(12,17,30,.1),rgba(12,17,30,.55));transition:opacity .35s var(--ease)}
 .intro-play.hide{opacity:0;pointer-events:none}
@@ -39,10 +40,20 @@ CSS = """
 .intro-replay i{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(from 210deg,var(--c1),var(--c3),var(--c5),var(--c1))}
 .intro-replay svg{width:11px;height:11px;fill:#fff;margin-left:2px}
 @media print{.intro-replay{display:none!important}}
+/* shown when the page is opened somewhere that cannot run it (Teams / SharePoint preview, blocked player) */
+.intro-help{position:absolute;inset:0;z-index:4;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:40px;text-align:center;color:#fff;background:rgba(12,17,30,.8);backdrop-filter:blur(4px)}
+.intro-help.on{display:flex}
+.intro-help b{font-size:24px;font-weight:600;letter-spacing:-.02em}
+.intro-help span{max-width:620px;font-size:15px;line-height:1.55;color:rgba(255,255,255,.78)}
+.intro-help ol{display:flex;gap:10px;margin:6px 0 0;padding:0;list-style:none;counter-reset:s}
+.intro-help li{counter-increment:s;display:flex;align-items:center;gap:10px;padding:9px 16px 9px 9px;border-radius:999px;font-size:13.5px;font-weight:600;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18)}
+.intro-help li::before{content:counter(s);width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;background:conic-gradient(from 210deg,var(--c1),var(--c3),var(--c5),var(--c1))}
 """
 
 PLAYER = """<video id="intro-video" playsinline preload="auto" poster="data:image/jpeg;base64,{poster}" aria-label="Race to 2030 · opening video"></video>
-    <button type="button" class="intro-play hide" id="intro-play" aria-label="Play the opening video with sound"><span><i><svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg></i><em>Play intro<small>Race to 2030 · {length} · sound on</small></em></span></button>"""
+    <button type="button" class="intro-play hide" id="intro-play" aria-label="Play the opening video with sound"><span><i><svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg></i><em>Play intro<small>Race to 2030 · {length} · sound on</small></em></span></button>
+    <div class="intro-help" id="intro-help" role="alert"><b>The video can't play here</b><span>This viewer is blocking the player. Download the file and open it in Edge or Chrome, or go straight to the 2027 Strategy.</span><ol><li>Download the file</li><li>Open it in Edge or Chrome</li></ol></div>
+    <noscript><div class="intro-help on"><b>Open this page in your browser</b><span>Previews like Teams and SharePoint don't run the video or the interactive strategy. Download the file and open it in Edge or Chrome.</span><ol><li>Download the file</li><li>Open it in Edge or Chrome</li></ol></div></noscript>"""
 
 REPLAY = """<button type="button" class="intro-replay" id="intro-replay" aria-label="Watch the opening video again"><i><svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg></i>Watch intro</button>"""
 
@@ -54,26 +65,37 @@ SCRIPT = """<script type="application/octet-stream" id="intro-mp4">__VIDEO__</sc
   const playBtn=document.getElementById("intro-play"),skip=document.getElementById("intro-skip"),replay=document.getElementById("intro-replay");
   const root=document.documentElement;root.classList.add("intro-on");
   let done=false,raf=null;
+  const help=document.getElementById("intro-help");
+  /* when this viewer cannot play the video: say how to open it, keep "Go to 2027 Strategy" working */
+  function fail(){if(done)return;playBtn.classList.add("hide");help.classList.add("on");skip.focus({preventScroll:true});}
   /* the MP4 travels inside this file: decode it once into a blob URL (offline, any folder, no login) */
-  const bin=atob(document.getElementById("intro-mp4").textContent.replace(/\\s+/g,"")),buf=new Uint8Array(bin.length);
-  for(let i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
-  vid.src=URL.createObjectURL(new Blob([buf],{type:"video/mp4"}));
+  try{
+    const bin=atob(document.getElementById("intro-mp4").textContent.replace(/\\s+/g,"")),buf=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
+    vid.src=URL.createObjectURL(new Blob([buf],{type:"video/mp4"}));
+  }catch(e){fail();}
   function size(){const w=Math.min(innerWidth*.9,(innerHeight-150)*16/9,1600);intro.style.setProperty("--vw",Math.max(320,w)+"px");}
   function tick(){bar.style.transform=`scaleX(${vid.duration?vid.currentTime/vid.duration:0})`;if(!done)raf=requestAnimationFrame(tick);}
   /* starts with sound when the browser allows it; otherwise the Play button stays up */
-  function play(){vid.play().then(()=>playBtn.classList.add("hide")).catch(()=>{playBtn.classList.remove("hide");playBtn.focus({preventScroll:true});});}
+  function play(){
+    if(help.classList.contains("on"))return;
+    const t=vid.currentTime;   /* asked to play but the clock never moves (spinner, frozen first frame) */
+    setTimeout(()=>{if(!done&&!vid.paused&&vid.currentTime<=t+0.05)fail();},8000);
+    vid.play().then(()=>playBtn.classList.add("hide")).catch(e=>{if(e&&e.name==="NotSupportedError")fail();else{playBtn.classList.remove("hide");playBtn.focus({preventScroll:true});}});
+  }
   function finish(){
     if(done)return;done=true;cancelAnimationFrame(raf);vid.pause();bar.style.transform="scaleX(1)";
     intro.classList.add("out");root.classList.remove("intro-on");replay.classList.add("on");
     setTimeout(()=>{if(typeof fit==="function")fit();},950);
   }
   function reopen(){
-    done=false;vid.currentTime=0;root.classList.add("intro-on");intro.classList.remove("out");replay.classList.remove("on");
+    done=false;if(vid.readyState)vid.currentTime=0;root.classList.add("intro-on");intro.classList.remove("out");replay.classList.remove("on");
     size();tick();play();skip.focus({preventScroll:true});
   }
   vid.addEventListener("ended",finish);
+  vid.addEventListener("error",fail);
   vid.addEventListener("play",()=>playBtn.classList.add("hide"));
-  vid.addEventListener("pause",()=>{if(!done&&!vid.ended)playBtn.classList.remove("hide");});
+  vid.addEventListener("pause",()=>{if(!done&&!vid.ended&&!help.classList.contains("on"))playBtn.classList.remove("hide");});
   vid.addEventListener("click",()=>vid.paused?play():vid.pause());
   playBtn.addEventListener("click",play);
   skip.addEventListener("click",finish);
@@ -125,6 +147,7 @@ def main():
         if not ok:
             raise SystemExit(f'could not find the {what} in {a.html}: is this the v14 page with the intro screen?')
 
+    page = page.replace('</head>', '<noscript><style>.intro-skip,.intro-prog,.intro-play{display:none!important}</style></noscript>\n</head>', 1)
     page = iframe.sub(lambda m: PLAYER.format(poster=poster_b64, length=length), page, count=1)
     page = page.replace(print_rule, print_rule + CSS, 1)
     page = section_end.sub(lambda m: m.group(1) + '\n' + REPLAY, page, count=1)

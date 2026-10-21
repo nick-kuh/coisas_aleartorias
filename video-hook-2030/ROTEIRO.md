@@ -95,3 +95,19 @@ Para gerar de novo depois de mudar o vídeo:
 ```bash
 python3 embed_intro.py CDIO_LATAM_2027_Strategy_E3_v14.html   # -> out/CDIO_LATAM_2027_Strategy_E3_v15.html
 ```
+
+### Compartilhar pelo Teams
+
+A prévia do Teams/SharePoint **não roda JavaScript**. Por isso, ao clicar no HTML dentro do Teams, o vídeo
+fica "carregando" e para na capa, e a parte interativa da estratégia também não funciona. Não tem como o
+arquivo contornar isso: quem recebe precisa **baixar o arquivo e abrir no Edge ou no Chrome**.
+
+Para ninguém ficar travado, a página agora mostra um aviso com esses dois passos:
+- quando a prévia não roda scripts (caso do Teams);
+- quando o visualizador bloqueia o player ou não tem o codec do vídeo;
+- quando o vídeo fica 8 s sem sair do lugar depois de pedir para tocar.
+
+Em qualquer caso, "Go to 2027 Strategy" (ou Esc) continua levando direto para a página.
+
+Se a ideia for só mostrar o vídeo no chat, mande também o `out/race-to-2030-hook.mp4`. O Teams toca MP4
+direto na conversa, sem baixar.
