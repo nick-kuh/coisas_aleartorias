@@ -77,3 +77,21 @@ python3 audio/mux.py --voice out/narration.wav   # tudo junto -> out/race-to-203
 - `node render.mjs --stills 3,20,55` gera quadros soltos para conferir.
 - `index.html` abre no navegador como prévia, com barra de rolagem e Espaço para pausar.
 - **Fonte:** Inter (licença OFL), a mesma do HTML do CDIO.
+
+## Vídeo dentro da página do CDIO (HTML)
+
+`out/CDIO_LATAM_2027_Strategy_E3_v15.html` é a página da estratégia (v14) com o vídeo **dentro do próprio
+arquivo** (~12 MB, um único HTML). Toda vez que alguém abre a página, a intro aparece primeiro:
+
+- Se o navegador deixa o vídeo tocar com som sozinho, ele já começa. Se não deixa (o padrão do Edge e do
+  Chrome), aparece o botão **▶ Play intro** sobre a capa, e um clique toca com som.
+- A barra acompanha o vídeo de verdade. Quando ele termina, a estratégia aparece sozinha.
+- "Go to 2027 Strategy", Esc ou Enter pulam a intro. Espaço pausa. O botão **Watch intro**, no canto, revê.
+- Funciona offline, de qualquer pasta, sem login. Não depende mais do link do SharePoint/Stream, que exigia
+  login e era bloqueado com o arquivo aberto localmente.
+
+Para gerar de novo depois de mudar o vídeo:
+
+```bash
+python3 embed_intro.py CDIO_LATAM_2027_Strategy_E3_v14.html   # -> out/CDIO_LATAM_2027_Strategy_E3_v15.html
+```
