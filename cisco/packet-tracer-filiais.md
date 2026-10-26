@@ -140,7 +140,7 @@ Clicar no roteador → aba **Config** → na lista da esquerda, `FastEthernet0/0
 2. **IPv4 Address** e **Subnet Mask**: preencher conforme as tabelas
 3. Na serial, se aparecer **Clock Rate**, escolher `64000`
 
-O roteamento (RIP v2) precisa ser feito pela CLI: o menu Routing > RIP da aba Config não tem opção de versão 2 nem `no auto-summary`.
+Roteamento sem comandos: na mesma aba Config, `Routing > RIP` → em **Network** digitar cada rede ligada ao roteador (as mesmas dos comandos `network` acima) e clicar **Add**. Esse menu cria RIP versão 1, que funciona nesta topologia porque cada filial e cada link serial estão numa rede classful diferente.
 
 ## Testar com PCs (opcional)
 
