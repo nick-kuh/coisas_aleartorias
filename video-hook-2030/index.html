@@ -402,7 +402,7 @@
     <div class="t split dim" id="bet1-c" style="top:790px;font-size:76px">turn that strategy into action</div>
   </div></section>
 
-  <!-- three strategies, five pillars, twenty-six initiatives -->
+  <!-- three strategies, five pillars, twenty-eight initiatives -->
   <section class="shot" id="bet2"><div class="in">
     <div class="eyebrow">2027 · Big Bets</div><div class="rule"></div>
     <div class="ncol l1" id="bet2-1" style="left:120px"><div class="num">0</div><div class="lab">Strategies</div><div class="sub">Growth · Effectiveness · Productivity</div></div>
@@ -417,7 +417,7 @@
     <div class="lane l2" style="left:690px"><div class="lanebar"></div><div class="badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></div><h4>Operational Effectiveness</h4><span class="ben"><b data-v="51.06">€0.0M</b><small>benefit</small></span></div>
     <div class="lane l3" style="left:1260px"><div class="lanebar"></div><div class="badge"><svg viewBox="0 0 24 24"><path d="M3 21V10l6 4V10l6 4V6l6 4v11z"/></svg></div><h4>Net Productivity</h4><span class="ben"><b data-v="53.784">€0.0M</b><small>benefit</small></span></div>
     <div class="t bold" id="bet3-n" style="top:400px;font-size:300px;font-feature-settings:'tnum';letter-spacing:-.05em">€0.0M</div>
-    <div class="t" id="bet3-l" style="top:720px;font-size:40px;letter-spacing:.2em;font-weight:700;color:var(--muted)">QUANTIFIED BENEFIT · 26 INITIATIVES</div>
+    <div class="t" id="bet3-l" style="top:720px;font-size:40px;letter-spacing:.2em;font-weight:700;color:var(--muted)">QUANTIFIED BENEFIT · 28 INITIATIVES</div>
     <div class="aibar" id="bet3-ai" style="top:850px"><span class="mini"><svg viewBox="0 0 24 24"><path d="M12 3l2 5.5L19.5 10.5 14 12.5 12 18l-2-5.5L4.5 10.5 10 8.5z"/></svg></span><h3>AI <span>@</span> Scale <span>· across all strategies</span></h3><i class="shine"></i></div>
   </div></section>
 
@@ -815,8 +815,8 @@ slam('#bet1-b', W('bet.a', 'big') - 0.05, 1.5);
 grow('#bet1-bar', W('bet.a', 'big') + 0.1, 0.7);
 say('#bet1-c', 'bet.a');
 
-[['three', 3], ['five', 5], ['26', 26]].forEach(([w, n], k) => {
-  const col = $(`#bet2-${k + 1}`), t = W('bet.b', w in C['bet.b'].w || w !== '26' ? w : 'twenty');
+[['three', 3], ['five', 5], ['28', 28]].forEach(([w, n], k) => {
+  const col = $(`#bet2-${k + 1}`), t = W('bet.b', w in C['bet.b'].w || w !== '28' ? w : 'twenty');
   rise(col, t - 0.12, 60);
   count($('.num', col), n, t - 0.05, 0.9, v => String(Math.round(v)));
 });

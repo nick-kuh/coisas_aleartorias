@@ -15,7 +15,7 @@ de 2 a 5 s na tela e as transições são suaves (~0,9 s).
 
   A jornada 2026 → 2030 vem do slide "Journey Data & Technology" que está dentro desse HTML.
 - **Números:** também saem do HTML do CDIO:
-  - 3 estratégias, 5 pilares e 26 iniciativas;
+  - 3 estratégias e 5 pilares (as **28 iniciativas** vêm da correção do time: a planilha do HTML lista 26);
   - €57.1M + €51.06M + €53.784M = **€161.9M** de benefício quantificado.
 - **Transições:** wipe com a faixa degradê, push lateral, rise, zoom suave e crossfade (o texto antigo sai
   antes do novo entrar). Flash e "camera shake" leves só nos 3 grandes momentos: 2030, o drop e Big Bets.
@@ -37,12 +37,12 @@ gerada em 6 blocos corridos, e a imagem troca **durante** a fala: cada corte ent
 | 0:34 | Data Agenda gap · TPM Journey · Social Commerce (Discover → Engage → Buy) · "faster." | "Our Data Agenda gap is a big opportunity. Our TPM Journey needs stronger momentum. And Social Commerce is reshaping how consumers discover, engage, and buy. We must move faster to unlock its full potential," |
 | 0:48 | **AI-First** (núcleo AI @ Scale) | "…on the way to an AI-First Unilever by 2030." |
 | 0:52 | Our strategy is clear → Reinforce / Accelerate / Concentrate | "Our strategy is clear: reinforce what already makes us strong, accelerate the capabilities that define our future, and concentrate on the few bets with disproportionate impact for LATAM." |
-| 1:04 | **2027 Big Bets** → 3 · 5 · 26 → €161.9M | "Our 2027 Big Bets turn that strategy into action: three strategies, five pillars, 26 initiatives, and more than 160 million euros in benefit," |
+| 1:04 | **2027 Big Bets** → 3 · 5 · 28 → €161.9M | "Our 2027 Big Bets turn that strategy into action: three strategies, five pillars, 28 initiatives, and more than 160 million euros in benefit," |
 | 1:15 | Today's core → Tomorrow's advantage | "…strengthening today's core while building tomorrow's advantage." |
 | 1:19 | **The race is on.** → logo Unilever · GDT | "The race is on." |
 
 O que entrou além do texto original:
-- Os números do HTML do CDIO (3 · 5 · 26 · €161.9M).
+- Os números do HTML do CDIO (3 · 5 · €161.9M) e as 28 iniciativas.
 - O fechamento "The race is on.", que retoma o "The race to 2030" do começo.
 
 Os dois estão em `CUES`, no `audio/narration.py`, e dá para tirar.
@@ -84,7 +84,7 @@ python3 audio/mux.py --voice out/narration.wav   # tudo junto -> out/race-to-203
 
 ## Vídeo dentro da página do CDIO (HTML)
 
-`out/CDIO_LATAM_2027_Strategy_E3_v16.html` é a página da estratégia (v14) com o vídeo **dentro do próprio
+`out/CDIO_LATAM_2027_Strategy_E3_v17.html` é a página da estratégia (v14) com o vídeo **dentro do próprio
 arquivo** (~12 MB, um único HTML). Toda vez que alguém abre a página, a intro aparece primeiro:
 
 - Se o navegador deixa o vídeo tocar com som sozinho, ele já começa. Se não deixa (o padrão do Edge e do
@@ -97,7 +97,7 @@ arquivo** (~12 MB, um único HTML). Toda vez que alguém abre a página, a intro
 Para gerar de novo depois de mudar o vídeo:
 
 ```bash
-python3 embed_intro.py CDIO_LATAM_2027_Strategy_E3_v14.html   # -> out/CDIO_LATAM_2027_Strategy_E3_v16.html
+python3 embed_intro.py CDIO_LATAM_2027_Strategy_E3_v14.html   # -> out/CDIO_LATAM_2027_Strategy_E3_v17.html
 ```
 
 ### Compartilhar pelo Teams

@@ -59,7 +59,7 @@ CUES = {
     'stg.2': 'accelerate the capabilities that define our future,',
     'stg.3': 'and concentrate on the few bets with disproportionate impact for [LATAM](/lˈɑtˌæm/).',
     'bet.a': 'Our 2027 Big Bets turn that strategy into action:',
-    'bet.b': 'three strategies, five pillars, 26 initiatives,',
+    'bet.b': 'three strategies, five pillars, 28 initiatives,',
     'bet.c': 'and more than 160 million euros in benefit,',
     'bet.d': "strengthening today's core while building tomorrow's advantage.",
     'end.a': 'The race is on.',

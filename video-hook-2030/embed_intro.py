@@ -11,7 +11,7 @@ the HTML (base64), so the page works offline, from any folder, with no login:
   - the progress bar follows the real video, and the strategy appears when it ends
   - "Go to 2027 Strategy" / Esc / Enter skip it; Space pauses; "Watch intro" replays it
 
-    python3 embed_intro.py PAGE.html [--video out/race-to-2030-hook.mp4] [--out out/PAGE_v16.html]
+    python3 embed_intro.py PAGE.html [--video out/race-to-2030-hook.mp4] [--out out/PAGE_v17.html]
 """
 import argparse
 import base64
@@ -23,7 +23,7 @@ import tempfile
 HERE = pathlib.Path(__file__).resolve().parent
 
 CSS = """
-/* ===== INTRO VIDEO (v16) · native player, the MP4 is embedded in this file ===== */
+/* ===== INTRO VIDEO (v17) · native player, the MP4 is embedded in this file ===== */
 .intro{--vw:max(320px,min(90vw,calc((100vh - 150px)*16/9),1600px))}  /* until fit() runs, or if scripts are blocked */
 .intro-frame video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;cursor:pointer}
 .intro-play{position:absolute;inset:0;z-index:3;display:grid;place-items:center;text-align:left;background:radial-gradient(60% 60% at 50% 50%,rgba(12,17,30,.1),rgba(12,17,30,.55));transition:opacity .35s var(--ease)}
@@ -59,7 +59,7 @@ REPLAY = """<button type="button" class="intro-replay" id="intro-replay" aria-la
 
 SCRIPT = """<script type="application/octet-stream" id="intro-mp4">__VIDEO__</script>
 <script>
-/* ===== INTRO VIDEO (v16) · plays first, then reveals the strategy ===== */
+/* ===== INTRO VIDEO (v17) · plays first, then reveals the strategy ===== */
 (function(){
   const intro=document.getElementById("intro"),vid=document.getElementById("intro-video"),bar=document.getElementById("intro-bar");
   const playBtn=document.getElementById("intro-play"),skip=document.getElementById("intro-skip"),replay=document.getElementById("intro-replay");
@@ -121,7 +121,7 @@ def main():
     ap.add_argument('html', help='strategy page with the v12 intro screen (e.g. CDIO_LATAM_2027_Strategy_E3_v14.html)')
     ap.add_argument('--video', default=str(HERE / 'out' / 'race-to-2030-hook.mp4'))
     ap.add_argument('--poster-at', type=float, default=4.6, help='second of the video used as cover frame')
-    ap.add_argument('--out', default=str(HERE / 'out' / 'CDIO_LATAM_2027_Strategy_E3_v16.html'))
+    ap.add_argument('--out', default=str(HERE / 'out' / 'CDIO_LATAM_2027_Strategy_E3_v17.html'))
     a = ap.parse_args()
 
     page = pathlib.Path(a.html).read_text(encoding='utf-8')
