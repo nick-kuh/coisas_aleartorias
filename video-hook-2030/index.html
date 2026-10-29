@@ -133,6 +133,15 @@
   .lane .ben small { font-size: 15px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
 
   .half { position: absolute; top: 0; bottom: 0; width: 960px; overflow: hidden; }
+
+  /* AI in the day-to-day of our people */
+  .gold { background: linear-gradient(90deg, #F3D9A4, #C99A52 55%, #E6C48F); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: .06em; }
+  .links { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: visible; }
+  .links line { stroke-width: 2.5; stroke-linecap: round; }
+  .av { position: absolute; width: 104px; height: 104px; margin: -52px 0 0 -52px; border-radius: 50%; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--a), var(--b)); box-shadow: 0 0 0 8px rgba(255,255,255,.05), 0 20px 50px -20px var(--a); }
+  .av svg { width: 52%; height: 52%; fill: none; stroke: #fff; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .ring { position: absolute; border-radius: 50%; border: 3px solid #E6C48F; opacity: 0; }
   .streaks { position: absolute; inset: 0; pointer-events: none; }
   .streaks i { position: absolute; left: 0; height: 10px; border-radius: 5px; opacity: 0; }
   .chev { position: absolute; left: 120px; display: flex; gap: 6px; }
@@ -204,14 +213,15 @@
     <div class="badge l3" style="left:1610px;top:560px;width:190px;height:190px"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
   </div></section>
 
-  <!-- best-in-class execution in stores -->
+  <!-- improvements in execution, aiming for best-in-class execution in stores -->
   <section class="shot p1 l1" id="str1"><div class="in">
     <div class="glow" style="--gx:82%;--gy:40%"></div>
     <div class="eyebrow"><b>Growth</b> · Win at the Shelf</div><div class="rule"></div>
-    <div class="accent" style="left:84px;top:300px;height:520px"></div>
-    <div class="t bold" id="str1-a" style="top:290px;font-size:170px">Best-in-class</div>
-    <div class="t bold" id="str1-b" style="top:470px;font-size:170px">execution</div>
-    <div class="t pc" id="str1-c" style="top:665px;font-size:120px">in stores</div>
+    <div class="accent" style="left:84px;top:265px;height:560px"></div>
+    <div class="t split" id="str1-a" style="top:255px;font-size:88px">Improvements in <b>execution,</b></div>
+    <div class="t split dim" id="str1-x" style="top:385px;font-size:60px">aiming for</div>
+    <div class="t bold" id="str1-b" style="top:470px;font-size:170px">Best-in-class</div>
+    <div class="t pc" id="str1-c" style="top:665px;font-size:120px">execution in stores</div>
     <div class="badge" style="left:1430px;top:330px;width:340px;height:340px"><svg viewBox="0 0 24 24"><path d="M4 7h16l-1.5 9h-13z"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/><path d="M9 20h.01M15 20h.01"/></svg></div>
     <div class="chips" style="top:880px"><span class="mk">BR</span><span class="mk">MX</span></div>
   </div></section>
@@ -220,11 +230,24 @@
   <section class="shot dark p3 l2" id="str2"><div class="in">
     <div class="glow" style="--gx:85%;--gy:30%"></div>
     <div class="eyebrow"><b>Operational Effectiveness</b> · Connected Planning</div><div class="rule"></div>
-    <div class="t dim" id="str2-a" style="top:280px;font-size:78px">Strong operational performance</div>
-    <div class="t bold" id="str2-b" style="top:400px;font-size:210px">Logistics</div>
-    <div class="t bold" id="str2-c" style="top:610px;font-size:210px">&amp; S&amp;OP</div>
+    <div class="t split dim" id="str2-a" style="top:238px;font-size:78px">Strong evolution in</div>
+    <div class="t bold" id="str2-b" style="top:335px;font-size:180px">Logistics</div>
+    <div class="t" id="str2-c" style="top:522px;font-size:110px;color:#A9B8F0">capabilities</div>
+    <div class="t bold" id="str2-d" style="top:648px;font-size:180px">&amp; S&amp;OP</div>
     <div class="badge" style="left:1430px;top:330px;width:340px;height:340px"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 15l2.5 2.5L16 13"/></svg></div>
     <div class="chips" style="top:880px"><span class="mk">BR</span><span class="mk">MX</span><span class="mk">AR</span></div>
+  </div></section>
+
+  <!-- AI included in the day-to-day of our people -->
+  <section class="shot dark p5" id="ppl"><div class="in">
+    <div class="glow" style="--gx:80%;--gy:52%"></div>
+    <div class="eyebrow"><b>AI @ Scale</b> · Our people</div><div class="rule" style="right:780px"></div>
+    <svg class="links" id="ppl-links" viewBox="0 0 1920 1080"></svg>
+    <div class="core" id="ppl-core" style="left:1375px;top:455px;width:210px;height:210px"><svg viewBox="0 0 24 24"><path d="M12 3l2 5.5L19.5 10.5 14 12.5 12 18l-2-5.5L4.5 10.5 10 8.5z"/></svg></div>
+    <div class="ring" id="ppl-ring" style="left:1380px;top:460px;width:200px;height:200px"></div>
+    <div class="t x sheen" id="ppl-b" style="top:240px;font-size:280px;--hi:#F3D9A4">AI</div>
+    <div class="t split" id="ppl-c" style="top:548px;font-size:64px">included in the day-to-day of</div>
+    <div class="t bold gold" id="ppl-d" style="top:640px;font-size:170px">our people</div>
   </div></section>
 
   <!-- progress on Tax Reform Compliance and Factory Transformation -->
@@ -504,6 +527,19 @@ $$('.streaks').forEach((box, b) => {
 for (let k = 0; k < 9; k++) {
   $('#acc2-c').insertAdjacentHTML('beforeend', `<svg viewBox="0 0 24 24" style="stroke:${COLS[k % 2 ? 1 : 0]}"><path d="M8 5l7 7-7 7"/></svg>`);
 }
+// our people around the AI core, one spoke each
+const PPL = { x: 1480, y: 560, r: 260 };
+const PAIRS = [['c1', 'c2'], ['c2', 'c3'], ['c3', 'c4'], ['c4', 'c5'], ['c5', 'c6'], ['c6', 'c5'], ['c7', 'c3'], ['c8', 'c4']];
+PAIRS.forEach(([a, b], k) => {
+  const ang = (-90 + 45 * k) * Math.PI / 180, ux = Math.cos(ang), uy = Math.sin(ang);
+  const at = d => [PPL.x + ux * d, PPL.y + uy * d].map(v => v.toFixed(1));
+  const [x0, y0] = at(118), [x1, y1] = at(PPL.r - 62), [ax, ay] = at(PPL.r);
+  $('#ppl-links').insertAdjacentHTML('beforeend',
+    `<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" style="stroke:var(--${a});stroke-opacity:.75"/>` +
+    `<circle class="pulse" r="5" cx="${x0}" cy="${y0}" data-to="${x1},${y1}" fill="#fff"/>`);
+  $('#ppl .in').insertAdjacentHTML('beforeend', `<div class="av" style="left:${ax}px;top:${ay}px;--a:var(--${a});--b:var(--${b})">` +
+    '<svg viewBox="0 0 24 24"><circle cx="12" cy="8.2" r="3.6"/><path d="M4.6 20c.8-4 3.7-6.1 7.4-6.1s6.6 2.1 7.4 6.1"/></svg></div>');
+});
 // dots along the AI / data connectors
 $$('.flow').forEach(f => { for (let k = 0; k < 3; k++) f.appendChild(document.createElement('i')); });
 
@@ -561,9 +597,9 @@ function flash(t, o = 0.85) {                  // ramps up over two frames, then
 }
 
 /* ---------- shots & transitions ---------- */
-const ORDER = ['hook', 'now', 'strT', 'str1', 'str2', 'str3', 'piv1', 'piv2', 'drop', 'acc1', 'acc2', 'acc3', 'acc4',
+const ORDER = ['hook', 'now', 'strT', 'str1', 'str2', 'ppl', 'str3', 'piv1', 'piv2', 'drop', 'acc1', 'acc2', 'acc3', 'acc4',
   'ai', 'stgT', 'stg1', 'stg2', 'stg3', 'bet1', 'bet2', 'bet3', 'bet4', 'end', 'logo'];
-const IN = { now: 'stripe', strT: 'rise', str1: 'push', str2: 'push', str3: 'stripe', piv1: 'fade', piv2: 'fade',
+const IN = { now: 'stripe', strT: 'rise', str1: 'push', str2: 'push', ppl: 'push', str3: 'stripe', piv1: 'fade', piv2: 'fade',
   drop: 'zoom', acc1: 'push', acc2: 'stripe', acc3: 'push', acc4: 'rise', ai: 'zoom', stgT: 'rise', stg1: 'push', stg2: 'push',
   stg3: 'push', bet1: 'zoom', bet2: 'stripe', bet3: 'rise', bet4: 'push', end: 'fade', logo: 'stripe' };
 const DARK = new Set($$('.shot.dark').map(e => e.id));
@@ -653,14 +689,45 @@ slam('#strT-c', W('str.t', 'strengths') - 0.04);
 pop($$('#strT .badge'), W('str.t', 'strengths') + 0.1, 0.09);
 
 grow('#str1 .accent', S.str1 + 0.05, 0.6, 'scaleY');
-rise(['#str1-a', '#str1-b'], S.str1 + 0.02, 60, 0.08);
-rise('#str1-c', W('str.1', 'stores') - 0.1, 40);
+say('#str1-a', 'str.1');
+say('#str1-x', 'str.1');
+slam('#str1-b', W('str.1', 'best') - 0.04, 1.3);
+rise('#str1-c', (W('str.1', 'best') + W('str.1', 'stores')) / 2 - 0.15, 40);   // the second "execution"
 pop($$('#str1 .badge, #str1 .mk'), S.str1 + 0.2, 0.1);
 
-rise('#str2-a', S.str2 + 0.02, 40);
+say('#str2-a', 'str.2');
 rise('#str2-b', W('str.2', 'logistics') - 0.08, 60);
-rise('#str2-c', W('str.2', 's') - 0.1, 60);
+rise('#str2-c', W('str.2', 'capabilities') - 0.08, 40);
+rise('#str2-d', W('str.2', 's') - 0.1, 60);
 pop($$('#str2 .badge, #str2 .mk'), S.str2 + 0.2, 0.08);
+
+{ // AI in the day-to-day of our people: one person after another joins the core
+  const ai = W('ppl.a', 'ai'), join = W('ppl.a', 'included'), our = W('ppl.a', 'our'), people = W('ppl.a', 'people');
+  const span = S.str3 - S.ppl + 0.6;
+  const avs = $$('#ppl .av'), lines = $$('#ppl-links line'), pulses = $$('#ppl-links .pulse');
+  pop('#ppl-core', S.ppl + 0.1);
+  tl.fromTo('#ppl-core svg', { rotate: -90 }, { rotate: 90, duration: span, ease: 'none' }, S.ppl);
+  slam('#ppl-b', ai - 0.05, 1.5);
+  sheen('#ppl-b', ai + 0.45, 1.0);
+  say('#ppl-c', 'ppl.a');
+  const step = Math.max(0.08, (our - 0.2 - join) / avs.length);
+  avs.forEach((av, k) => {
+    const t = join - 0.1 + k * step;
+    tl.fromTo(av, { scale: 0.4, opacity: 0 }, { scale: 1, opacity: 0.55, duration: 0.6, ease: 'back.out(1.6)' }, t);
+    const ln = lines[k], len = Math.hypot(ln.x2.baseVal.value - ln.x1.baseVal.value, ln.y2.baseVal.value - ln.y1.baseVal.value);
+    tl.fromTo(ln, { strokeDasharray: len, strokeDashoffset: len }, { strokeDashoffset: 0, duration: 0.5, ease: 'power2.out' }, t - 0.05);
+    const [x1, y1] = pulses[k].dataset.to.split(',').map(Number);
+    tl.fromTo(pulses[k], { attr: { cx: ln.x1.baseVal.value, cy: ln.y1.baseVal.value }, opacity: 0 },
+      { attr: { cx: x1, cy: y1 }, opacity: 1, duration: 0.55, ease: 'power1.in', repeat: Math.ceil((S.str3 + 0.6 - t) / 0.85), repeatDelay: 0.3 }, t + 0.25);
+  });
+  // "our people": everyone lights up at once and a golden ring opens from the core
+  slam('#ppl-d', our - 0.04, 1.35);
+  tl.to(avs, { opacity: 1, duration: 0.25, ease: 'none' }, our);
+  tl.fromTo(avs, { scale: 1 }, { scale: 1.14, duration: 0.22, yoyo: true, repeat: 1, ease: 'power2.out', immediateRender: false }, our);
+  tl.to(lines, { strokeOpacity: 1, stroke: '#E6C48F', duration: 0.3, ease: 'none' }, people);
+  tl.set('#ppl-ring', { opacity: 1, scale: 1 }, people);
+  tl.to('#ppl-ring', { opacity: 0, scale: 4.2, duration: 1.3, ease: 'power2.out' }, people);
+}
 
 gsap.set('#str3-r', { clipPath: 'inset(0 0 0 100%)' });
 pop('#str3-l .badge', S.str3 + 0.1);

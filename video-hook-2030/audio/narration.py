@@ -42,8 +42,9 @@ CUES = {
     'now.a': 'The decisions we make now',
     'now.b': 'determine whether we lead tomorrow.',
     'str.t': 'We have proven strengths:',
-    'str.1': 'best-in-class execution in stores,',
-    'str.2': 'strong Logistics [and](/ˈænd/) S and O P,',
+    'str.1': 'improvements in execution, aiming for best-in-class execution in stores,',
+    'str.2': 'strong evolution in Logistics capabilities [and](/ˈænd/) S and O P,',
+    'ppl.a': '[AI](/ˌAˈI/) included in the day-to-day of our people,',
     'str.3': 'and critical progress on Tax Reform Compliance',
     'str.4': 'and Factory Transformation.',
     'piv.a': 'But leadership requires more than operational excellence.',
@@ -67,7 +68,7 @@ CUES = {
 # and the music takes over between "acceleration." and the drop.
 PASSAGES = [
     ['hook.a'], ['hook.b'],
-    ['now.a', 'now.b', 'str.t', 'str.1', 'str.2', 'str.3', 'str.4'],
+    ['now.a', 'now.b', 'str.t', 'str.1', 'str.2', 'ppl.a', 'str.3', 'str.4'],
     ['piv.a', 'piv.b'],
     ['acc.1', 'acc.2', 'acc.3', 'acc.4', 'ai.a'],
     ['stg.t', 'stg.1', 'stg.2', 'stg.3'],
@@ -116,6 +117,21 @@ def whisper_words(wav):
     return [(key(w.word), w.start, w.end) for s in segs for w in s.words]
 
 
+def onset(wav, t, prev, look=0.6):
+    """Whisper can date a word that follows a pause late: snap it back to where its sound starts."""
+    fr = int(0.01 * SR)
+    a = int(max(t - look, prev + 0.15, 0) * SR)     # the previous word sounds for a while first
+    if int(t * SR) - a < 10 * fr:
+        return t
+    rms = np.sqrt(np.convolve(wav[a:int(t * SR)] ** 2, np.ones(fr) / fr, mode='same'))[::fr]
+    edge = np.flatnonzero(np.diff(np.r_[0, (rms < 10 ** (-45 / 20)).astype(int), 0]))
+    pauses = [e for s, e in zip(edge[::2], edge[1::2]) if e - s >= 8]      # quiet for 80 ms or more
+    if not pauses:
+        return t
+    t_on = a / SR + pauses[-1] * 0.01
+    return t_on if t - t_on >= 0.04 else t
+
+
 def main():
     import onnxruntime as ort
     sess = ort.InferenceSession(str(fetch('onnx/model.onnx')), providers=['CPUExecutionProvider'])
@@ -159,6 +175,7 @@ def main():
             for blk in sm.get_matching_blocks():
                 for j in range(blk.size):
                     times[blk.a + j] = heard[blk.b + j][1]
+            times = [onset(wav, t, times[i - 1] if i else 0.0) for i, t in enumerate(times)]
             for i in range(1, len(times)):         # keep the order sane where nothing matched
                 times[i] = max(times[i], times[i - 1] + 0.05)
         passages.append(dict(ids=ids, wav=wav, dur=dur, words=words, times=times))
@@ -204,7 +221,7 @@ def main():
 
     # the picture leads the voice slightly ("now" carries on into "lead tomorrow" inside one shot)
     shots = {'hook': 0.0, 'now': s('now.a') - 0.15}
-    for name, c in [('strT', 'str.t'), ('str1', 'str.1'), ('str2', 'str.2'), ('str3', 'str.3'),
+    for name, c in [('strT', 'str.t'), ('str1', 'str.1'), ('str2', 'str.2'), ('ppl', 'ppl.a'), ('str3', 'str.3'),
                     ('piv1', 'piv.a'), ('piv2', 'piv.b')]:
         shots[name] = s(c) - 0.15
     shots['drop'] = marks['drop']

@@ -356,8 +356,10 @@ section(LAND, SH['strT'], ['D', 'Bm', 'G'], pad_lvl=.42, bright=2200, arp_mode='
 # --- proven strengths: four on the floor, a ping on each check
 section(SH['strT'], SH['piv1'], ['D', 'A', 'Bm', 'G'], pad_lvl=.42, bright=2600, arp_mode='16', arp_lvl=.2,
         arp_bright=6000, drum_mode='drive', bass_mode='pulse', bass_lvl=.4)
-for k, at in enumerate([W('str.t', 'strengths'), SH['str1'], SH['str2'], SH['str3'], W('str.4', 'factory')]):
-    bells.add(bell([84, 86, 88, 90, 93][k], dur=1.4, decay=0.5), at + 0.2, 0.08, pan=0.3 + 0.1 * k)
+for k, at in enumerate([W('str.t', 'strengths'), SH['str1'], SH['str2'], SH['ppl'], SH['str3'], W('str.4', 'factory')]):
+    bells.add(bell([84, 86, 88, 90, 91, 93][k], dur=1.4, decay=0.5), at + 0.2, 0.08, pan=0.3 + 0.08 * k)
+for i, m in enumerate([81, 86, 90, 93]):        # a sparkle as "our people" light up around the AI core
+    bells.add(bell(m, dur=1.6, decay=0.7), W('ppl.a', 'people') + i * 0.08, 0.07, pan=0.3 + 0.13 * i)
 
 # --- the stop: the beat drops out under "more than operational excellence", then builds into the drop
 section(SH['piv1'], DROP, ['Bm', 'G', 'A'], pad_lvl=.24, bright=600, bright_to=3200, bass_mode='long', bass_lvl=.2)
