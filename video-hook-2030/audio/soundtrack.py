@@ -5,7 +5,7 @@ Everything is synthesized here from scratch (numpy only), so there is no
 third-party music and no licensing to clear. It runs at 110 BPM on the same
 grid as the voice-over and follows ../timeline.js: hits land on the cuts and
 words that matter (2030 landing, the drop on "Accelerate", AI-First, the three
-strategy verbs, 2027, the euros, "The race is on").
+strategy verbs, 2027, the numbers, "The race is on").
 
     python3 audio/soundtrack.py            -> out/soundtrack.wav (48 kHz stereo)
 """
@@ -394,14 +394,13 @@ for k, (ch, verb) in enumerate([('Bm', 'reinforce'), ('G', 'accelerate'), ('D', 
     hit(W(f'stg.{k + 1}', verb), ch, 0.55 + 0.15 * k)
 fx.add(riser(SH['bet1'] - CU['stg.3']['e'] + 0.3, 400, 9000), CU['stg.3']['e'] - 0.3, 0.4)
 
-# --- 2027 Big Bets: the peak; hits on 2027, the numbers and the euros
+# --- 2027 Big Bets: the peak; hits on 2027 and the numbers
 hit(SH['bet1'], 'D', 1.2)
 section(SH['bet1'], SH['end'], ['D', 'A', 'G', 'A'], pad_lvl=.46, bright=3600, arp_mode='16', arp_lvl=.26,
         arp_bright=7500, drum_mode='drive', bass_mode='pulse', bass_lvl=.46)
 fx.add(impact(), W('bet.a', 'big') - 0.05, 0.4)
 for k, w in enumerate(['three', 'five', '28']):
     bells.add(bell([86, 90, 93][k], dur=1.2, decay=0.5), W('bet.b', w), 0.12, pan=0.3 + 0.2 * k)
-fx.add(impact(), W('bet.c', '160') - 0.1, 0.5)
 
 # --- "The race is on." final hit, then ring out over the logo
 ON = W('end.a', 'on')

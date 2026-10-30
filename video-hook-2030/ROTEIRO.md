@@ -1,7 +1,7 @@
 # Race to 2030 — Promo (CDIO LATAM · 2027 Big Bets)
 
-Vídeo de abertura para os VPs, em formato promo: **~84 s**, 1920×1080, 30 fps.
-São 25 cenas sincronizadas com a voz e com a batida da música. A narração é contínua, as cenas ficam
+Vídeo de abertura para os VPs, em formato promo: **~82 s**, 1920×1080, 30 fps.
+São 24 cenas sincronizadas com a voz e com a batida da música. A narração é contínua, as cenas ficam
 de 2 a 5 s na tela e as transições são suaves (~0,9 s).
 
 - **Vídeo final:** `out/race-to-2030-hook.mp4`. Tem narração em inglês (voz feminina de IA), trilha original
@@ -16,7 +16,7 @@ de 2 a 5 s na tela e as transições são suaves (~0,9 s).
   A jornada 2026 → 2030 vem do slide "Journey Data & Technology" que está dentro desse HTML.
 - **Números:** também saem do HTML do CDIO:
   - 3 estratégias e 5 pilares (as **28 iniciativas** vêm da correção do time: a planilha do HTML lista 26);
-  - €57.1M + €51.06M + €53.784M = **€161.9M** de benefício quantificado.
+  - os valores de benefício (€) **não** aparecem no vídeo, nem na tela nem na voz.
 - **Transições:** wipe com a faixa degradê, push lateral, rise, zoom suave e crossfade (o texto antigo sai
   antes do novo entrar). Flash e "camera shake" leves só nos 3 grandes momentos: 2030, o drop e Big Bets.
 
@@ -31,18 +31,18 @@ gerada em 6 blocos corridos, e a imagem troca **durante** a fala: cada corte ent
 |---|---|---|
 | 0:00 | **Hook**: contador 2026 → 2030 na linha da jornada, impacto em 2030 | "The race to 2030… is already underway." |
 | 0:05 | "now." → (no mesmo quadro) "lead tomorrow." | "The decisions we make now determine whether we lead tomorrow." |
-| 0:08 | Proven strengths: Stores · Logistics capabilities & S&OP · **AI no dia a dia das nossas pessoas** (pessoas conectadas ao núcleo de IA) · Tax Reform \| Factory | "We have proven strengths: improvements in execution, aiming for best-in-class execution in stores, strong evolution in Logistics capabilities and S&OP, AI included in the day-to-day of our people, and critical progress on Tax Reform Compliance and Factory Transformation." |
-| 0:27 | **A virada**: a música para | "But leadership requires more than operational excellence. It requires acceleration." |
+| 0:08 | Proven strengths: Stores · Logistics capabilities & S&OP · **AI no dia a dia das nossas pessoas** (pessoas conectadas ao núcleo de IA) · Tax Reform (BR) \| Factory (BR · MX · AR) | "We have proven strengths: improvements in execution, aiming for best-in-class execution in stores, strong evolution in Logistics capabilities and S&OP, AI included in the day-to-day of our people, and critical progress on Tax Reform Compliance and Factory Transformation." |
+| 0:27 | **A virada**: a música para | "But leadership requires more than operational excellence. It requires growth acceleration." |
 | 0:33 | **DROP**: "Accelerate" | *(música)* |
-| 0:34 | Data Agenda gap · TPM Journey · Social Commerce (Discover → Engage → Buy) · "faster." | "Our Data Agenda gap is a big opportunity. Our TPM Journey needs stronger momentum. And Social Commerce is reshaping how consumers discover, engage, and buy. We must move faster to unlock its full potential," |
-| 0:48 | **AI-First** (núcleo AI @ Scale) | "…on the way to an AI-First Unilever by 2030." |
-| 0:52 | Our strategy is clear → Reinforce / Accelerate / Concentrate | "Our strategy is clear: reinforce what already makes us strong, accelerate the capabilities that define our future, and concentrate on the few bets with disproportionate impact for LATAM." |
-| 1:04 | **2027 Big Bets** → 3 · 5 · 28 → €161.9M | "Our 2027 Big Bets turn that strategy into action: three strategies, five pillars, 28 initiatives, and more than 160 million euros in benefit," |
-| 1:15 | Today's core → Tomorrow's advantage | "…strengthening today's core while building tomorrow's advantage." |
-| 1:19 | **The race is on.** → logo Unilever · GDT | "The race is on." |
+| 0:35 | Data Agenda gap · TPM Journey · Social Commerce (Discover → Engage → Buy) · "faster." | "Our Data Agenda gap is a big opportunity. Our TPM Journey needs stronger momentum. And Social Commerce is reshaping how consumers discover, engage, and buy. We must move faster to unlock its full potential," |
+| 0:49 | **AI-First** (núcleo AI @ Scale) | "…on the way to an AI-First Unilever by 2030." |
+| 0:53 | Our strategy is clear → Reinforce / Accelerate / Concentrate | "Our strategy is clear: reinforce what already makes us strong, accelerate the capabilities that define our future, and concentrate on the few bets with disproportionate impact for LATAM." |
+| 1:05 | **2027 Big Bets** → 3 · 5 · 28 | "Our 2027 Big Bets turn that strategy into action: three strategies, five pillars, and 28 initiatives," |
+| 1:13 | Today's core → Tomorrow's advantage | "…strengthening today's core while building tomorrow's advantage." |
+| 1:16 | **The race is on.** → logo Unilever · GDT | "The race is on." |
 
 O que entrou além do texto original:
-- Os números do HTML do CDIO (3 · 5 · €161.9M) e as 28 iniciativas.
+- Os números do HTML do CDIO (3 estratégias · 5 pilares) e as 28 iniciativas.
 - O fechamento "The race is on.", que retoma o "The race to 2030" do começo.
 
 Os dois estão em `CUES`, no `audio/narration.py`, e dá para tirar.
@@ -61,7 +61,7 @@ Original e sintetizada do zero (`audio/soundtrack.py`), 110 BPM, no mesmo grid d
   em volta do núcleo de IA.
 - **Virada:** a música some em "more than operational excellence". Depois vêm rufar de caixa e riser, um
   respiro de silêncio e o **drop** em "Accelerate".
-- **Impactos:** em AI-First, em cada verbo (Reinforce / Accelerate / Concentrate), no 2027 e no €161.9M.
+- **Impactos:** em AI-First, em cada verbo (Reinforce / Accelerate / Concentrate), no 2027 e nos números (3 · 5 · 28).
 - **Fim:** hit final em "The race is **on**", com o acorde soando sobre o logo.
 
 ## Como gerar de novo
@@ -84,7 +84,7 @@ python3 audio/mux.py --voice out/narration.wav   # tudo junto -> out/race-to-203
 
 ## Vídeo dentro da página do CDIO (HTML)
 
-`out/CDIO_LATAM_2027_Strategy_E3_v17.html` é a página da estratégia (v14) com o vídeo **dentro do próprio
+`out/CDIO_LATAM_2027_Strategy_E3_v18.html` é a página da estratégia (v14) com o vídeo **dentro do próprio
 arquivo** (~12 MB, um único HTML). Toda vez que alguém abre a página, a intro aparece primeiro:
 
 - Se o navegador deixa o vídeo tocar com som sozinho, ele já começa. Se não deixa (o padrão do Edge e do
@@ -97,7 +97,7 @@ arquivo** (~12 MB, um único HTML). Toda vez que alguém abre a página, a intro
 Para gerar de novo depois de mudar o vídeo:
 
 ```bash
-python3 embed_intro.py CDIO_LATAM_2027_Strategy_E3_v14.html   # -> out/CDIO_LATAM_2027_Strategy_E3_v17.html
+python3 embed_intro.py CDIO_LATAM_2027_Strategy_E3_v14.html   # -> out/CDIO_LATAM_2027_Strategy_E3_v18.html
 ```
 
 ### Compartilhar pelo Teams

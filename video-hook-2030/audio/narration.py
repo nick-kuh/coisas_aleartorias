@@ -48,7 +48,7 @@ CUES = {
     'str.3': 'and critical progress on Tax Reform Compliance',
     'str.4': 'and Factory Transformation.',
     'piv.a': 'But leadership requires more than operational excellence.',
-    'piv.b': 'It requires acceleration.',
+    'piv.b': 'It requires growth acceleration.',
     'acc.1': 'Our Data Agenda gap is a big opportunity.',
     'acc.2': 'Our TPM Journey needs stronger momentum.',
     'acc.3': 'And Social Commerce is reshaping how consumers discover, engage, and buy.',
@@ -59,8 +59,7 @@ CUES = {
     'stg.2': 'accelerate the capabilities that define our future,',
     'stg.3': 'and concentrate on the few bets with disproportionate impact for [LATAM](/lˈɑtˌæm/).',
     'bet.a': 'Our 2027 Big Bets turn that strategy into action:',
-    'bet.b': 'three strategies, five pillars, 28 initiatives,',
-    'bet.c': 'and more than 160 million euros in benefit,',
+    'bet.b': 'three strategies, five pillars, and 28 initiatives,',
     'bet.d': "strengthening today's core while building tomorrow's advantage.",
     'end.a': 'The race is on.',
 }
@@ -72,7 +71,7 @@ PASSAGES = [
     ['piv.a', 'piv.b'],
     ['acc.1', 'acc.2', 'acc.3', 'acc.4', 'ai.a'],
     ['stg.t', 'stg.1', 'stg.2', 'stg.3'],
-    ['bet.a', 'bet.b', 'bet.c', 'bet.d'],
+    ['bet.a', 'bet.b', 'bet.d'],
     ['end.a'],
 ]
 
@@ -227,7 +226,7 @@ def main():
     shots['drop'] = marks['drop']
     for name, c in [('acc1', 'acc.1'), ('acc2', 'acc.2'), ('acc3', 'acc.3'), ('acc4', 'acc.4'), ('ai', 'ai.a'),
                     ('stgT', 'stg.t'), ('stg1', 'stg.1'), ('stg2', 'stg.2'), ('stg3', 'stg.3'),
-                    ('bet1', 'bet.a'), ('bet2', 'bet.b'), ('bet3', 'bet.c'), ('bet4', 'bet.d'), ('end', 'end.a')]:
+                    ('bet1', 'bet.a'), ('bet2', 'bet.b'), ('bet4', 'bet.d'), ('end', 'end.a')]:
         shots[name] = s(c) - 0.15
     shots['logo'] = q(cues['end.a']['e'] + 0.8)
     out_t = shots['logo'] + 3.0

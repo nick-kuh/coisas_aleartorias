@@ -101,15 +101,6 @@
   .flow i { position: absolute; left: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--fc); box-shadow: 0 0 18px 2px var(--fc); }
   .flow::before { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent, var(--fc)); opacity: .55; }
 
-  .aibar { position: absolute; left: 120px; right: 120px; height: 96px; border-radius: 20px; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 22px;
-    background: linear-gradient(90deg, color-mix(in srgb, var(--c1) 8%, #fff), #fff 32%, #fff 68%, color-mix(in srgb, var(--c5) 8%, #fff)); border: 1px solid var(--line);
-    box-shadow: 0 24px 50px -34px rgba(18,26,46,.45); }
-  .aibar::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: var(--grad); }
-  .aibar .mini { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(from 210deg, var(--c1), var(--c3), var(--c5), var(--c1)); }
-  .aibar .mini svg { width: 28px; height: 28px; stroke: #fff; fill: rgba(255,255,255,.25); stroke-width: 1.5; }
-  .aibar h3 { margin: 0; font-size: 40px; font-weight: 600; letter-spacing: -.02em; }
-  .aibar h3 span { font-weight: 300; color: var(--muted); }
-  .shine { position: absolute; top: 0; bottom: 0; left: -30%; width: 22%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent); transform: skewX(-18deg); }
 
   /* social commerce funnel */
   .funnel { position: absolute; left: 120px; display: flex; align-items: center; gap: 22px; }
@@ -123,14 +114,6 @@
   .ncol .num { position: absolute; left: 60px; top: 30px; font-size: 330px; font-weight: 700; letter-spacing: -.05em; line-height: 1; color: var(--la); font-feature-settings: "tnum"; }
   .ncol .lab { position: absolute; left: 66px; top: 400px; font-size: 34px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; }
   .ncol .sub { position: absolute; left: 66px; top: 460px; font-size: 26px; color: var(--ink-2); white-space: nowrap; }
-  .lane { position: absolute; top: 220px; width: 540px; height: 130px; }
-  .lane .lanebar { height: 6px; }
-  .lane .badge { left: 0; top: 34px; width: 84px; height: 84px; box-shadow: 0 16px 30px -16px var(--la); }
-  .lane h4 { position: absolute; left: 106px; top: 40px; margin: 0; font-size: 34px; font-weight: 600; letter-spacing: -.02em; line-height: 1.05; }
-  .lane .ben { position: absolute; left: 106px; top: 88px; display: inline-flex; align-items: baseline; gap: 8px; padding: 4px 16px; border-radius: 999px;
-    background: color-mix(in srgb, var(--la) 9%, #fff); border: 1px solid color-mix(in srgb, var(--la) 24%, transparent); }
-  .lane .ben b { font-size: 30px; letter-spacing: -.02em; color: var(--la); font-feature-settings: "tnum"; }
-  .lane .ben small { font-size: 15px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
 
   .half { position: absolute; top: 0; bottom: 0; width: 960px; overflow: hidden; }
 
@@ -266,7 +249,7 @@
       <div class="badge" style="left:120px;top:250px;width:200px;height:200px"><svg viewBox="0 0 24 24"><path d="M3 21V10l6 4V10l6 4V6l6 4v11z"/><path d="M7 17h2M12 17h2M17 17h2"/></svg></div>
       <div class="t bold" id="str3-c" style="top:520px;font-size:112px">Factory</div>
       <div class="t" id="str3-d" style="top:650px;font-size:104px;color:#E6C48F">Transformation</div>
-      <div class="chips" style="top:860px"><span class="mk">BR</span><span class="mk">MX</span></div>
+      <div class="chips" style="top:860px"><span class="mk">BR</span><span class="mk">MX</span><span class="mk">AR</span></div>
     </div>
   </div></section>
 
@@ -279,12 +262,13 @@
     <div class="bar" id="piv1-bar" style="left:126px;top:880px;width:900px;opacity:.8"></div>
   </div></section>
 
-  <!-- It requires acceleration -->
+  <!-- It requires growth acceleration -->
   <section class="shot dark p3" id="piv2"><div class="in">
     <div class="glow" style="--gx:70%;--gy:50%"></div>
     <div class="streaks" id="piv2-s"></div>
-    <div class="t split dim" id="piv2-a" style="top:300px;font-size:104px">It requires</div>
-    <div class="t x gt" id="piv2-b" style="top:440px;font-size:220px">acceleration.</div>
+    <div class="t split dim" id="piv2-a" style="top:250px;font-size:104px">It requires</div>
+    <div class="t bold" id="piv2-g" style="top:380px;font-size:170px">growth</div>
+    <div class="t x gt" id="piv2-b" style="top:570px;font-size:220px">acceleration.</div>
   </div></section>
 
   <!-- DROP · ACCELERATE -->
@@ -408,17 +392,6 @@
     <div class="ncol l1" id="bet2-1" style="left:120px"><div class="num">0</div><div class="lab">Strategies</div><div class="sub">Growth · Effectiveness · Productivity</div></div>
     <div class="ncol l2" id="bet2-2" style="left:680px"><div class="num">0</div><div class="lab">Pillars</div><div class="sub">Shelf · Data · Planning · Core · Factories</div></div>
     <div class="ncol l3" id="bet2-3" style="left:1240px"><div class="num">0</div><div class="lab">Initiatives</div><div class="sub">Brazil · Mexico · Argentina · LATAM</div></div>
-  </div></section>
-
-  <!-- more than 160 million euros in benefit -->
-  <section class="shot" id="bet3"><div class="in">
-    <div class="eyebrow">Quantified benefit · 2027</div>
-    <div class="lane l1" style="left:120px"><div class="lanebar"></div><div class="badge"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></div><h4>Growth</h4><span class="ben"><b data-v="57.1">€0.0M</b><small>benefit</small></span></div>
-    <div class="lane l2" style="left:690px"><div class="lanebar"></div><div class="badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></div><h4>Operational Effectiveness</h4><span class="ben"><b data-v="51.06">€0.0M</b><small>benefit</small></span></div>
-    <div class="lane l3" style="left:1260px"><div class="lanebar"></div><div class="badge"><svg viewBox="0 0 24 24"><path d="M3 21V10l6 4V10l6 4V6l6 4v11z"/></svg></div><h4>Net Productivity</h4><span class="ben"><b data-v="53.784">€0.0M</b><small>benefit</small></span></div>
-    <div class="t bold" id="bet3-n" style="top:400px;font-size:300px;font-feature-settings:'tnum';letter-spacing:-.05em">€0.0M</div>
-    <div class="t" id="bet3-l" style="top:720px;font-size:40px;letter-spacing:.2em;font-weight:700;color:var(--muted)">QUANTIFIED BENEFIT · 28 INITIATIVES</div>
-    <div class="aibar" id="bet3-ai" style="top:850px"><span class="mini"><svg viewBox="0 0 24 24"><path d="M12 3l2 5.5L19.5 10.5 14 12.5 12 18l-2-5.5L4.5 10.5 10 8.5z"/></svg></span><h3>AI <span>@</span> Scale <span>· across all strategies</span></h3><i class="shine"></i></div>
   </div></section>
 
   <!-- Strengthening today's core, building tomorrow's advantage -->
@@ -598,10 +571,10 @@ function flash(t, o = 0.85) {                  // ramps up over two frames, then
 
 /* ---------- shots & transitions ---------- */
 const ORDER = ['hook', 'now', 'strT', 'str1', 'str2', 'ppl', 'str3', 'piv1', 'piv2', 'drop', 'acc1', 'acc2', 'acc3', 'acc4',
-  'ai', 'stgT', 'stg1', 'stg2', 'stg3', 'bet1', 'bet2', 'bet3', 'bet4', 'end', 'logo'];
+  'ai', 'stgT', 'stg1', 'stg2', 'stg3', 'bet1', 'bet2', 'bet4', 'end', 'logo'];
 const IN = { now: 'stripe', strT: 'rise', str1: 'push', str2: 'push', ppl: 'push', str3: 'stripe', piv1: 'fade', piv2: 'fade',
   drop: 'zoom', acc1: 'push', acc2: 'stripe', acc3: 'push', acc4: 'rise', ai: 'zoom', stgT: 'rise', stg1: 'push', stg2: 'push',
-  stg3: 'push', bet1: 'zoom', bet2: 'stripe', bet3: 'rise', bet4: 'push', end: 'fade', logo: 'stripe' };
+  stg3: 'push', bet1: 'zoom', bet2: 'stripe', bet4: 'push', end: 'fade', logo: 'stripe' };
 const DARK = new Set($$('.shot.dark').map(e => e.id));
 const INK = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
 
@@ -737,7 +710,7 @@ tl.to('#str3-r', { clipPath: 'inset(0 0 0 0%)', duration: 0.8, ease: 'power3.inO
 tl.set('#brand', { color: '#fff' }, W('str.4', 'factory') - 0.32);      // the logo now sits on the dark half
 pop('#str3-r .badge', W('str.4', 'factory'));
 rise(['#str3-c', '#str3-d'], W('str.4', 'factory') - 0.05, 60, 0.1);
-pop($$('#str3-r .mk'), W('str.4', 'transformation') + 0.2);
+pop($$('#str3-r .mk'), W('str.4', 'transformation') - 0.1);      // BR · MX · AR are all in before the scene fades
 
 /* ---------- PIVOT ---------- */
 say('#piv1-a', 'piv.a', 0.7);
@@ -745,6 +718,7 @@ rise('#piv1-b', W('piv.a', 'operational') - 0.08, 50);
 rise('#piv1-c', W('piv.a', 'excellence') - 0.08, 50);
 grow('#piv1-bar', W('piv.a', 'excellence') + 0.2, 1.4);
 say('#piv2-a', 'piv.b');
+slam('#piv2-g', W('piv.b', 'growth') - 0.05, 1.3);
 slam('#piv2-b', W('piv.b', 'acceleration') - 0.06, 1.25);
 tl.to('#piv2-b', { scaleX: 1.07, transformOrigin: '0% 50%', duration: M.drop - W('piv.b', 'acceleration') - 0.3, ease: 'power2.in' }, W('piv.b', 'acceleration') + 0.45);
 streaks('#piv2-s', W('piv.b', 'acceleration'), 3);
@@ -820,18 +794,6 @@ say('#bet1-c', 'bet.a');
   rise(col, t - 0.12, 60);
   count($('.num', col), n, t - 0.05, 0.9, v => String(Math.round(v)));
 });
-
-rise($$('#bet3 .lane'), S.bet3 + 0.02, 40, 0.08);
-$$('#bet3 .lane').forEach((ln, k) => {
-  grow($('.lanebar', ln), S.bet3 + 0.05 + k * 0.08, 0.5);
-  const b = $('.ben b', ln);
-  count(b, +b.dataset.v, S.bet3 + 0.3 + k * 0.12, 1.8, v => `€${v.toFixed(1)}M`);
-});
-count($('#bet3-n'), 161.9, W('bet.c', '160') - 0.1, 2.4, v => `€${v.toFixed(1)}M`);
-slam('#bet3-n', W('bet.c', '160') - 0.12, 1.2);
-rise('#bet3-l', W('bet.c', 'benefit') - 0.2, 20);
-rise('#bet3-ai', W('bet.c', 'benefit') + 0.05, 40);
-tl.fromTo('#bet3-ai .shine', { left: '-30%' }, { left: '120%', duration: 0.9, ease: 'power2.inOut' }, W('bet.c', 'benefit') + 0.3);
 
 gsap.set('#bet4-r', { clipPath: 'inset(0 0 0 100%)' });
 rise($$('#bet4-l .t'), S.bet4 + 0.02, 50, 0.08);
